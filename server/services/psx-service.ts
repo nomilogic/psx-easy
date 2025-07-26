@@ -221,7 +221,9 @@ export class PSXService {
       return stockData;
     } catch (error) {
       console.error("Error fetching market data:", error);
-      //return this.getMockData();
+      console.error("All CORS proxies failed - cannot fetch authentic PSX data");
+      // Never return mock data for market data - only authentic data should be persisted
+      return undefined;
     }
   }
 
@@ -336,27 +338,35 @@ export class PSXService {
     const $ = cheerio.load(html);
     const stocks: StockData[] = [];
 
+    console.log("Parsing HTML data, looking for table rows...");
+    
+    // Look for both main market watch table and performance tables
+    let tableRows = 0;
     $("tr").each((_: any, row: any) => {
       const cells = $(row).find("td");
-      if (cells.length > 6) {
-        const symbol = $(cells[0]).find("strong").text().trim();
-        const name = $(cells[0]).find("a").attr("title") || "";
-        const sector = $(cells[1]).text().trim();
-        const ldcp = parseFloat($(cells[2]).attr("data-order") || "0");
-        const open = parseFloat($(cells[3]).attr("data-order") || "0");
-        const high = parseFloat($(cells[4]).attr("data-order") || "0");
-        const low = parseFloat($(cells[5]).attr("data-order") || "0");
-        const current = parseFloat($(cells[6]).attr("data-order") || "0");
-        const change = parseFloat($(cells[7]).attr("data-order") || "0");
-        const changePercent = parseFloat($(cells[8]).attr("data-order") || "0");
-        const volume = parseInt($(cells[9]).attr("data-order") || "0", 10);
-        const isPositive = change >= 0;
+      tableRows++;
+      
+      // Check for full market watch table (9+ columns)
+      if (cells.length >= 9) {
+        const symbolCell = $(cells[0]);
+        const symbol = symbolCell.find("strong").text().trim();
+        const name = symbolCell.find("a").attr("title") || symbolCell.find("a").text().trim() || `${symbol} Limited`;
 
-        if (symbol) {
+        if (symbol && symbol.length > 0) {
+          const ldcp = parseFloat($(cells[1]).text().replace(/,/g, "")) || 0;
+          const open = parseFloat($(cells[2]).text().replace(/,/g, "")) || 0;
+          const high = parseFloat($(cells[3]).text().replace(/,/g, "")) || 0;
+          const low = parseFloat($(cells[4]).text().replace(/,/g, "")) || 0;
+          const current = parseFloat($(cells[5]).text().replace(/,/g, "")) || 0;
+          const change = parseFloat($(cells[6]).text().replace(/,/g, "")) || 0;
+          const changePercent = parseFloat($(cells[7]).text().replace(/[%,()]/g, "")) || 0;
+          const volume = parseInt($(cells[8]).text().replace(/,/g, ""), 10) || 0;
+          const isPositive = change >= 0;
+
           stocks.push({
             symbol,
             name,
-            sector,
+            sector: "GENERAL",
             ldcp,
             open,
             high,
@@ -367,11 +377,53 @@ export class PSXService {
             volume,
             isPositive,
           });
+          
+          console.log(`Parsed full data for: ${symbol} - Current: ${current}, Volume: ${volume}`);
+        }
+      }
+      // Check for performance tables (4 columns: SYMBOL, PRICE, CHANGE, VOLUME)
+      else if (cells.length === 4) {
+        const symbolCell = $(cells[0]);
+        const symbol = symbolCell.find("strong").text().trim();
+        const name = symbolCell.find("a").attr("title") || symbolCell.find("a").text().trim() || `${symbol} Limited`;
+
+        if (symbol && symbol.length > 0) {
+          const current = parseFloat($(cells[1]).text().replace(/,/g, "")) || 0;
+          
+          // Parse change with icons and percentage
+          const changeText = $(cells[2]).text().trim();
+          const changeMatch = changeText.match(/([-+]?\d+\.?\d*)/);
+          const change = changeMatch ? parseFloat(changeMatch[1]) : 0;
+          
+          const percentMatch = changeText.match(/\(([-+]?\d+\.?\d*)%\)/);
+          const changePercent = percentMatch ? parseFloat(percentMatch[1]) : 0;
+          
+          const volume = parseInt($(cells[3]).text().replace(/,/g, ""), 10) || 0;
+          const isPositive = change >= 0;
+
+          stocks.push({
+            symbol,
+            name,
+            sector: "GENERAL",
+            ldcp: current - change, // Estimate LDCP
+            open: current, // Use current as placeholder
+            high: current, // Use current as placeholder
+            low: current, // Use current as placeholder
+            current,
+            change,
+            changePercent,
+            volume,
+            isPositive,
+          });
+          
+          console.log(`Parsed perf data for: ${symbol} - Current: ${current}, Change: ${change}, Volume: ${volume}`);
         }
       }
     });
 
-    return stocks.length > 0 ? stocks : this.getMockData();
+    console.log(`Found ${tableRows} table rows, parsed ${stocks.length} stocks`);
+    // Only return stocks if we successfully parsed authentic data
+    return stocks;
   }
 
   private static parseJSONChartData(
