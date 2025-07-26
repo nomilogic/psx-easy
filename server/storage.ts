@@ -1,28 +1,37 @@
 import { 
   type StockData, 
-  type MarketSummary, 
   type SectorData, 
   type PerformersData,
-  type StockTimeSeriesData,
   type ChartTimeInterval,
-  type SystemStatus
+  type SystemStatus,
+  type MarketSummary as LegacyMarketSummary,
+  stocks,
+  marketSummaries,
+  sectors,
+  stockTimeSeries,
+  type InsertStock,
+  type InsertMarketSummary,
+  type InsertSector,
+  type InsertStockTimeSeries
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Market data methods
   getMarketData(): Promise<StockData[]>;
   setMarketData(data: StockData[]): Promise<void>;
-  getMarketSummary(): Promise<MarketSummary | null>;
-  setMarketSummary(summary: MarketSummary): Promise<void>;
+  getMarketSummary(): Promise<LegacyMarketSummary | null>;
+  setMarketSummary(summary: LegacyMarketSummary): Promise<void>;
   
   // Stock methods
   getStock(symbol: string): Promise<StockData | null>;
-  getStockTimeSeries(symbol: string, interval: ChartTimeInterval): Promise<StockTimeSeriesData | null>;
-  setStockTimeSeries(symbol: string, interval: ChartTimeInterval, data: StockTimeSeriesData): Promise<void>;
+  getStockTimeSeries(symbol: string, interval: ChartTimeInterval): Promise<any | null>;
+  setStockTimeSeries(symbol: string, interval: ChartTimeInterval, data: any): Promise<void>;
   
   // Sector methods
   getSectors(): Promise<SectorData[]>;
-  setSectors(sectors: SectorData[]): Promise<void>;
+  setSectors(sectorsData: SectorData[]): Promise<void>;
   
   // Performer methods
   getPerformers(): Promise<PerformersData | null>;
@@ -33,12 +42,8 @@ export interface IStorage {
   updateSystemStatus(status: Partial<SystemStatus>): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private marketData: StockData[] = [];
-  private marketSummary: MarketSummary | null = null;
-  private sectors: SectorData[] = [];
+export class DatabaseStorage implements IStorage {
   private performers: PerformersData | null = null;
-  private stockTimeSeriesCache: Map<string, StockTimeSeriesData> = new Map();
   private systemStatus: SystemStatus = {
     uptime: "99.9%",
     avgResponse: "45ms",
@@ -48,41 +53,142 @@ export class MemStorage implements IStorage {
   };
 
   async getMarketData(): Promise<StockData[]> {
-    return this.marketData;
+    const result = await db.select().from(stocks);
+    return result.map(stock => ({
+      symbol: stock.symbol,
+      name: stock.name,
+      sector: stock.sector,
+      ldcp: stock.ldcp,
+      open: stock.open,
+      high: stock.high,
+      low: stock.low,
+      current: stock.current,
+      change: stock.change,
+      changePercent: stock.changePercent,
+      volume: stock.volume,
+      isPositive: stock.isPositive,
+    }));
   }
 
   async setMarketData(data: StockData[]): Promise<void> {
-    this.marketData = data;
+    // Delete existing data
+    await db.delete(stocks);
+    
+    // Insert new data
+    if (data.length > 0) {
+      const insertData: InsertStock[] = data.map(stock => ({
+        symbol: stock.symbol,
+        name: stock.name,
+        sector: stock.sector,
+        ldcp: stock.ldcp,
+        open: stock.open,
+        high: stock.high,
+        low: stock.low,
+        current: stock.current,
+        change: stock.change,
+        changePercent: stock.changePercent,
+        volume: stock.volume,
+        isPositive: stock.isPositive,
+      }));
+      
+      await db.insert(stocks).values(insertData);
+    }
   }
 
-  async getMarketSummary(): Promise<MarketSummary | null> {
-    return this.marketSummary;
+  async getMarketSummary(): Promise<LegacyMarketSummary | null> {
+    const result = await db.select().from(marketSummaries).orderBy(desc(marketSummaries.createdAt)).limit(1);
+    if (result.length === 0) return null;
+    
+    const summary = result[0];
+    return {
+      totalStocks: summary.totalStocks,
+      gainers: summary.gainers,
+      losers: summary.losers,
+      unchanged: summary.unchanged,
+      totalVolume: summary.totalVolume,
+    };
   }
 
-  async setMarketSummary(summary: MarketSummary): Promise<void> {
-    this.marketSummary = summary;
+  async setMarketSummary(summary: LegacyMarketSummary): Promise<void> {
+    const insertData: InsertMarketSummary = {
+      totalStocks: summary.totalStocks,
+      gainers: summary.gainers,
+      losers: summary.losers,
+      unchanged: summary.unchanged,
+      totalVolume: summary.totalVolume,
+    };
+    
+    await db.insert(marketSummaries).values(insertData);
   }
 
   async getStock(symbol: string): Promise<StockData | null> {
-    return this.marketData.find(stock => stock.symbol === symbol) || null;
+    const result = await db.select().from(stocks).where(eq(stocks.symbol, symbol));
+    if (result.length === 0) return null;
+    
+    const stock = result[0];
+    return {
+      symbol: stock.symbol,
+      name: stock.name,
+      sector: stock.sector,
+      ldcp: stock.ldcp,
+      open: stock.open,
+      high: stock.high,
+      low: stock.low,
+      current: stock.current,
+      change: stock.change,
+      changePercent: stock.changePercent,
+      volume: stock.volume,
+      isPositive: stock.isPositive,
+    };
   }
 
-  async getStockTimeSeries(symbol: string, interval: ChartTimeInterval): Promise<StockTimeSeriesData | null> {
-    const key = `${symbol}-${interval}`;
-    return this.stockTimeSeriesCache.get(key) || null;
+  async getStockTimeSeries(symbol: string, interval: ChartTimeInterval): Promise<any | null> {
+    const result = await db.select().from(stockTimeSeries)
+      .where(eq(stockTimeSeries.symbol, symbol))
+      .orderBy(desc(stockTimeSeries.updatedAt))
+      .limit(1);
+    
+    if (result.length === 0) return null;
+    return result[0].data;
   }
 
-  async setStockTimeSeries(symbol: string, interval: ChartTimeInterval, data: StockTimeSeriesData): Promise<void> {
-    const key = `${symbol}-${interval}`;
-    this.stockTimeSeriesCache.set(key, data);
+  async setStockTimeSeries(symbol: string, interval: ChartTimeInterval, data: any): Promise<void> {
+    // Delete existing time series for this symbol and interval
+    await db.delete(stockTimeSeries)
+      .where(eq(stockTimeSeries.symbol, symbol));
+    
+    const insertData: InsertStockTimeSeries = {
+      symbol,
+      interval,
+      data,
+    };
+    
+    await db.insert(stockTimeSeries).values(insertData);
   }
 
   async getSectors(): Promise<SectorData[]> {
-    return this.sectors;
+    const result = await db.select().from(sectors);
+    return result.map(sector => ({
+      name: sector.name,
+      code: sector.code,
+      volume: sector.volume,
+    }));
   }
 
-  async setSectors(sectors: SectorData[]): Promise<void> {
-    this.sectors = sectors;
+  async setSectors(sectorsData: SectorData[]): Promise<void> {
+    // Delete existing data
+    await db.delete(sectors);
+    
+    // Insert new data
+    if (sectorsData.length > 0) {
+      const insertData: InsertSector[] = sectorsData.map(sector => ({
+        name: sector.name,
+        code: sector.code,
+        volume: sector.volume,
+      }));
+      
+      await db.insert(sectors).values(insertData);
+    }
   }
 
   async getPerformers(): Promise<PerformersData | null> {
@@ -102,4 +208,4 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

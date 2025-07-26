@@ -4,8 +4,8 @@
 
 This is a full-stack web application that provides real-time Pakistan Stock Exchange (PSX) market data through a React frontend and Express.js backend. The application features live stock tickers, market summaries, WebSocket real-time updates, and a comprehensive API for financial data.
 
-**Status**: ✅ Fully functional with demonstration data
-**Last Updated**: January 25, 2025
+**Status**: ✅ Fully functional with PostgreSQL database persistence and demonstration data
+**Last Updated**: January 26, 2025
 
 ## User Preferences
 
@@ -30,7 +30,7 @@ The application follows a monorepo structure with clearly separated frontend and
 - **Database Provider**: Neon Database (serverless PostgreSQL)
 - **Real-time**: WebSocket server for live data streaming
 - **External Data**: PSX service for scraping stock market data
-- **Storage**: In-memory caching with interface for future database integration
+- **Storage**: PostgreSQL database persistence with Drizzle ORM and type-safe database operations
 
 ## Key Components
 
@@ -107,7 +107,7 @@ The application follows a monorepo structure with clearly separated frontend and
 
 **Drizzle ORM**: Selected for type-safe database operations and excellent TypeScript integration, providing better developer experience compared to traditional ORMs.
 
-**Storage Interface Pattern**: Implemented to allow switching between in-memory storage (development) and database storage (production) without changing business logic.
+**Database-First Storage Pattern**: Implemented PostgreSQL database persistence with Drizzle ORM for type-safe operations and data integrity across all environments.
 
 **WebSocket + REST Hybrid**: REST APIs provide initial data loading and fallback, while WebSockets handle real-time updates for optimal user experience.
 

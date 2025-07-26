@@ -1,5 +1,84 @@
 import { z } from "zod";
+import { pgTable, serial, text, real, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { relations } from "drizzle-orm";
 
+// Database Tables
+export const stocks = pgTable("stocks", {
+  id: serial("id").primaryKey(),
+  symbol: text("symbol").notNull().unique(),
+  name: text("name").notNull(),
+  sector: text("sector").notNull(),
+  ldcp: real("ldcp").notNull(),
+  open: real("open").notNull(),
+  high: real("high").notNull(),
+  low: real("low").notNull(),
+  current: real("current").notNull(),
+  change: real("change").notNull(),
+  changePercent: real("change_percent").notNull(),
+  volume: integer("volume").notNull(),
+  isPositive: boolean("is_positive").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const marketSummaries = pgTable("market_summaries", {
+  id: serial("id").primaryKey(),
+  totalStocks: integer("total_stocks").notNull(),
+  gainers: integer("gainers").notNull(),
+  losers: integer("losers").notNull(),
+  unchanged: integer("unchanged").notNull(),
+  totalVolume: integer("total_volume").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const sectors = pgTable("sectors", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  code: text("code").notNull().unique(),
+  volume: integer("volume").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const stockTimeSeries = pgTable("stock_time_series", {
+  id: serial("id").primaryKey(),
+  symbol: text("symbol").notNull(),
+  interval: text("interval").notNull(),
+  data: jsonb("data").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Zod Schemas
+export const insertStockSchema = createInsertSchema(stocks).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export const insertMarketSummarySchema = createInsertSchema(marketSummaries).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertSectorSchema = createInsertSchema(sectors).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export const insertStockTimeSeriesSchema = createInsertSchema(stockTimeSeries).omit({
+  id: true,
+  updatedAt: true,
+});
+
+// Types
+export type Stock = typeof stocks.$inferSelect;
+export type InsertStock = z.infer<typeof insertStockSchema>;
+export type MarketSummary = typeof marketSummaries.$inferSelect;
+export type InsertMarketSummary = z.infer<typeof insertMarketSummarySchema>;
+export type Sector = typeof sectors.$inferSelect;
+export type InsertSector = z.infer<typeof insertSectorSchema>;
+export type StockTimeSeriesData = typeof stockTimeSeries.$inferSelect;
+export type InsertStockTimeSeries = z.infer<typeof insertStockTimeSeriesSchema>;
+
+// Legacy interfaces for compatibility
 export interface StockData {
   symbol: string;
   name: string;
