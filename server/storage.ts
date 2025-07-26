@@ -71,27 +71,40 @@ export class DatabaseStorage implements IStorage {
   }
 
   async setMarketData(data: StockData[]): Promise<void> {
-    // Delete existing data
-    await db.delete(stocks);
+    if (data.length === 0) return;
     
-    // Insert new data
-    if (data.length > 0) {
-      const insertData: InsertStock[] = data.map(stock => ({
-        symbol: stock.symbol,
-        name: stock.name,
-        sector: stock.sector,
-        ldcp: stock.ldcp,
-        open: stock.open,
-        high: stock.high,
-        low: stock.low,
-        current: stock.current,
-        change: stock.change,
-        changePercent: stock.changePercent,
-        volume: stock.volume,
-        isPositive: stock.isPositive,
-      }));
-      
-      await db.insert(stocks).values(insertData);
+    try {
+      // Use transaction to ensure atomicity
+      await db.transaction(async (tx) => {
+        // Delete existing data
+        await tx.delete(stocks);
+        
+        // Insert new data
+        const insertData: InsertStock[] = data.map(stock => ({
+          symbol: stock.symbol,
+          name: stock.name,
+          sector: stock.sector,
+          ldcp: stock.ldcp,
+          open: stock.open,
+          high: stock.high,
+          low: stock.low,
+          current: stock.current,
+          change: stock.change,
+          changePercent: stock.changePercent,
+          volume: stock.volume,
+          isPositive: stock.isPositive,
+        }));
+        
+        // Insert in batches to avoid memory issues
+        const batchSize = 100;
+        for (let i = 0; i < insertData.length; i += batchSize) {
+          const batch = insertData.slice(i, i + batchSize);
+          await tx.insert(stocks).values(batch);
+        }
+      });
+    } catch (error) {
+      console.error('Error updating market data:', error);
+      throw error;
     }
   }
 
@@ -106,7 +119,7 @@ export class DatabaseStorage implements IStorage {
       losers: summary.losers,
       unchanged: summary.unchanged,
       totalVolume: summary.totalVolume,
-    };
+    } as LegacyMarketSummary;
   }
 
   async setMarketSummary(summary: LegacyMarketSummary): Promise<void> {
