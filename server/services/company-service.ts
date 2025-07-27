@@ -520,7 +520,153 @@ export class CompanyService {
         }
       });
 
-      // Extract additional financial metrics from any financial tables
+      // Extract comprehensive financial data from financials section
+      const financialData: Array<{year: string, sales?: number, profitAfterTax?: number, eps?: number}> = [];
+      
+      // Annual financials
+      $("#financials .tabs__panel[data-name='Annual'] table tbody tr").each((_, row) => {
+        const cells = $(row).find("td");
+        if (cells.length >= 2) {
+          const metric = $(cells[0]).text().trim().toLowerCase();
+          
+          // Extract years from header if not done
+          if (financialData.length === 0) {
+            const headers = $(row).closest("table").find("thead th");
+            headers.each((index, header) => {
+              if (index > 0) { // Skip first column which is metric name
+                const year = $(header).text().trim();
+                if (year) {
+                  financialData.push({ year });
+                }
+              }
+            });
+          }
+          
+          // Extract financial metrics for each year
+          for (let i = 1; i < cells.length && i - 1 < financialData.length; i++) {
+            const value = $(cells[i]).text().trim().replace(/[(),]/g, "").replace(/,/g, "");
+            const numValue = parseFloat(value);
+            
+            if (!isNaN(numValue)) {
+              if (metric.includes("sales")) {
+                financialData[i - 1].sales = numValue;
+              } else if (metric.includes("profit after taxation")) {
+                financialData[i - 1].profitAfterTax = numValue;
+              } else if (metric === "eps") {
+                financialData[i - 1].eps = numValue;
+              }
+            }
+          }
+        }
+      });
+      
+      if (financialData.length > 0) {
+        companyData.financialData = financialData;
+      }
+
+      // Extract ratios data
+      const ratiosData: Array<{year: string, grossProfitMargin?: number, netProfitMargin?: number, epsGrowth?: number, peg?: number}> = [];
+      
+      $("#ratios .tbl__body tr").each((_, row) => {
+        const cells = $(row).find("td");
+        if (cells.length >= 2) {
+          const metric = $(cells[0]).text().trim().toLowerCase();
+          
+          // Extract years from header if not done
+          if (ratiosData.length === 0) {
+            const headers = $(row).closest("table").find("thead th");
+            headers.each((index, header) => {
+              if (index > 0) {
+                const year = $(header).text().trim();
+                if (year) {
+                  ratiosData.push({ year });
+                }
+              }
+            });
+          }
+          
+          // Extract ratio metrics for each year
+          for (let i = 1; i < cells.length && i - 1 < ratiosData.length; i++) {
+            const value = $(cells[i]).text().trim().replace(/[()%]/g, "").replace(/,/g, "");
+            const numValue = parseFloat(value);
+            
+            if (!isNaN(numValue)) {
+              if (metric.includes("gross profit margin")) {
+                ratiosData[i - 1].grossProfitMargin = numValue;
+              } else if (metric.includes("net profit margin")) {
+                ratiosData[i - 1].netProfitMargin = numValue;
+              } else if (metric.includes("eps growth")) {
+                ratiosData[i - 1].epsGrowth = numValue;
+              } else if (metric.includes("peg")) {
+                ratiosData[i - 1].peg = numValue;
+              }
+            }
+          }
+        }
+      });
+      
+      if (ratiosData.length > 0) {
+        companyData.ratiosData = ratiosData;
+      }
+
+      // Enhanced dividend and payout extraction from payouts section
+      const payoutsData: Array<{date: string, financialResults?: string, details?: string, bookClosure?: string}> = [];
+      
+      $("#payouts .tbl__body tr").each((_, row) => {
+        const cells = $(row).find("td");
+        if (cells.length >= 3) {
+          const date = $(cells[0]).text().trim();
+          const financialResults = $(cells[1]).text().trim();
+          const details = $(cells[2]).text().trim();
+          const bookClosure = cells.length > 3 ? $(cells[3]).text().trim() : undefined;
+          
+          if (date) {
+            payoutsData.push({
+              date,
+              financialResults: financialResults || undefined,
+              details: details || undefined,
+              bookClosure
+            });
+          }
+        }
+      });
+      
+      if (payoutsData.length > 0) {
+        companyData.payoutsData = payoutsData;
+      }
+
+      // Extract announcements data by category
+      const announcements: {[key: string]: Array<{date: string, title: string, hasDocument: boolean}>} = {};
+      
+      $("#announcements .tabs__panel").each((_, panel) => {
+        const panelName = $(panel).attr("data-name");
+        if (panelName) {
+          const categoryAnnouncements: Array<{date: string, title: string, hasDocument: boolean}> = [];
+          
+          $(panel).find(".tbl__body tr").each((_, row) => {
+            const cells = $(row).find("td");
+            if (cells.length >= 2) {
+              const date = $(cells[0]).text().trim();
+              const title = $(cells[1]).text().trim();
+              const hasDocument = $(cells[2]).find("a").length > 0;
+              
+              if (date && title) {
+                categoryAnnouncements.push({ date, title, hasDocument });
+              }
+            }
+          });
+          
+          if (categoryAnnouncements.length > 0) {
+            announcements[panelName] = categoryAnnouncements;
+          }
+        }
+      });
+      
+      if (Object.keys(announcements).length > 0) {
+        companyData.announcements = announcements;
+      }
+
+      // Extract additional financial metrics from any remaining financial tables
       $(".financials .tbl__body tr, .financial__ratios .tbl__body tr").each((_, row) => {
         const cells = $(row).find("td");
         if (cells.length >= 2) {
