@@ -263,7 +263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   fetchAndBroadcastData();
 
   // Set up periodic data fetching (every 30 seconds)
-  //setInterval(fetchAndBroadcastData, 30000);
+  setInterval(fetchAndBroadcastData, 30000);
 
   return httpServer;
 }
