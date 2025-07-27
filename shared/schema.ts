@@ -6,7 +6,6 @@ import {
   text,
   real,
   integer,
-  bigint,
   boolean,
   timestamp,
   jsonb,
@@ -27,7 +26,7 @@ export const stocks = pgTable("stocks", {
   current: real("current").notNull(),
   change: real("change").notNull(),
   changePercent: real("change_percent").notNull(),
-  volume: bigint("volume", { mode: "number" }).notNull(),
+  volume: integer("volume").notNull(),
   isPositive: boolean("is_positive").notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -38,7 +37,7 @@ export const marketSummaries = pgTable("market_summaries", {
   gainers: integer("gainers").notNull(),
   losers: integer("losers").notNull(),
   unchanged: integer("unchanged").notNull(),
-  totalVolume: bigint("total_volume", { mode: "number" }).notNull(),
+  totalVolume: integer("total_volume").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -46,7 +45,7 @@ export const sectors = pgTable("sectors", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   code: text("code").notNull().unique(),
-  volume: bigint("volume", { mode: "number" }).notNull(),
+  volume: integer("volume").notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
@@ -69,7 +68,7 @@ export const companies = pgTable("companies", {
   address: text("address"),
   ceo: text("ceo"),
   marketCap: real("market_cap"),
-  sharesOutstanding: bigint("shares_outstanding", { mode: "number" }),
+  sharesOutstanding: integer("shares_outstanding"),
   peRatio: real("pe_ratio"),
   pbRatio: real("pb_ratio"),
   dividendYield: real("dividend_yield"),
@@ -100,10 +99,10 @@ export const companies = pgTable("companies", {
   operatingMargin: real("operating_margin"),
   assetTurnover: real("asset_turnover"),
   interestCoverage: real("interest_coverage"),
-  workingCapital: bigint("working_capital", { mode: "number" }),
+  workingCapital: real("working_capital"),
   priceToSales: real("price_to_sales"),
   priceToCashFlow: real("price_to_cash_flow"),
-  enterpriseValue: bigint("enterprise_value", { mode: "number" }),
+  enterpriseValue: real("enterprise_value"),
   evToEbitda: real("ev_to_ebitda"),
   beta: real("beta"),
   payoutRatio: real("payout_ratio"),
