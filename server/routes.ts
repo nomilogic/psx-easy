@@ -133,62 +133,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { symbol } = req.params;
       console.log(`Company endpoint called for symbol: ${symbol}`);
-      
+
       // First, try to get cached data from database
       const cachedCompany = await storage.getCompany(symbol.toUpperCase());
-      
+
       if (cachedCompany) {
         console.log(`Returning cached data for ${symbol}:`, cachedCompany.name);
         res.json(cachedCompany);
-        
+
         // Optionally try to fetch fresh data in background for next request
-        CompanyService.fetchCompanyData(symbol).then(freshData => {
-          if (freshData) {
-            storage.setCompany(freshData).catch(err => 
-              console.warn(`Background update failed for ${symbol}:`, err)
-            );
-          }
-        }).catch(err => 
-          console.warn(`Background fetch failed for ${symbol}:`, err)
-        );
-        
+        CompanyService.fetchCompanyData(symbol)
+          .then((freshData) => {
+            if (freshData) {
+              storage
+                .setCompany(freshData)
+                .catch((err) =>
+                  console.warn(`Background update failed for ${symbol}:`, err),
+                );
+            }
+          })
+          .catch((err) =>
+            console.warn(`Background fetch failed for ${symbol}:`, err),
+          );
+
         return;
       }
-      
+
       // If no cached data, try to fetch fresh data
       console.log(`No cached data for ${symbol}, fetching fresh data`);
       const freshCompanyData = await CompanyService.fetchCompanyData(symbol);
-      console.log(`Fresh data fetch result for ${symbol}:`, freshCompanyData ? 'Success' : 'Failed');
-      
+      console.log(
+        `Fresh data fetch result for ${symbol}:`,
+        freshCompanyData ? "Success" : "Failed",
+      );
+
       if (freshCompanyData) {
         // Store the fresh data in database
         await storage.setCompany(freshCompanyData);
         console.log(`Stored fresh data for ${symbol}`);
-        
-        console.log(`Returning fresh company data for ${symbol}:`, freshCompanyData.name);
+
+        console.log(
+          `Returning fresh company data for ${symbol}:`,
+          freshCompanyData.name,
+        );
         res.json(freshCompanyData);
       } else {
-        console.log(`No company data found for ${symbol} - neither cached nor fresh`);
-        return res.status(404).json({ 
-          error: "Company not found", 
-          message: `No data available for symbol ${symbol.toUpperCase()}` 
+        console.log(
+          `No company data found for ${symbol} - neither cached nor fresh`,
+        );
+        return res.status(404).json({
+          error: "Company not found",
+          message: `No data available for symbol ${symbol.toUpperCase()}`,
         });
       }
     } catch (error) {
       console.error(`Error fetching company ${req.params.symbol}:`, error);
-      
+
       // Try one more time with cached data as final fallback
       try {
-        const fallbackCompany = await storage.getCompany(req.params.symbol.toUpperCase());
+        const fallbackCompany = await storage.getCompany(
+          req.params.symbol.toUpperCase(),
+        );
         if (fallbackCompany) {
           console.log(`Using fallback cached data for ${req.params.symbol}`);
           res.json(fallbackCompany);
           return;
         }
       } catch (fallbackError) {
-        console.error(`Fallback also failed for ${req.params.symbol}:`, fallbackError);
+        console.error(
+          `Fallback also failed for ${req.params.symbol}:`,
+          fallbackError,
+        );
       }
-      
+
       res.status(500).json({ error: "Failed to fetch company data" });
     }
   });
@@ -205,17 +222,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Fetch all companies data (admin endpoint)
-  app.post("/api/companies/fetch-all", async (req, res) => {
+  app.get("/api/companies/fetch-all", async (req, res) => {
     try {
       console.log("Starting to fetch all companies data...");
       const companiesData = await CompanyService.fetchAllCompaniesData();
-      
+
       if (companiesData.length > 0) {
         await storage.setAllCompanies(companiesData);
-        console.log(`Successfully fetched and stored ${companiesData.length} companies`);
-        res.json({ 
+        console.log(
+          `Successfully fetched and stored ${companiesData.length} companies`,
+        );
+        res.json({
           message: `Successfully fetched and stored ${companiesData.length} companies`,
-          count: companiesData.length 
+          count: companiesData.length,
         });
       } else {
         res.status(500).json({ error: "Failed to fetch companies data" });
@@ -369,10 +388,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Starting periodic fetch of all companies data...");
       const companiesData = await CompanyService.fetchAllCompaniesData();
-      
+
       if (companiesData.length > 0) {
         await storage.setAllCompanies(companiesData);
-        console.log(`Periodic fetch completed: ${companiesData.length} companies updated`);
+        console.log(
+          `Periodic fetch completed: ${companiesData.length} companies updated`,
+        );
       }
     } catch (error) {
       console.error("Error in periodic companies fetch:", error);
