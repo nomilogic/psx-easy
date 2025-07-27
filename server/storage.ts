@@ -61,10 +61,37 @@ export class DatabaseStorage implements IStorage {
   };
 
   async getMarketData(): Promise<StockData[]> {
+    // First try to get fresh data from PSX service
     const result = await PSXService.fetchMarketData();
-    //console.log(result, " result");
-    if (!result) return [];
-    return result.map((stock) => ({
+    
+    if (result && result.length > 0) {
+      const mappedData = result.map((stock) => ({
+        symbol: stock.symbol,
+        name: stock.name,
+        sector: stock.sector,
+        ldcp: stock.ldcp,
+        open: stock.open,
+        high: stock.high,
+        low: stock.low,
+        current: stock.current,
+        change: stock.change,
+        changePercent: stock.changePercent,
+        volume: stock.volume,
+        isPositive: stock.isPositive,
+      }));
+      
+      // Store the fresh data in database
+      await this.setMarketData(mappedData);
+      return mappedData;
+    }
+    
+    // If PSX service fails, fall back to database data
+    return this.getMarketDataFromDatabase();
+  }
+
+  async getMarketDataFromDatabase(): Promise<StockData[]> {
+    const dbResult = await db.select().from(stocks);
+    return dbResult.map((stock) => ({
       symbol: stock.symbol,
       name: stock.name,
       sector: stock.sector,
