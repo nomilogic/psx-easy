@@ -79,6 +79,7 @@ export const companies = pgTable("companies", {
   lotSize: integer("lot_size"),
   isinCode: text("isin_code"),
   registrar: text("registrar"),
+  registrar: text("registrar"),
   auditor: text("auditor"),
   fiscalYearEnd: text("fiscal_year_end"),
   keyPeople: jsonb("key_people"),
