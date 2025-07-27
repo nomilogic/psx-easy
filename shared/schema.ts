@@ -1,5 +1,14 @@
 import { z } from "zod";
-import { pgTable, serial, text, real, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  serial,
+  text,
+  real,
+  integer,
+  boolean,
+  timestamp,
+  jsonb,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 
@@ -53,7 +62,9 @@ export const insertStockSchema = createInsertSchema(stocks).omit({
   updatedAt: true,
 });
 
-export const insertMarketSummarySchema = createInsertSchema(marketSummaries).omit({
+export const insertMarketSummarySchema = createInsertSchema(
+  marketSummaries,
+).omit({
   id: true,
   createdAt: true,
 });
@@ -63,7 +74,9 @@ export const insertSectorSchema = createInsertSchema(sectors).omit({
   updatedAt: true,
 });
 
-export const insertStockTimeSeriesSchema = createInsertSchema(stockTimeSeries).omit({
+export const insertStockTimeSeriesSchema = createInsertSchema(
+  stockTimeSeries,
+).omit({
   id: true,
   updatedAt: true,
 });
@@ -71,11 +84,11 @@ export const insertStockTimeSeriesSchema = createInsertSchema(stockTimeSeries).o
 // Types
 export type Stock = typeof stocks.$inferSelect;
 export type InsertStock = z.infer<typeof insertStockSchema>;
-export type MarketSummary = typeof marketSummaries.$inferSelect;
+
 export type InsertMarketSummary = z.infer<typeof insertMarketSummarySchema>;
 export type Sector = typeof sectors.$inferSelect;
 export type InsertSector = z.infer<typeof insertSectorSchema>;
-export type StockTimeSeriesData = typeof stockTimeSeries.$inferSelect;
+
 export type InsertStockTimeSeries = z.infer<typeof insertStockTimeSeriesSchema>;
 
 // Legacy interfaces for compatibility
@@ -169,7 +182,7 @@ export type ChartTimeInterval =
   | "1year";
 
 export interface WebSocketMessage {
-  type: 'market_update' | 'stock_update' | 'sector_update';
+  type: "market_update" | "stock_update" | "sector_update";
   timestamp: string;
   data: any;
 }

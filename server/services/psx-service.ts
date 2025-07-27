@@ -121,7 +121,7 @@ export class PSXService {
 
   private static async fetchWithRetry<T extends string | object>(
     url: string,
-    isJson: boolean = true
+    isJson: boolean = true,
   ): Promise<T> {
     if (!url) {
       throw new Error("URL is null or undefined");
@@ -137,8 +137,8 @@ export class PSXService {
               "application/json,text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
           },
         });
-       
-        console.log(response);
+
+        // console.log(response);
 
         if (!response) {
           throw new Error("No response from server");
@@ -180,7 +180,7 @@ export class PSXService {
     try {
       const response = await this.fetchWithRetry<string>(
         this.SYMBOL_URL,
-        false
+        false,
       );
       const symbols = JSON.parse(response) as Symbol[];
       this.symbolsCache = symbols.reduce(
@@ -188,7 +188,7 @@ export class PSXService {
           acc[symbol.symbol] = symbol;
           return acc;
         },
-        {}
+        {},
       );
       this.symbolsCacheTimestamp = now;
     } catch (error) {
@@ -197,9 +197,10 @@ export class PSXService {
   }
   static async fetchMarketData(): Promise<StockData[] | undefined> {
     try {
-      await this.fetchSymbols(); // Call fetchSymbols first
+      //await this.fetchSymbols(); // Call fetchSymbols first
       const html = await this.fetchWithRetry<string>(this.API_URL, false);
       const stockData = this.parseHTMLData(html);
+      console.log(stockData, "stockData");
       stockData.forEach((stock) => {
         const symbol =
           this.symbolsCache !== null
@@ -221,7 +222,9 @@ export class PSXService {
       return stockData;
     } catch (error) {
       console.error("Error fetching market data:", error);
-      console.error("All CORS proxies failed - cannot fetch authentic PSX data");
+      console.error(
+        "All CORS proxies failed - cannot fetch authentic PSX data",
+      );
       // Never return mock data for market data - only authentic data should be persisted
       return undefined;
     }
@@ -244,7 +247,7 @@ export class PSXService {
 
   static async fetchStockTimeSeries(
     symbol: string,
-    interval: ChartTimeInterval = "1day"
+    interval: ChartTimeInterval = "1day",
   ): Promise<StockTimeSeriesData> {
     try {
       const isEod = ["1day", "1week", "1month", "1year"].includes(interval);
@@ -254,7 +257,7 @@ export class PSXService {
       let chartData = this.parseJSONChartData(
         jsonData,
         symbol,
-        isEod ? "1day" : "1min"
+        isEod ? "1day" : "1min",
       );
 
       if (interval !== "1day" && interval !== "1min") {
@@ -283,7 +286,7 @@ export class PSXService {
   static async fetchTopSectors(): Promise<SectorData[]> {
     try {
       const sectors = await this.fetchWithRetry<SectorData[]>(
-        this.TOP_SECTORS_URL
+        this.TOP_SECTORS_URL,
       );
       return sectors;
     } catch (error) {
@@ -300,10 +303,10 @@ export class PSXService {
     try {
       const html = await this.fetchWithRetry<string>(
         this.PERFORMERS_URL,
-        false
+        false,
       );
 
-      console.log(html);
+      //console.log(html);
       //return html;
       return this.parsePerformersHTML(html);
     } catch (error) {
@@ -315,7 +318,7 @@ export class PSXService {
   static async fetchHistoricalData(
     symbol: string,
     month: number,
-    year: number
+    year: number,
   ): Promise<HistoricalDataPoint[]> {
     try {
       const params = new URLSearchParams({
@@ -338,35 +341,43 @@ export class PSXService {
     const $ = cheerio.load(html);
     const stocks: StockData[] = [];
 
-    console.log("Parsing HTML data, looking for table rows...");
-    
-    // Look for both main market watch table and performance tables
-    let tableRows = 0;
     $("tr").each((_: any, row: any) => {
       const cells = $(row).find("td");
-      tableRows++;
-      
-      // Check for full market watch table (9+ columns)
-      if (cells.length >= 9) {
-        const symbolCell = $(cells[0]);
-        const symbol = symbolCell.find("strong").text().trim();
-        const name = symbolCell.find("a").attr("title") || symbolCell.find("a").text().trim() || `${symbol} Limited`;
+      if (cells.length > 6) {
+        const symbol = $(cells[0]).find("strong").text().trim();
+        const name = $(cells[0]).find("a").attr("data-title") || "";
+        const sector = $(cells[0]).text().trim();
+        const ldcp = parseFloat($(cells[3]).attr("data-order") || "0");
+        const open = parseFloat($(cells[4]).attr("data-order") || "0");
+        const high = parseFloat($(cells[5]).attr("data-order") || "0");
+        const low = parseFloat($(cells[6]).attr("data-order") || "0");
+        const current = parseFloat($(cells[7]).attr("data-order") || "0");
+        const change = parseFloat($(cells[8]).attr("data-order") || "0");
+        const changePercent = parseFloat($(cells[9]).attr("data-order") || "0");
+        const volume = parseInt($(cells[10]).attr("data-order") || "0", 10);
+        console.log($(cells[10]).attr("data-order"), "data-tippy");
+        const isPositive = change >= 0;
 
-        if (symbol && symbol.length > 0) {
-          const ldcp = parseFloat($(cells[1]).text().replace(/,/g, "")) || 0;
-          const open = parseFloat($(cells[2]).text().replace(/,/g, "")) || 0;
-          const high = parseFloat($(cells[3]).text().replace(/,/g, "")) || 0;
-          const low = parseFloat($(cells[4]).text().replace(/,/g, "")) || 0;
-          const current = parseFloat($(cells[5]).text().replace(/,/g, "")) || 0;
-          const change = parseFloat($(cells[6]).text().replace(/,/g, "")) || 0;
-          const changePercent = parseFloat($(cells[7]).text().replace(/[%,()]/g, "")) || 0;
-          const volume = parseInt($(cells[8]).text().replace(/,/g, ""), 10) || 0;
-          const isPositive = change >= 0;
-
+        if (symbol) {
+          console.log(
+            symbol,
+            name,
+            sector,
+            ldcp,
+            open,
+            high,
+            low,
+            current,
+            change,
+            changePercent,
+            volume,
+            isPositive,
+            "symbol",
+          );
           stocks.push({
             symbol,
             name,
-            sector: "GENERAL",
+            sector,
             ldcp,
             open,
             high,
@@ -377,59 +388,17 @@ export class PSXService {
             volume,
             isPositive,
           });
-          
-          console.log(`Parsed full data for: ${symbol} - Current: ${current}, Volume: ${volume}`);
-        }
-      }
-      // Check for performance tables (4 columns: SYMBOL, PRICE, CHANGE, VOLUME)
-      else if (cells.length === 4) {
-        const symbolCell = $(cells[0]);
-        const symbol = symbolCell.find("strong").text().trim();
-        const name = symbolCell.find("a").attr("title") || symbolCell.find("a").text().trim() || `${symbol} Limited`;
-
-        if (symbol && symbol.length > 0) {
-          const current = parseFloat($(cells[1]).text().replace(/,/g, "")) || 0;
-          
-          // Parse change with icons and percentage
-          const changeText = $(cells[2]).text().trim();
-          const changeMatch = changeText.match(/([-+]?\d+\.?\d*)/);
-          const change = changeMatch ? parseFloat(changeMatch[1]) : 0;
-          
-          const percentMatch = changeText.match(/\(([-+]?\d+\.?\d*)%\)/);
-          const changePercent = percentMatch ? parseFloat(percentMatch[1]) : 0;
-          
-          const volume = parseInt($(cells[3]).text().replace(/,/g, ""), 10) || 0;
-          const isPositive = change >= 0;
-
-          stocks.push({
-            symbol,
-            name,
-            sector: "GENERAL",
-            ldcp: current - change, // Estimate LDCP
-            open: current, // Use current as placeholder
-            high: current, // Use current as placeholder
-            low: current, // Use current as placeholder
-            current,
-            change,
-            changePercent,
-            volume,
-            isPositive,
-          });
-          
-          console.log(`Parsed perf data for: ${symbol} - Current: ${current}, Change: ${change}, Volume: ${volume}`);
         }
       }
     });
 
-    console.log(`Found ${tableRows} table rows, parsed ${stocks.length} stocks`);
-    // Only return stocks if we successfully parsed authentic data
-    return stocks;
+    return stocks.length > 0 ? stocks : this.getMockData();
   }
 
   private static parseJSONChartData(
     data: any,
     symbol: string,
-    interval: string
+    interval: string,
   ): ChartDataPoint[] {
     if (!data?.data || !Array.isArray(data.data)) {
       return [];
@@ -453,7 +422,7 @@ export class PSXService {
 
   private static aggregateDataByInterval(
     data: ChartDataPoint[],
-    interval: ChartTimeInterval
+    interval: ChartTimeInterval,
   ): ChartDataPoint[] {
     if (interval === "1min" || interval === "1day") {
       return data;
@@ -525,7 +494,7 @@ export class PSXService {
 
         const changeText = $(tds[2]).text().trim();
         const match = changeText.match(
-          /([-+]?[0-9,.]+)\s*\(([-+]?[0-9,.]+)%\)/
+          /([-+]?[0-9,.]+)\s*\(([-+]?[0-9,.]+)%\)/,
         );
         const change = match ? parseFloat(match[1].replace(/,/g, "")) : 0;
         const changePercent = match
@@ -594,8 +563,8 @@ export class PSXService {
         symbol: "TRG",
         name: "The Resource Group International Limited",
         sector: "TECHNOLOGY & COMMUNICATION",
-        ldcp: 45.50,
-        open: 46.00,
+        ldcp: 45.5,
+        open: 46.0,
         high: 47.25,
         low: 45.25,
         current: 46.75,
@@ -610,9 +579,9 @@ export class PSXService {
         sector: "COMMERCIAL BANKS",
         ldcp: 89.25,
         open: 88.75,
-        high: 90.50,
-        low: 88.00,
-        current: 87.50,
+        high: 90.5,
+        low: 88.0,
+        current: 87.5,
         change: -1.75,
         changePercent: -1.96,
         volume: 1200000,
@@ -622,12 +591,12 @@ export class PSXService {
         symbol: "LUCK",
         name: "Lucky Cement Limited",
         sector: "CEMENT",
-        ldcp: 725.00,
-        open: 728.00,
-        high: 735.00,
-        low: 720.00,
-        current: 732.50,
-        change: 7.50,
+        ldcp: 725.0,
+        open: 728.0,
+        high: 735.0,
+        low: 720.0,
+        current: 732.5,
+        change: 7.5,
         changePercent: 1.03,
         volume: 45000,
         isPositive: true,
@@ -637,21 +606,21 @@ export class PSXService {
         name: "Engro Corporation Limited",
         sector: "FERTILIZER",
         ldcp: 325.75,
-        open: 324.50,
-        high: 328.00,
+        open: 324.5,
+        high: 328.0,
         low: 322.25,
         current: 323.25,
-        change: -2.50,
+        change: -2.5,
         changePercent: -0.77,
         volume: 180000,
         isPositive: false,
-      }
+      },
     ];
   }
 
   private static getMockTimeSeriesData(
     symbol: string,
-    interval: ChartTimeInterval
+    interval: ChartTimeInterval,
   ): StockTimeSeriesData {
     const now = Date.now();
     const chartData: ChartDataPoint[] = [];

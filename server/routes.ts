@@ -3,11 +3,11 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { PSXService } from "./services/psx-service";
-import type { 
-  StockData, 
-  MarketSummary, 
-  WebSocketMessage, 
-  ChartTimeInterval 
+import type {
+  StockData,
+  MarketSummary,
+  WebSocketMessage,
+  ChartTimeInterval,
 } from "@shared/schema";
 
 let connectedClients = 0;
@@ -22,7 +22,7 @@ setInterval(() => {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Middleware to track API calls
-  app.use('/api', (req, res, next) => {
+  app.use("/api", (req, res, next) => {
     apiCallsThisMinute++;
     next();
   });
@@ -45,6 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/stocks", async (req, res) => {
     try {
       const stocks = await storage.getMarketData();
+      //console.log(stocks, "stocks");
       res.json(stocks);
     } catch (error) {
       console.error("Error fetching stocks:", error);
@@ -57,11 +58,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { symbol } = req.params;
       const stock = await storage.getStock(symbol.toUpperCase());
-      
+
       if (!stock) {
         return res.status(404).json({ error: "Stock not found" });
       }
-      
+
       res.json(stock);
     } catch (error) {
       console.error("Error fetching stock:", error);
@@ -74,22 +75,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { symbol } = req.params;
       const { interval = "1day" } = req.query;
-      
+
       const timeSeriesData = await storage.getStockTimeSeries(
-        symbol.toUpperCase(), 
-        interval as ChartTimeInterval
+        symbol.toUpperCase(),
+        interval as ChartTimeInterval,
       );
-      
+
       if (!timeSeriesData) {
         // Fetch fresh data from PSX service if not in cache
         const freshData = await PSXService.fetchStockTimeSeries(
           symbol.toUpperCase(),
-          interval as ChartTimeInterval
+          interval as ChartTimeInterval,
         );
         await storage.setStockTimeSeries(
           symbol.toUpperCase(),
           interval as ChartTimeInterval,
-          freshData
+          freshData,
         );
         res.json(freshData);
       } else {
@@ -133,7 +134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update with current stats
       await storage.updateSystemStatus({
         apiCallsPerMin: apiCallsThisMinute,
-        connectedClients: connectedClients
+        connectedClients: connectedClients,
       });
       const updatedStatus = await storage.getSystemStatus();
       res.json(updatedStatus);
@@ -146,15 +147,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
   // WebSocket server setup
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
 
   wss.on("connection", (ws: WebSocket) => {
     connectedClients++;
-    console.log(`WebSocket client connected. Total clients: ${connectedClients}`);
+    console.log(
+      `WebSocket client connected. Total clients: ${connectedClients}`,
+    );
 
     ws.on("close", () => {
       connectedClients--;
-      console.log(`WebSocket client disconnected. Total clients: ${connectedClients}`);
+      console.log(
+        `WebSocket client disconnected. Total clients: ${connectedClients}`,
+      );
     });
 
     ws.on("error", (error) => {
@@ -179,17 +184,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const marketData = await storage.getMarketData();
       const marketSummary = await storage.getMarketSummary();
-      
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'market_update',
-          timestamp: new Date().toISOString(),
-          data: {
-            stocks: marketData,
-            summary: marketSummary
-          }
-        }));
-      }
+
+      // if (ws.readyState === WebSocket.OPEN) {
+      //   ws.send(
+      //     JSON.stringify({
+      //       type: "market_update",
+      //       timestamp: new Date().toISOString(),
+      //       data: {
+      //         stocks: marketData,
+      //         summary: marketSummary,
+      //       },
+      //     }),
+      //   );
+      // }
     } catch (error) {
       console.error("Error sending initial data:", error);
     }
@@ -199,40 +206,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   async function fetchAndBroadcastData() {
     try {
       console.log("Fetching market data from PSX...");
-      
+
       // Fetch market data
       const marketData = await PSXService.fetchMarketData();
-      
+
       if (marketData && marketData.length > 0) {
         // Update storage
         await storage.setMarketData(marketData);
-        
+
         // Calculate and store market summary
         const marketSummary = PSXService.calculateMarketSummary(marketData);
         await storage.setMarketSummary(marketSummary);
-        
+
         // Broadcast market update
         broadcastToClients({
-          type: 'market_update',
+          type: "market_update",
           timestamp: new Date().toISOString(),
           data: {
             stocks: marketData,
-            summary: marketSummary
-          }
+            summary: marketSummary,
+          },
         });
 
-        console.log(`Updated ${marketData.length} stocks and broadcasted to ${connectedClients} clients`);
+        console.log(
+          `Updated ${marketData.length} stocks and broadcasted to ${connectedClients} clients`,
+        );
       }
 
       // Fetch sectors data
       try {
         const sectors = await PSXService.fetchTopSectors();
         await storage.setSectors(sectors);
-        
+
         broadcastToClients({
-          type: 'sector_update',
+          type: "sector_update",
           timestamp: new Date().toISOString(),
-          data: sectors
+          data: sectors,
         });
       } catch (error) {
         console.warn("Error fetching sectors:", error);
@@ -245,7 +254,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.warn("Error fetching performers:", error);
       }
-
     } catch (error) {
       console.error("Error in fetchAndBroadcastData:", error);
     }
@@ -255,7 +263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   fetchAndBroadcastData();
 
   // Set up periodic data fetching (every 30 seconds)
-  setInterval(fetchAndBroadcastData, 30000);
+  //setInterval(fetchAndBroadcastData, 30000);
 
   return httpServer;
 }
