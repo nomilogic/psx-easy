@@ -315,50 +315,69 @@ export class CompanyService {
   private static parseCompanyHTML(html: string, symbol: string): CompanyData {
     const $ = cheerio.load(html);
 
-    // Initialize company data
+    // Initialize company data with symbol
     const companyData: CompanyData = {
       symbol: symbol,
-      name: "",
+      name: symbol + " Limited", // Default fallback
       description: "",
     };
 
     try {
-      // Extract company name
+      // Extract company name from quote section
       const companyName = $(".quote__name").text().trim();
-      if (companyName) companyData.name = companyName;
+      if (companyName) {
+        companyData.name = companyName;
+      }
 
-      // Extract sector
+      // Extract sector from quote section
       const sectorText = $(".quote__sector span").text().trim();
-      if (sectorText) companyData.sector = sectorText;
+      if (sectorText) {
+        companyData.sector = sectorText;
+      }
 
-      // Extract description
+      // Extract business description from profile section
       const description = $(".profile__item--decription p").text().trim();
-      if (description) companyData.description = description;
+      if (description) {
+        companyData.description = description;
+        companyData.businessDescription = description;
+      }
 
-      // Extract website
+      // Extract website from profile section
       const websiteLink = $('.profile__item a[href*="http"]').attr("href");
-      if (websiteLink) companyData.website = websiteLink;
+      if (websiteLink) {
+        companyData.website = websiteLink;
+      }
 
-      // Extract address
+      // Extract address from profile section
       const addressElement = $(".profile__item .item__head")
         .filter((_, el) => $(el).text().trim() === "ADDRESS")
         .next("p");
-      if (addressElement.length)
+      if (addressElement.length) {
         companyData.address = addressElement.text().trim();
+      }
 
-      // Extract CEO
+      // Extract CEO and key people information
+      const keyPeople: Array<{name: string, role: string}> = [];
       $(".profile__item--people .tbl__body tr").each((_, row) => {
         const cells = $(row).find("td");
         if (cells.length >= 2) {
           const name = $(cells[0]).find("strong").text().trim();
-          const role = $(cells[1]).text().trim().toLowerCase();
-          if (role.includes("ceo") || role.includes("chief executive")) {
-            companyData.ceo = name;
+          const role = $(cells[1]).text().trim();
+
+          if (name && role) {
+            keyPeople.push({ name, role });
+            
+            if (role.toLowerCase().includes("ceo") || role.toLowerCase().includes("chief executive")) {
+              companyData.ceo = name;
+            }
           }
         }
       });
+      if (keyPeople.length > 0) {
+        companyData.keyPeople = keyPeople;
+      }
 
-      // Extract market cap
+      // Extract financial data from stats section
       $(".stats_item").each((_, item) => {
         const label = $(item).find(".stats_label").text().trim().toLowerCase();
         const value = $(item)
@@ -366,31 +385,173 @@ export class CompanyService {
           .text()
           .trim()
           .replace(/,/g, "");
-        if (label.includes("market cap")) {
-          const marketCap = parseFloat(value);
-          if (!isNaN(marketCap)) companyData.marketCap = marketCap;
+
+        // Parse various financial metrics
+        if (label.includes("p/e ratio")) {
+          const pe = parseFloat(value);
+          if (!isNaN(pe)) companyData.peRatio = pe;
+        } else if (label.includes("market cap")) {
+          // Extract numeric value from market cap (remove thousands notation)
+          const marketCapMatch = value.match(/[\d,.]+/);
+          if (marketCapMatch) {
+            const marketCap = parseFloat(marketCapMatch[0].replace(/,/g, ""));
+            if (!isNaN(marketCap)) companyData.marketCap = marketCap;
+          }
+        } else if (label.includes("face value")) {
+          const face = parseFloat(value);
+          if (!isNaN(face)) companyData.faceValue = face;
+        } else if (label.includes("lot size")) {
+          const lot = parseInt(value, 10);
+          if (!isNaN(lot)) companyData.lotSize = lot;
         }
       });
 
-      // Extract auditor info
-      const auditor = $(".profile__item .item__head")
+      // Extract equity profile data
+      $(".companyEquity .stats_item").each((_, item) => {
+        const label = $(item).find(".stats_label").text().trim().toLowerCase();
+        const value = $(item)
+          .find(".stats_value")
+          .text()
+          .trim()
+          .replace(/,/g, "");
+
+        if (label.includes("market cap")) {
+          const marketCap = parseFloat(value);
+          if (!isNaN(marketCap)) companyData.marketCap = marketCap;
+        } else if (label.includes("shares") && !label.includes("free float")) {
+          const shares = parseFloat(value);
+          if (!isNaN(shares)) companyData.sharesOutstanding = shares;
+        }
+      });
+
+      // Extract 52-week range from range stats
+      $(".stats_value").each((_, element) => {
+        const text = $(element).text().trim();
+        const rangeMatch = text.match(
+          /52-WEEK RANGE.*?([\d.]+)\s*—\s*([\d.]+)/i,
+        );
+        if (rangeMatch) {
+          const low = parseFloat(rangeMatch[1]);
+          const high = parseFloat(rangeMatch[2]);
+          if (!isNaN(low)) companyData.low52Week = low;
+          if (!isNaN(high)) companyData.high52Week = high;
+        }
+      });
+
+      // Extract P/E ratio from stats
+      $(".stats_item").each((_, item) => {
+        const label = $(item).find(".stats_label").text().trim();
+        if (label.includes("P/E Ratio")) {
+          const value = $(item).find(".stats_value").text().trim();
+          const pe = parseFloat(value);
+          if (!isNaN(pe)) companyData.peRatio = pe;
+        }
+      });
+
+      // Extract dividend yield and other financial ratios from ratios section
+      $(".company__ratios .tbl__body tr").each((_, row) => {
+        const cells = $(row).find("td");
+        if (cells.length >= 2) {
+          const metric = $(cells[0]).text().trim().toLowerCase();
+          const latestValue = $(cells[1]).text().trim();
+
+          if (metric.includes("dividend yield")) {
+            const dividend = parseFloat(latestValue);
+            if (!isNaN(dividend)) companyData.dividendYield = dividend;
+          } else if (metric.includes("book value")) {
+            const book = parseFloat(latestValue);
+            if (!isNaN(book)) companyData.bookValue = book;
+          } else if (metric.includes("p/b ratio") || metric.includes("price to book")) {
+            const pb = parseFloat(latestValue);
+            if (!isNaN(pb)) companyData.pbRatio = pb;
+          }
+        }
+      });
+
+      // Extract EPS from financials section
+      $(".company__financials .tbl__body tr").each((_, row) => {
+        const cells = $(row).find("td");
+        if (cells.length >= 2) {
+          const metric = $(cells[0]).text().trim().toLowerCase();
+
+          if (metric === "eps") {
+            const latestEps = $(cells[1]).text().trim();
+            const eps = parseFloat(latestEps);
+            if (!isNaN(eps)) companyData.epsRatio = eps;
+          }
+        }
+      });
+
+      // Extract auditor information
+      const auditorElement = $(".profile__item .item__head")
         .filter((_, el) => $(el).text().trim() === "AUDITOR")
-        .next("p")
-        .text()
-        .trim();
-      if (auditor) companyData.auditor = auditor;
+        .next("p");
+      if (auditorElement.length) {
+        const auditorInfo = auditorElement.text().trim();
+        if (auditorInfo) {
+          companyData.auditor = auditorInfo;
+        }
+      }
 
-      // Extract registrar info
-      const registrar = $(".profile__item .item__head")
+      // Extract registrar information
+      const registrarElement = $(".profile__item .item__head")
         .filter((_, el) => $(el).text().trim() === "REGISTRAR")
-        .next("p")
-        .text()
-        .trim();
-      if (registrar) companyData.registrar = registrar;
+        .next("p");
+      if (registrarElement.length) {
+        const registrarInfo = registrarElement.text().trim();
+        if (registrarInfo) {
+          companyData.registrar = registrarInfo;
+        }
+      }
 
-      // Additional extraction logic can go here...
-    } catch (error) {
-      console.warn(`Error parsing HTML for ${symbol}:`, error);
+      // Extract fiscal year end
+      const fiscalYearElement = $(".profile__item .item__head")
+        .filter((_, el) => $(el).text().trim() === "Fiscal Year End")
+        .next("p");
+      if (fiscalYearElement.length) {
+        const fiscalYear = fiscalYearElement.text().trim();
+        if (fiscalYear) {
+          companyData.fiscalYearEnd = fiscalYear;
+        }
+      }
+
+      // Extract phone number
+      const phoneElement = $(".profile__item .item__head")
+        .filter((_, el) => $(el).text().trim().includes("PHONE") || $(el).text().trim().includes("TEL"))
+        .next("p");
+      if (phoneElement.length) {
+        companyData.phone = phoneElement.text().trim();
+      }
+
+      // Try to extract any additional financial metrics from tables
+      $("table.tbl tbody tr").each((_, row) => {
+        const cells = $(row).find("td");
+        if (cells.length >= 2) {
+          const label = $(cells[0]).text().trim().toLowerCase();
+          const value = $(cells[1]).text().trim().replace(/,/g, "");
+
+          if (label.includes("isin")) {
+            companyData.isinCode = value;
+          } else if (label.includes("phone") || label.includes("telephone")) {
+            companyData.phone = value;
+          }
+        }
+      });
+
+      console.log(`Parsed company data for ${symbol}:`, {
+        name: companyData.name,
+        sector: companyData.sector,
+        marketCap: companyData.marketCap,
+        peRatio: companyData.peRatio,
+        sharesOutstanding: companyData.sharesOutstanding,
+        description: companyData.description?.substring(0, 100) + "...",
+        keyPeopleCount: companyData.keyPeople?.length || 0,
+        hasAuditor: !!companyData.auditor,
+        hasRegistrar: !!companyData.registrar,
+        hasFiscalYear: !!companyData.fiscalYearEnd,
+      });
+    } catch (parseError) {
+      console.warn(`Error parsing company data for ${symbol}:`, parseError);
     }
 
     return companyData;
