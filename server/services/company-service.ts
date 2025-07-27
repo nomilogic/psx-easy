@@ -366,7 +366,7 @@ export class CompanyService {
 
           if (name && role) {
             keyPeople.push({ name, role });
-            
+
             if (role.toLowerCase().includes("ceo") || role.toLowerCase().includes("chief executive")) {
               companyData.ceo = name;
             }
@@ -508,7 +508,7 @@ export class CompanyService {
           const year = $(cells[0]).text().trim();
           const dividendPerShare = parseFloat($(cells[1]).text().trim());
           const payoutRatio = parseFloat($(cells[2]).text().trim());
-          
+
           if (!isNaN(dividendPerShare)) {
             if (!companyData.dividendHistory) companyData.dividendHistory = [];
             companyData.dividendHistory.push({
@@ -522,13 +522,13 @@ export class CompanyService {
 
       // Extract comprehensive financial data from financials section
       const financialData: Array<{year: string, sales?: number, profitAfterTax?: number, eps?: number}> = [];
-      
+
       // Annual financials
       $("#financials .tabs__panel[data-name='Annual'] table tbody tr").each((_, row) => {
         const cells = $(row).find("td");
         if (cells.length >= 2) {
           const metric = $(cells[0]).text().trim().toLowerCase();
-          
+
           // Extract years from header if not done
           if (financialData.length === 0) {
             const headers = $(row).closest("table").find("thead th");
@@ -541,12 +541,12 @@ export class CompanyService {
               }
             });
           }
-          
+
           // Extract financial metrics for each year
           for (let i = 1; i < cells.length && i - 1 < financialData.length; i++) {
             const value = $(cells[i]).text().trim().replace(/[(),]/g, "").replace(/,/g, "");
             const numValue = parseFloat(value);
-            
+
             if (!isNaN(numValue)) {
               if (metric.includes("sales")) {
                 financialData[i - 1].sales = numValue;
@@ -559,19 +559,19 @@ export class CompanyService {
           }
         }
       });
-      
+
       if (financialData.length > 0) {
         companyData.financialData = financialData;
       }
 
       // Extract ratios data
       const ratiosData: Array<{year: string, grossProfitMargin?: number, netProfitMargin?: number, epsGrowth?: number, peg?: number}> = [];
-      
+
       $("#ratios .tbl__body tr").each((_, row) => {
         const cells = $(row).find("td");
         if (cells.length >= 2) {
           const metric = $(cells[0]).text().trim().toLowerCase();
-          
+
           // Extract years from header if not done
           if (ratiosData.length === 0) {
             const headers = $(row).closest("table").find("thead th");
@@ -584,12 +584,12 @@ export class CompanyService {
               }
             });
           }
-          
+
           // Extract ratio metrics for each year
           for (let i = 1; i < cells.length && i - 1 < ratiosData.length; i++) {
             const value = $(cells[i]).text().trim().replace(/[()%]/g, "").replace(/,/g, "");
             const numValue = parseFloat(value);
-            
+
             if (!isNaN(numValue)) {
               if (metric.includes("gross profit margin")) {
                 ratiosData[i - 1].grossProfitMargin = numValue;
@@ -604,14 +604,14 @@ export class CompanyService {
           }
         }
       });
-      
+
       if (ratiosData.length > 0) {
         companyData.ratiosData = ratiosData;
       }
 
       // Enhanced dividend and payout extraction from payouts section
       const payoutsData: Array<{date: string, financialResults?: string, details?: string, bookClosure?: string}> = [];
-      
+
       $("#payouts .tbl__body tr").each((_, row) => {
         const cells = $(row).find("td");
         if (cells.length >= 3) {
@@ -619,7 +619,7 @@ export class CompanyService {
           const financialResults = $(cells[1]).text().trim();
           const details = $(cells[2]).text().trim();
           const bookClosure = cells.length > 3 ? $(cells[3]).text().trim() : undefined;
-          
+
           if (date) {
             payoutsData.push({
               date,
@@ -630,38 +630,68 @@ export class CompanyService {
           }
         }
       });
-      
+
       if (payoutsData.length > 0) {
         companyData.payoutsData = payoutsData;
       }
 
-      // Extract announcements data by category
-      const announcements: {[key: string]: Array<{date: string, title: string, hasDocument: boolean}>} = {};
-      
-      $("#announcements .tabs__panel").each((_, panel) => {
-        const panelName = $(panel).attr("data-name");
-        if (panelName) {
-          const categoryAnnouncements: Array<{date: string, title: string, hasDocument: boolean}> = [];
-          
-          $(panel).find(".tbl__body tr").each((_, row) => {
-            const cells = $(row).find("td");
+      // Extract announcements by category
+      const announcementSections = $('h3').filter((_, el) => {
+        const text = $(el).text().trim();
+        return text.includes('Announcements') || 
+               text.includes('Corporate Actions') || 
+               text.includes('Financial Results') ||
+               text.includes('Dividend') ||
+               text.includes('Rights');
+      });
+
+      const announcements: { [category: string]: Array<{ date: string; title: string; documentUrl?: string }> } = {};
+
+      announcementSections.each((_, section) => {
+        const categoryTitle = $(section).text().trim();
+        const table = $(section).next('table');
+
+        if (table.length > 0) {
+          const categoryAnnouncements: Array<{ date: string; title: string; documentUrl?: string }> = [];
+
+          table.find('tbody tr').each((_, row) => {
+            const cells = $(row).find('td');
             if (cells.length >= 2) {
               const date = $(cells[0]).text().trim();
-              const title = $(cells[1]).text().trim();
-              const hasDocument = $(cells[2]).find("a").length > 0;
-              
+              const titleCell = $(cells[1]);
+              const title = titleCell.text().trim();
+              const documentLink = titleCell.find('a').first();
+              let documentUrl: string | undefined;
+
+              if (documentLink.length > 0) {
+                const href = documentLink.attr('href');
+                if (href) {
+                  // Convert relative URLs to absolute URLs
+                  documentUrl = href.startsWith('http') ? href : `https://dps.psx.com.pk${href}`;
+                }
+              }
+
               if (date && title) {
-                categoryAnnouncements.push({ date, title, hasDocument });
+                const announcement: { date: string; title: string; documentUrl?: string } = {
+                  date,
+                  title
+                };
+
+                if (documentUrl) {
+                  announcement.documentUrl = documentUrl;
+                }
+
+                categoryAnnouncements.push(announcement);
               }
             }
           });
-          
+
           if (categoryAnnouncements.length > 0) {
-            announcements[panelName] = categoryAnnouncements;
+            announcements[categoryTitle] = categoryAnnouncements;
           }
         }
       });
-      
+
       if (Object.keys(announcements).length > 0) {
         companyData.announcements = announcements;
       }

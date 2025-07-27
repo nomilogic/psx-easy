@@ -353,7 +353,7 @@ export interface CompanyData {
     [category: string]: Array<{
       date: string;
       title: string;
-      hasDocument: boolean;
+      documentUrl?: string;
     }>;
   };
 }
