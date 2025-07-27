@@ -1,3 +1,4 @@
+
 import { z } from "zod";
 import {
   pgTable,
@@ -81,7 +82,7 @@ export const companies = pgTable("companies", {
   registrar: text("registrar"),
   auditor: text("auditor"),
   fiscalYearEnd: text("fiscal_year_end"),
-  keyPeople: jsonb("key_people"), // Key people data
+  keyPeople: jsonb("key_people"),
   businessDescription: text("business_description"),
   lastUpdated: timestamp("last_updated").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -256,7 +257,6 @@ export interface CompanyData {
   faceValue?: number;
   lotSize?: number;
   isinCode?: string;
-  // Additional fields that can be extracted
   registrar?: string;
   auditor?: string;
   fiscalYearEnd?: string;
