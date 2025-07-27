@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { PSXService } from "./services/psx-service";
+import { CompanyService } from "./services/company-service";
 import type {
   StockData,
   MarketSummary,
@@ -124,6 +125,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching performers:", error);
       res.status(500).json({ error: "Failed to fetch performers data" });
+    }
+  });
+
+  // Individual company endpoint
+  app.get("/api/company/:symbol", async (req, res) => {
+    try {
+      const { symbol } = req.params;
+      
+      // First try to get from database
+      let company = await storage.getCompany(symbol.toUpperCase());
+      
+      // If not found or data is old (more than 24 hours), fetch fresh data
+      if (!company) {
+        console.log(`Fetching fresh company data for ${symbol}`);
+        const freshCompanyData = await CompanyService.fetchCompanyData(symbol);
+        
+        if (freshCompanyData) {
+          await storage.setCompany(freshCompanyData);
+          company = freshCompanyData;
+        }
+      }
+      
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
+
+      res.json(company);
+    } catch (error) {
+      console.error("Error fetching company:", error);
+      res.status(500).json({ error: "Failed to fetch company data" });
+    }
+  });
+
+  // All companies endpoint
+  app.get("/api/companies", async (req, res) => {
+    try {
+      const companies = await storage.getAllCompanies();
+      res.json(companies);
+    } catch (error) {
+      console.error("Error fetching companies:", error);
+      res.status(500).json({ error: "Failed to fetch companies data" });
+    }
+  });
+
+  // Fetch all companies data (admin endpoint)
+  app.post("/api/companies/fetch-all", async (req, res) => {
+    try {
+      console.log("Starting to fetch all companies data...");
+      const companiesData = await CompanyService.fetchAllCompaniesData();
+      
+      if (companiesData.length > 0) {
+        await storage.setAllCompanies(companiesData);
+        console.log(`Successfully fetched and stored ${companiesData.length} companies`);
+        res.json({ 
+          message: `Successfully fetched and stored ${companiesData.length} companies`,
+          count: companiesData.length 
+        });
+      } else {
+        res.status(500).json({ error: "Failed to fetch companies data" });
+      }
+    } catch (error) {
+      console.error("Error in fetch-all companies:", error);
+      res.status(500).json({ error: "Failed to fetch all companies data" });
     }
   });
 
@@ -264,6 +328,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Set up periodic data fetching (every 30 seconds)
   setInterval(fetchAndBroadcastData, 30000);
+
+  // Periodic company data fetching (once per day)
+  async function fetchAllCompaniesDataPeriodically() {
+    try {
+      console.log("Starting periodic fetch of all companies data...");
+      const companiesData = await CompanyService.fetchAllCompaniesData();
+      
+      if (companiesData.length > 0) {
+        await storage.setAllCompanies(companiesData);
+        console.log(`Periodic fetch completed: ${companiesData.length} companies updated`);
+      }
+    } catch (error) {
+      console.error("Error in periodic companies fetch:", error);
+    }
+  }
+
+  // Schedule to run once per day (24 hours = 24 * 60 * 60 * 1000 ms)
+  setInterval(fetchAllCompaniesDataPeriodically, 24 * 60 * 60 * 1000);
 
   return httpServer;
 }

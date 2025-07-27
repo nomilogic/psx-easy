@@ -56,6 +56,32 @@ export const stockTimeSeries = pgTable("stock_time_series", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const companies = pgTable("companies", {
+  id: serial("id").primaryKey(),
+  symbol: text("symbol").notNull().unique(),
+  name: text("name").notNull(),
+  sector: text("sector"),
+  description: text("description"),
+  website: text("website"),
+  phone: text("phone"),
+  address: text("address"),
+  ceo: text("ceo"),
+  marketCap: real("market_cap"),
+  sharesOutstanding: integer("shares_outstanding"),
+  peRatio: real("pe_ratio"),
+  pbRatio: real("pb_ratio"),
+  dividendYield: real("dividend_yield"),
+  epsRatio: real("eps_ratio"),
+  bookValue: real("book_value"),
+  high52Week: real("high_52_week"),
+  low52Week: real("low_52_week"),
+  faceValue: real("face_value"),
+  lotSize: integer("lot_size"),
+  isinCode: text("isin_code"),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Zod Schemas
 export const insertStockSchema = createInsertSchema(stocks).omit({
   id: true,
@@ -81,6 +107,12 @@ export const insertStockTimeSeriesSchema = createInsertSchema(
   updatedAt: true,
 });
 
+export const insertCompanySchema = createInsertSchema(companies).omit({
+  id: true,
+  lastUpdated: true,
+  createdAt: true,
+});
+
 // Types
 export type Stock = typeof stocks.$inferSelect;
 export type InsertStock = z.infer<typeof insertStockSchema>;
@@ -90,6 +122,9 @@ export type Sector = typeof sectors.$inferSelect;
 export type InsertSector = z.infer<typeof insertSectorSchema>;
 
 export type InsertStockTimeSeries = z.infer<typeof insertStockTimeSeriesSchema>;
+
+export type Company = typeof companies.$inferSelect;
+export type InsertCompany = z.infer<typeof insertCompanySchema>;
 
 // Legacy interfaces for compatibility
 export interface StockData {
@@ -193,4 +228,27 @@ export interface SystemStatus {
   memoryUsage: string;
   apiCallsPerMin: number;
   connectedClients: number;
+}
+
+export interface CompanyData {
+  symbol: string;
+  name: string;
+  sector?: string;
+  description?: string;
+  website?: string;
+  phone?: string;
+  address?: string;
+  ceo?: string;
+  marketCap?: number;
+  sharesOutstanding?: number;
+  peRatio?: number;
+  pbRatio?: number;
+  dividendYield?: number;
+  epsRatio?: number;
+  bookValue?: number;
+  high52Week?: number;
+  low52Week?: number;
+  faceValue?: number;
+  lotSize?: number;
+  isinCode?: string;
 }

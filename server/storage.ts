@@ -5,14 +5,17 @@ import {
   type ChartTimeInterval,
   type SystemStatus,
   type MarketSummary as LegacyMarketSummary,
+  type CompanyData,
   stocks,
   marketSummaries,
   sectors,
   stockTimeSeries,
+  companies,
   type InsertStock,
   type InsertMarketSummary,
   type InsertSector,
   type InsertStockTimeSeries,
+  type InsertCompany,
 } from "@shared/schema";
 import { db } from "./db";
 import { PSXService } from "./services/psx-service";
@@ -44,6 +47,12 @@ export interface IStorage {
   // Performer methods
   getPerformers(): Promise<PerformersData | null>;
   setPerformers(performers: PerformersData): Promise<void>;
+
+  // Company methods
+  getCompany(symbol: string): Promise<CompanyData | null>;
+  setCompany(companyData: CompanyData): Promise<void>;
+  getAllCompanies(): Promise<CompanyData[]>;
+  setAllCompanies(companiesData: CompanyData[]): Promise<void>;
 
   // System status
   getSystemStatus(): Promise<SystemStatus>;
@@ -266,6 +275,159 @@ export class DatabaseStorage implements IStorage {
 
   async getSystemStatus(): Promise<SystemStatus> {
     return this.systemStatus;
+  }
+
+  async getCompany(symbol: string): Promise<CompanyData | null> {
+    const result = await db
+      .select()
+      .from(companies)
+      .where(eq(companies.symbol, symbol.toUpperCase()));
+    
+    if (result.length === 0) return null;
+    
+    const company = result[0];
+    return {
+      symbol: company.symbol,
+      name: company.name,
+      sector: company.sector || undefined,
+      description: company.description || undefined,
+      website: company.website || undefined,
+      phone: company.phone || undefined,
+      address: company.address || undefined,
+      ceo: company.ceo || undefined,
+      marketCap: company.marketCap || undefined,
+      sharesOutstanding: company.sharesOutstanding || undefined,
+      peRatio: company.peRatio || undefined,
+      pbRatio: company.pbRatio || undefined,
+      dividendYield: company.dividendYield || undefined,
+      epsRatio: company.epsRatio || undefined,
+      bookValue: company.bookValue || undefined,
+      high52Week: company.high52Week || undefined,
+      low52Week: company.low52Week || undefined,
+      faceValue: company.faceValue || undefined,
+      lotSize: company.lotSize || undefined,
+      isinCode: company.isinCode || undefined,
+    };
+  }
+
+  async setCompany(companyData: CompanyData): Promise<void> {
+    try {
+      const insertData: InsertCompany = {
+        symbol: companyData.symbol.toUpperCase(),
+        name: companyData.name,
+        sector: companyData.sector || null,
+        description: companyData.description || null,
+        website: companyData.website || null,
+        phone: companyData.phone || null,
+        address: companyData.address || null,
+        ceo: companyData.ceo || null,
+        marketCap: companyData.marketCap || null,
+        sharesOutstanding: companyData.sharesOutstanding || null,
+        peRatio: companyData.peRatio || null,
+        pbRatio: companyData.pbRatio || null,
+        dividendYield: companyData.dividendYield || null,
+        epsRatio: companyData.epsRatio || null,
+        bookValue: companyData.bookValue || null,
+        high52Week: companyData.high52Week || null,
+        low52Week: companyData.low52Week || null,
+        faceValue: companyData.faceValue || null,
+        lotSize: companyData.lotSize || null,
+        isinCode: companyData.isinCode || null,
+      };
+
+      // Use upsert logic - insert or update if exists
+      await db
+        .insert(companies)
+        .values(insertData)
+        .onConflictDoUpdate({
+          target: companies.symbol,
+          set: {
+            ...insertData,
+            lastUpdated: new Date(),
+          },
+        });
+    } catch (error) {
+      console.error("Error updating company data:", error);
+      throw error;
+    }
+  }
+
+  async getAllCompanies(): Promise<CompanyData[]> {
+    const result = await db.select().from(companies);
+    return result.map((company) => ({
+      symbol: company.symbol,
+      name: company.name,
+      sector: company.sector || undefined,
+      description: company.description || undefined,
+      website: company.website || undefined,
+      phone: company.phone || undefined,
+      address: company.address || undefined,
+      ceo: company.ceo || undefined,
+      marketCap: company.marketCap || undefined,
+      sharesOutstanding: company.sharesOutstanding || undefined,
+      peRatio: company.peRatio || undefined,
+      pbRatio: company.pbRatio || undefined,
+      dividendYield: company.dividendYield || undefined,
+      epsRatio: company.epsRatio || undefined,
+      bookValue: company.bookValue || undefined,
+      high52Week: company.high52Week || undefined,
+      low52Week: company.low52Week || undefined,
+      faceValue: company.faceValue || undefined,
+      lotSize: company.lotSize || undefined,
+      isinCode: company.isinCode || undefined,
+    }));
+  }
+
+  async setAllCompanies(companiesData: CompanyData[]): Promise<void> {
+    if (companiesData.length === 0) return;
+
+    try {
+      await db.transaction(async (tx) => {
+        // Insert or update companies in batches
+        const batchSize = 50;
+        for (let i = 0; i < companiesData.length; i += batchSize) {
+          const batch = companiesData.slice(i, i + batchSize);
+          const insertData: InsertCompany[] = batch.map((company) => ({
+            symbol: company.symbol.toUpperCase(),
+            name: company.name,
+            sector: company.sector || null,
+            description: company.description || null,
+            website: company.website || null,
+            phone: company.phone || null,
+            address: company.address || null,
+            ceo: company.ceo || null,
+            marketCap: company.marketCap || null,
+            sharesOutstanding: company.sharesOutstanding || null,
+            peRatio: company.peRatio || null,
+            pbRatio: company.pbRatio || null,
+            dividendYield: company.dividendYield || null,
+            epsRatio: company.epsRatio || null,
+            bookValue: company.bookValue || null,
+            high52Week: company.high52Week || null,
+            low52Week: company.low52Week || null,
+            faceValue: company.faceValue || null,
+            lotSize: company.lotSize || null,
+            isinCode: company.isinCode || null,
+          }));
+
+          for (const company of insertData) {
+            await tx
+              .insert(companies)
+              .values(company)
+              .onConflictDoUpdate({
+                target: companies.symbol,
+                set: {
+                  ...company,
+                  lastUpdated: new Date(),
+                },
+              });
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Error updating companies data:", error);
+      throw error;
+    }
   }
 
   async updateSystemStatus(status: Partial<SystemStatus>): Promise<void> {
