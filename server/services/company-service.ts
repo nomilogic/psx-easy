@@ -635,22 +635,15 @@ export class CompanyService {
         companyData.payoutsData = payoutsData;
       }
 
-      // Extract announcements by category - look for various heading types
-      const announcementSections = $('h3, h4, h5, .section-heading').filter((_, el) => {
-        const text = $(el).text().trim().toLowerCase();
-        return text.includes('announcement') || 
-               text.includes('corporate action') || 
-               text.includes('financial result') ||
-               text.includes('dividend') ||
-               text.includes('rights') ||
-               text.includes('notice') ||
-               text.includes('disclosure') ||
-               text.includes('agm') ||
-               text.includes('egm') ||
-               text.includes('board meeting');
+      // Extract announcements by category
+      const announcementSections = $('h3').filter((_, el) => {
+        const text = $(el).text().trim();
+        return text.includes('Announcements') || 
+               text.includes('Corporate Actions') || 
+               text.includes('Financial Results') ||
+               text.includes('Dividend') ||
+               text.includes('Rights');
       });
-
-      console.log(`Found ${announcementSections.length} announcement sections for ${symbol}`);
 
       const announcements: { [category: string]: Array<{ date: string; title: string; documentUrl?: string }> } = {};
 
@@ -667,8 +660,6 @@ export class CompanyService {
               const date = $(cells[0]).text().trim();
               const titleCell = $(cells[1]);
               const title = titleCell.text().trim();
-              
-              // Look for any link in the title cell
               const documentLink = titleCell.find('a').first();
               let documentUrl: string | undefined;
 
@@ -676,11 +667,7 @@ export class CompanyService {
                 const href = documentLink.attr('href');
                 if (href) {
                   // Convert relative URLs to absolute URLs
-                  documentUrl = href.startsWith('http') 
-                    ? href 
-                    : href.startsWith('/') 
-                      ? `https://dps.psx.com.pk${href}`
-                      : `https://dps.psx.com.pk/${href}`;
+                  documentUrl = href.startsWith('http') ? href : `https://dps.psx.com.pk${href}`;
                 }
               }
 
@@ -707,15 +694,6 @@ export class CompanyService {
 
       if (Object.keys(announcements).length > 0) {
         companyData.announcements = announcements;
-        console.log(`Extracted announcements for ${symbol}:`, Object.keys(announcements).length, 'categories');
-        
-        // Debug: log first few announcements
-        Object.entries(announcements).forEach(([category, items]) => {
-          console.log(`Category "${category}": ${items.length} announcements`);
-          if (items.length > 0) {
-            console.log(`Sample announcement:`, items[0]);
-          }
-        });
       }
 
       // Extract additional financial metrics from any remaining financial tables
