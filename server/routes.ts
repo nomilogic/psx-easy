@@ -132,28 +132,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/company/:symbol", async (req, res) => {
     try {
       const { symbol } = req.params;
+      console.log(`Company endpoint called for symbol: ${symbol}`);
       
       // First try to get from database
       let company = await storage.getCompany(symbol.toUpperCase());
+      console.log(`Database result for ${symbol}:`, company ? 'Found' : 'Not found');
       
       // If not found or data is old (more than 24 hours), fetch fresh data
       if (!company) {
         console.log(`Fetching fresh company data for ${symbol}`);
         const freshCompanyData = await CompanyService.fetchCompanyData(symbol);
+        console.log(`Fresh data fetch result for ${symbol}:`, freshCompanyData ? 'Success' : 'Failed');
         
         if (freshCompanyData) {
           await storage.setCompany(freshCompanyData);
           company = freshCompanyData;
+          console.log(`Stored fresh data for ${symbol}`);
         }
       }
       
       if (!company) {
+        console.log(`No company data found for ${symbol}`);
         return res.status(404).json({ error: "Company not found" });
       }
 
+      console.log(`Returning company data for ${symbol}:`, company.name);
       res.json(company);
     } catch (error) {
-      console.error("Error fetching company:", error);
+      console.error(`Error fetching company ${symbol}:`, error);
       res.status(500).json({ error: "Failed to fetch company data" });
     }
   });

@@ -49,9 +49,22 @@ export class CompanyService {
 
   static async fetchCompanyData(symbol: string): Promise<CompanyData | null> {
     try {
-      const url = `${this.COMPANY_URL}/${symbol.toUpperCase()}`;
+      const upperSymbol = symbol.toUpperCase();
+      const url = `${this.COMPANY_URL}/${upperSymbol}`;
+      console.log(`Attempting to fetch company data from: ${url}`);
+      
       const html = await this.fetchWithRetry(url);
-      return this.parseCompanyHTML(html, symbol.toUpperCase());
+      console.log(`Successfully fetched HTML for ${upperSymbol}, length: ${html.length}`);
+      
+      const companyData = this.parseCompanyHTML(html, upperSymbol);
+      console.log(`Parsed company data for ${upperSymbol}:`, {
+        name: companyData.name,
+        sector: companyData.sector,
+        hasDescription: !!companyData.description,
+        hasWebsite: !!companyData.website
+      });
+      
+      return companyData;
     } catch (error) {
       console.error(`Error fetching company data for ${symbol}:`, error);
       return null;

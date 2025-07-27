@@ -278,14 +278,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCompany(symbol: string): Promise<CompanyData | null> {
+    const upperSymbol = symbol.toUpperCase();
+    console.log(`Searching database for company: ${upperSymbol}`);
+    
     const result = await db
       .select()
       .from(companies)
-      .where(eq(companies.symbol, symbol.toUpperCase()));
+      .where(eq(companies.symbol, upperSymbol));
+    
+    console.log(`Database query result for ${upperSymbol}: ${result.length} records found`);
     
     if (result.length === 0) return null;
     
     const company = result[0];
+    console.log(`Found company in database: ${company.name} (${company.symbol})`);
+    
     return {
       symbol: company.symbol,
       name: company.name,
