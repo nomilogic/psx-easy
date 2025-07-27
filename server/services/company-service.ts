@@ -464,6 +464,94 @@ export class CompanyService {
           } else if (metric.includes("p/b ratio") || metric.includes("price to book")) {
             const pb = parseFloat(latestValue);
             if (!isNaN(pb)) companyData.pbRatio = pb;
+          } else if (metric.includes("p/e ratio") || metric.includes("price earnings")) {
+            const pe = parseFloat(latestValue);
+            if (!isNaN(pe)) companyData.peRatio = pe;
+          } else if (metric.includes("roa") || metric.includes("return on assets")) {
+            const roa = parseFloat(latestValue);
+            if (!isNaN(roa)) companyData.roa = roa;
+          } else if (metric.includes("roe") || metric.includes("return on equity")) {
+            const roe = parseFloat(latestValue);
+            if (!isNaN(roe)) companyData.roe = roe;
+          } else if (metric.includes("current ratio")) {
+            const current = parseFloat(latestValue);
+            if (!isNaN(current)) companyData.currentRatio = current;
+          } else if (metric.includes("debt to equity") || metric.includes("debt/equity")) {
+            const debtEquity = parseFloat(latestValue);
+            if (!isNaN(debtEquity)) companyData.debtToEquity = debtEquity;
+          } else if (metric.includes("gross profit margin") || metric.includes("gross margin")) {
+            const grossMargin = parseFloat(latestValue);
+            if (!isNaN(grossMargin)) companyData.grossProfitMargin = grossMargin;
+          } else if (metric.includes("net profit margin") || metric.includes("net margin")) {
+            const netMargin = parseFloat(latestValue);
+            if (!isNaN(netMargin)) companyData.netProfitMargin = netMargin;
+          } else if (metric.includes("operating margin")) {
+            const opMargin = parseFloat(latestValue);
+            if (!isNaN(opMargin)) companyData.operatingMargin = opMargin;
+          } else if (metric.includes("asset turnover")) {
+            const assetTurnover = parseFloat(latestValue);
+            if (!isNaN(assetTurnover)) companyData.assetTurnover = assetTurnover;
+          } else if (metric.includes("quick ratio")) {
+            const quickRatio = parseFloat(latestValue);
+            if (!isNaN(quickRatio)) companyData.quickRatio = quickRatio;
+          } else if (metric.includes("cash ratio")) {
+            const cashRatio = parseFloat(latestValue);
+            if (!isNaN(cashRatio)) companyData.cashRatio = cashRatio;
+          }
+        }
+      });
+
+      // Extract dividend and payout information
+      $(".company__dividends .tbl__body tr, .dividend__history .tbl__body tr").each((_, row) => {
+        const cells = $(row).find("td");
+        if (cells.length >= 3) {
+          const year = $(cells[0]).text().trim();
+          const dividendPerShare = parseFloat($(cells[1]).text().trim());
+          const payoutRatio = parseFloat($(cells[2]).text().trim());
+          
+          if (!isNaN(dividendPerShare)) {
+            if (!companyData.dividendHistory) companyData.dividendHistory = [];
+            companyData.dividendHistory.push({
+              year,
+              dividendPerShare,
+              payoutRatio: !isNaN(payoutRatio) ? payoutRatio : undefined
+            });
+          }
+        }
+      });
+
+      // Extract additional financial metrics from any financial tables
+      $(".financials .tbl__body tr, .financial__ratios .tbl__body tr").each((_, row) => {
+        const cells = $(row).find("td");
+        if (cells.length >= 2) {
+          const metric = $(cells[0]).text().trim().toLowerCase();
+          const value = $(cells[1]).text().trim().replace(/,/g, "");
+          const numValue = parseFloat(value);
+
+          if (!isNaN(numValue)) {
+            if (metric.includes("payout ratio")) {
+              companyData.payoutRatio = numValue;
+            } else if (metric.includes("retention ratio")) {
+              companyData.retentionRatio = numValue;
+            } else if (metric.includes("interest coverage")) {
+              companyData.interestCoverage = numValue;
+            } else if (metric.includes("debt ratio")) {
+              companyData.debtRatio = numValue;
+            } else if (metric.includes("equity ratio")) {
+              companyData.equityRatio = numValue;
+            } else if (metric.includes("working capital")) {
+              companyData.workingCapital = numValue;
+            } else if (metric.includes("price to sales") || metric.includes("p/s ratio")) {
+              companyData.priceToSales = numValue;
+            } else if (metric.includes("price to cash flow") || metric.includes("p/cf ratio")) {
+              companyData.priceToCashFlow = numValue;
+            } else if (metric.includes("enterprise value")) {
+              companyData.enterpriseValue = numValue;
+            } else if (metric.includes("ev/ebitda")) {
+              companyData.evToEbitda = numValue;
+            } else if (metric.includes("beta")) {
+              companyData.beta = numValue;
+            }
           }
         }
       });

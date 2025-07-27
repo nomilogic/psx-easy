@@ -262,4 +262,34 @@ export interface CompanyData {
   fiscalYearEnd?: string;
   keyPeople?: Array<{name: string, role: string}>;
   businessDescription?: string;
+  
+  // Additional Financial Ratios
+  roa?: number; // Return on Assets
+  roe?: number; // Return on Equity
+  currentRatio?: number;
+  quickRatio?: number;
+  cashRatio?: number;
+  debtToEquity?: number;
+  debtRatio?: number;
+  equityRatio?: number;
+  grossProfitMargin?: number;
+  netProfitMargin?: number;
+  operatingMargin?: number;
+  assetTurnover?: number;
+  interestCoverage?: number;
+  workingCapital?: number;
+  priceToSales?: number;
+  priceToCashFlow?: number;
+  enterpriseValue?: number;
+  evToEbitda?: number;
+  beta?: number;
+  
+  // Dividend and Payout Information
+  payoutRatio?: number;
+  retentionRatio?: number;
+  dividendHistory?: Array<{
+    year: string;
+    dividendPerShare: number;
+    payoutRatio?: number;
+  }>;
 }
