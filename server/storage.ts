@@ -307,6 +307,11 @@ export class DatabaseStorage implements IStorage {
       faceValue: company.faceValue || undefined,
       lotSize: company.lotSize || undefined,
       isinCode: company.isinCode || undefined,
+      registrar: company.registrar || undefined,
+      auditor: company.auditor || undefined,
+      fiscalYearEnd: company.fiscalYearEnd || undefined,
+      keyPeople: company.keyPeople as Array<{name: string, role: string}> || undefined,
+      businessDescription: company.businessDescription || undefined,
     };
   }
 
@@ -333,6 +338,11 @@ export class DatabaseStorage implements IStorage {
         faceValue: companyData.faceValue || null,
         lotSize: companyData.lotSize || null,
         isinCode: companyData.isinCode || null,
+        registrar: companyData.registrar || null,
+        auditor: companyData.auditor || null,
+        fiscalYearEnd: companyData.fiscalYearEnd || null,
+        keyPeople: companyData.keyPeople || null,
+        businessDescription: companyData.businessDescription || null,
       };
 
       // Use upsert logic - insert or update if exists
@@ -375,6 +385,11 @@ export class DatabaseStorage implements IStorage {
       faceValue: company.faceValue || undefined,
       lotSize: company.lotSize || undefined,
       isinCode: company.isinCode || undefined,
+      registrar: company.registrar || undefined,
+      auditor: company.auditor || undefined,
+      fiscalYearEnd: company.fiscalYearEnd || undefined,
+      keyPeople: company.keyPeople as Array<{name: string, role: string}> || undefined,
+      businessDescription: company.businessDescription || undefined,
     }));
   }
 
@@ -408,6 +423,11 @@ export class DatabaseStorage implements IStorage {
             faceValue: company.faceValue || null,
             lotSize: company.lotSize || null,
             isinCode: company.isinCode || null,
+            registrar: company.registrar || null,
+            auditor: company.auditor || null,
+            fiscalYearEnd: company.fiscalYearEnd || null,
+            keyPeople: company.keyPeople || null,
+            businessDescription: company.businessDescription || null,
           }));
 
           for (const company of insertData) {

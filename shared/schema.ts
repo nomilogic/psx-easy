@@ -78,6 +78,11 @@ export const companies = pgTable("companies", {
   faceValue: real("face_value"),
   lotSize: integer("lot_size"),
   isinCode: text("isin_code"),
+  registrar: text("registrar"),
+  auditor: text("auditor"),
+  fiscalYearEnd: text("fiscal_year_end"),
+  keyPeople: jsonb("key_people"),
+  businessDescription: text("business_description"),
   lastUpdated: timestamp("last_updated").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -251,4 +256,10 @@ export interface CompanyData {
   faceValue?: number;
   lotSize?: number;
   isinCode?: string;
+  // Additional fields that can be extracted
+  registrar?: string;
+  auditor?: string;
+  fiscalYearEnd?: string;
+  keyPeople?: Array<{name: string, role: string}>;
+  businessDescription?: string;
 }
