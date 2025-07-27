@@ -183,6 +183,8 @@ export class PSXService {
         false,
       );
       const symbols = JSON.parse(response) as Symbol[];
+      console.log(`Fetched ${symbols.length} symbols from PSX service`);
+      
       this.symbolsCache = symbols.reduce(
         (acc: { [symbolId: string]: Symbol }, symbol) => {
           acc[symbol.symbol] = symbol;
@@ -193,32 +195,34 @@ export class PSXService {
       this.symbolsCacheTimestamp = now;
     } catch (error) {
       console.error("Error fetching symbols:", error);
+      // Initialize empty cache if fetch fails
+      if (!this.symbolsCache) {
+        this.symbolsCache = {};
+      }
     }
   }
   static async fetchMarketData(): Promise<StockData[] | undefined> {
     try {
-      //await this.fetchSymbols(); // Call fetchSymbols first
+      await this.fetchSymbols(); // Call fetchSymbols first to get proper names and sectors
       const html = await this.fetchWithRetry<string>(this.API_URL, false);
       const stockData = this.parseHTMLData(html);
       console.log(stockData, "stockData");
+      
+      // Map stock data with proper names and sectors from symbols service
       stockData.forEach((stock) => {
-        const symbol =
-          this.symbolsCache !== null
-            ? this.symbolsCache[stock.symbol]
-            : {
-                symbol: stock.symbol,
-                name: "",
-                sectorName: "",
-                isETF: false,
-                isDebt: false,
-              };
-        if (symbol.name !== "") {
-          stock.name = symbol.name;
+        const symbolInfo = this.symbolsCache?.[stock.symbol];
+        
+        if (symbolInfo) {
+          // Use proper company name from symbols service
+          stock.name = symbolInfo.name || `${stock.symbol} Limited`;
+          // Use proper sector name from symbols service
+          stock.sector = symbolInfo.sectorName || stock.sector;
         } else {
-          stock.name = `${stock.symbol} name Limited`;
+          // Fallback if symbol not found in cache
+          stock.name = `${stock.symbol} Limited`;
         }
-        stock.sector = symbol.sectorName || stock.sector;
       });
+      
       return stockData;
     } catch (error) {
       console.error("Error fetching market data:", error);
