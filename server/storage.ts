@@ -125,7 +125,7 @@ export class DatabaseStorage implements IStorage {
         // Delete existing data
         await tx.delete(stocks);
 
-        // Insert new data
+        // Insert new data using upsert to handle duplicates
         const insertData: InsertStock[] = data.map((stock) => ({
           symbol: stock.symbol,
           name: stock.name,
@@ -141,11 +141,29 @@ export class DatabaseStorage implements IStorage {
           isPositive: stock.isPositive,
         }));
 
-        // Insert in batches to avoid memory issues
+        // Insert in batches using upsert to avoid constraint violations
         const batchSize = 100;
         for (let i = 0; i < insertData.length; i += batchSize) {
           const batch = insertData.slice(i, i + batchSize);
-          await tx.insert(stocks).values(batch);
+          for (const stock of batch) {
+            await tx.insert(stocks).values(stock).onConflictDoUpdate({
+              target: stocks.symbol,
+              set: {
+                name: stock.name,
+                sector: stock.sector,
+                ldcp: stock.ldcp,
+                open: stock.open,
+                high: stock.high,
+                low: stock.low,
+                current: stock.current,
+                change: stock.change,
+                changePercent: stock.changePercent,
+                volume: stock.volume,
+                isPositive: stock.isPositive,
+                updatedAt: new Date(),
+              },
+            });
+          }
         }
       });
     } catch (error) {

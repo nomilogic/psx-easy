@@ -132,35 +132,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/company/:symbol", async (req, res) => {
     try {
       const { symbol } = req.params;
-      console.log(`Company endpoint called for symbol: ${symbol} - fetching fresh data`);
+      console.log(`Company endpoint called for symbol: ${symbol}`);
       
-      // Always fetch fresh data from the source
+      // First, try to get cached data from database
+      const cachedCompany = await storage.getCompany(symbol.toUpperCase());
+      
+      if (cachedCompany) {
+        console.log(`Returning cached data for ${symbol}:`, cachedCompany.name);
+        res.json(cachedCompany);
+        
+        // Optionally try to fetch fresh data in background for next request
+        CompanyService.fetchCompanyData(symbol).then(freshData => {
+          if (freshData) {
+            storage.setCompany(freshData).catch(err => 
+              console.warn(`Background update failed for ${symbol}:`, err)
+            );
+          }
+        }).catch(err => 
+          console.warn(`Background fetch failed for ${symbol}:`, err)
+        );
+        
+        return;
+      }
+      
+      // If no cached data, try to fetch fresh data
+      console.log(`No cached data for ${symbol}, fetching fresh data`);
       const freshCompanyData = await CompanyService.fetchCompanyData(symbol);
       console.log(`Fresh data fetch result for ${symbol}:`, freshCompanyData ? 'Success' : 'Failed');
       
       if (freshCompanyData) {
-        // Store the fresh data in database for backup/caching purposes
+        // Store the fresh data in database
         await storage.setCompany(freshCompanyData);
         console.log(`Stored fresh data for ${symbol}`);
         
         console.log(`Returning fresh company data for ${symbol}:`, freshCompanyData.name);
         res.json(freshCompanyData);
       } else {
-        console.log(`Failed to fetch fresh data for ${symbol}, trying database fallback`);
-        
-        // Fallback to database if fresh fetch fails
-        const cachedCompany = await storage.getCompany(symbol.toUpperCase());
-        
-        if (cachedCompany) {
-          console.log(`Returning cached data for ${symbol}:`, cachedCompany.name);
-          res.json(cachedCompany);
-        } else {
-          console.log(`No company data found for ${symbol}`);
-          return res.status(404).json({ error: "Company not found" });
-        }
+        console.log(`No company data found for ${symbol} - neither cached nor fresh`);
+        return res.status(404).json({ 
+          error: "Company not found", 
+          message: `No data available for symbol ${symbol.toUpperCase()}` 
+        });
       }
     } catch (error) {
       console.error(`Error fetching company ${req.params.symbol}:`, error);
+      
+      // Try one more time with cached data as final fallback
+      try {
+        const fallbackCompany = await storage.getCompany(req.params.symbol.toUpperCase());
+        if (fallbackCompany) {
+          console.log(`Using fallback cached data for ${req.params.symbol}`);
+          res.json(fallbackCompany);
+          return;
+        }
+      } catch (fallbackError) {
+        console.error(`Fallback also failed for ${req.params.symbol}:`, fallbackError);
+      }
+      
       res.status(500).json({ error: "Failed to fetch company data" });
     }
   });

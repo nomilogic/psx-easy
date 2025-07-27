@@ -20,6 +20,9 @@ export class CompanyService {
 
     for (const proxy of CORS_PROXIES) {
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
         const response = await fetch(`${proxy}${encodeURIComponent(url)}`, {
           headers: {
             "User-Agent":
@@ -27,7 +30,10 @@ export class CompanyService {
             Accept:
               "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
           },
+          signal: controller.signal,
         });
+        
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
