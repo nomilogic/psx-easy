@@ -81,7 +81,7 @@ export const companies = pgTable("companies", {
   registrar: text("registrar"),
   auditor: text("auditor"),
   fiscalYearEnd: text("fiscal_year_end"),
-  keyPeople: jsonb("key_people"),
+  keyPeople: jsonb("key_people"), // Key people data
   businessDescription: text("business_description"),
   lastUpdated: timestamp("last_updated").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
