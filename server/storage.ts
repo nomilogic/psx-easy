@@ -324,6 +324,8 @@ export class DatabaseStorage implements IStorage {
 
   async setCompany(companyData: CompanyData): Promise<void> {
     try {
+      console.log(`Attempting to save/update company data for ${companyData.symbol} in database`);
+      
       const insertData: InsertCompany = {
         symbol: companyData.symbol.toUpperCase(),
         name: companyData.name,
@@ -353,7 +355,7 @@ export class DatabaseStorage implements IStorage {
       };
 
       // Use upsert logic - insert or update if exists
-      await db
+      const result = await db
         .insert(companies)
         .values(insertData)
         .onConflictDoUpdate({
@@ -362,9 +364,12 @@ export class DatabaseStorage implements IStorage {
             ...insertData,
             lastUpdated: new Date(),
           },
-        });
+        })
+        .returning({ symbol: companies.symbol, lastUpdated: companies.lastUpdated });
+
+      console.log(`Successfully saved/updated company data for ${companyData.symbol}:`, result);
     } catch (error) {
-      console.error("Error updating company data:", error);
+      console.error(`Error updating company data for ${companyData.symbol}:`, error);
       throw error;
     }
   }
