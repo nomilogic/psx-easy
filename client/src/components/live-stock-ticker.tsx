@@ -28,11 +28,12 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
   };
 
   const filteredStocks = useMemo(() => {
-    if (!searchTerm) return stocks;
+    if (!searchTerm.trim()) return stocks;
+    const searchLower = searchTerm.toLowerCase().trim();
     return stocks.filter(stock => 
-      stock.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      stock.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      stock.sector.toLowerCase().includes(searchTerm.toLowerCase())
+      stock.symbol.toLowerCase().includes(searchLower) ||
+      stock.name.toLowerCase().includes(searchLower) ||
+      stock.sector.toLowerCase().includes(searchLower)
     );
   }, [stocks, searchTerm]);
 
@@ -61,7 +62,7 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="text-lg font-semibold text-slate-900">Live Stock Data</h3>
-              <p className="text-sm text-slate-600">Auto-refreshing every 30 seconds • {stocks.length} stocks</p>
+              <p className="text-sm text-slate-600">Auto-refreshing every 30 seconds • {searchTerm ? `${filteredStocks.length} of ${stocks.length}` : stocks.length} stocks</p>
             </div>
           </div>
           
@@ -73,7 +74,13 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+              autoComplete="off"
             />
+            {searchTerm && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-slate-500">
+                {filteredStocks.length} results
+              </div>
+            )}
           </div>
         </div>
         
@@ -104,10 +111,10 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
                     <div className="text-sm font-medium text-slate-900 font-mono">{formatPrice(stock.current)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="text-sm font-medium text-slate-900 font-mono">{formatPrice(stock.high)}</div>
+                    <div className="text-sm font-medium text-green-600 font-mono">{formatPrice(stock.high)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="text-sm font-medium text-slate-900 font-mono">{formatPrice(stock.low)}</div>
+                    <div className="text-sm font-medium text-red-600 font-mono">{formatPrice(stock.low)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <div className="flex items-center justify-end space-x-1">
