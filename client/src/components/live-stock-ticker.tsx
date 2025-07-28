@@ -1,13 +1,20 @@
-import { ArrowUp, ArrowDown, Search } from "lucide-react";
+import { ArrowUp, ArrowDown, Search, ChevronUp, ChevronDown } from "lucide-react";
 import { useState, useMemo } from "react";
+import { useLocation } from "wouter";
 import type { StockData } from "@shared/schema";
 
 interface LiveStockTickerProps {
   stocks: StockData[];
 }
 
+type SortKey = 'symbol' | 'name' | 'current' | 'high' | 'low' | 'change' | 'volume';
+type SortDirection = 'asc' | 'desc';
+
 export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>('volume');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [, setLocation] = useLocation();
   const formatPrice = (price: number) => {
     return `₨${price.toFixed(2)}`;
   };
@@ -27,15 +34,52 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
     return `${sign}${change.toFixed(2)} (${sign}${changePercent.toFixed(1)}%)`;
   };
 
-  const filteredStocks = useMemo(() => {
-    if (!searchTerm.trim()) return stocks;
-    const searchLower = searchTerm.toLowerCase().trim();
-    return stocks.filter(stock => 
-      stock.symbol.toLowerCase().includes(searchLower) ||
-      stock.name.toLowerCase().includes(searchLower) ||
-      stock.sector.toLowerCase().includes(searchLower)
-    );
-  }, [stocks, searchTerm]);
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDirection('desc');
+    }
+  };
+
+  const handleStockClick = (symbol: string) => {
+    setLocation(`/stock/${symbol}`);
+  };
+
+  const getSortIcon = (key: SortKey) => {
+    if (sortKey !== key) return null;
+    return sortDirection === 'asc' ? 
+      <ChevronUp className="w-4 h-4 inline-block ml-1" /> : 
+      <ChevronDown className="w-4 h-4 inline-block ml-1" />;
+  };
+
+  const filteredAndSortedStocks = useMemo(() => {
+    let filtered = stocks;
+    
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase().trim();
+      filtered = stocks.filter(stock => 
+        stock.symbol.toLowerCase().includes(searchLower) ||
+        stock.name.toLowerCase().includes(searchLower) ||
+        stock.sector.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return filtered.sort((a, b) => {
+      let aValue: any = a[sortKey];
+      let bValue: any = b[sortKey];
+
+      if (sortKey === 'symbol' || sortKey === 'name') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [stocks, searchTerm, sortKey, sortDirection]);
 
   if (stocks.length === 0) {
     return (
@@ -62,7 +106,7 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="text-lg font-semibold text-slate-900">Live Stock Data</h3>
-              <p className="text-sm text-slate-600">Auto-refreshing every 30 seconds • {searchTerm ? `${filteredStocks.length} of ${stocks.length}` : stocks.length} stocks</p>
+              <p className="text-sm text-slate-600">Auto-refreshing every 30 seconds • {searchTerm ? `${filteredAndSortedStocks.length} of ${stocks.length}` : stocks.length} stocks</p>
             </div>
           </div>
           
@@ -78,7 +122,7 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
             />
             {searchTerm && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-slate-500">
-                {filteredStocks.length} results
+                {filteredAndSortedStocks.length} results
               </div>
             )}
           </div>
@@ -88,18 +132,57 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Symbol</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Price</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">High</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Low</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Change</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Volume</th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
+                  onClick={() => handleSort('symbol')}
+                >
+                  Symbol {getSortIcon('symbol')}
+                </th>
+                <th 
+                  className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
+                  onClick={() => handleSort('name')}
+                >
+                  Name {getSortIcon('name')}
+                </th>
+                <th 
+                  className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
+                  onClick={() => handleSort('current')}
+                >
+                  Price {getSortIcon('current')}
+                </th>
+                <th 
+                  className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
+                  onClick={() => handleSort('high')}
+                >
+                  High {getSortIcon('high')}
+                </th>
+                <th 
+                  className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
+                  onClick={() => handleSort('low')}
+                >
+                  Low {getSortIcon('low')}
+                </th>
+                <th 
+                  className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
+                  onClick={() => handleSort('change')}
+                >
+                  Change {getSortIcon('change')}
+                </th>
+                <th 
+                  className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
+                  onClick={() => handleSort('volume')}
+                >
+                  Volume {getSortIcon('volume')}
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-200">
-              {filteredStocks.map((stock) => (
-                <tr key={stock.symbol} className="hover:bg-slate-50 transition-colors">
+              {filteredAndSortedStocks.map((stock) => (
+                <tr 
+                  key={stock.symbol} 
+                  className="hover:bg-slate-50 transition-colors cursor-pointer"
+                  onClick={() => handleStockClick(stock.symbol)}
+                >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-slate-900 font-mono">{stock.symbol}</div>
                   </td>
