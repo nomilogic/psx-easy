@@ -13,7 +13,7 @@ export default function StockDetail() {
   });
 
   const { data: company, isLoading: companyLoading } = useQuery({
-    queryKey: ['/api/companies', symbol],
+    queryKey: ['/api/company', symbol],
     enabled: !!symbol,
   });
 
