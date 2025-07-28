@@ -1,4 +1,5 @@
-import { ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUp, ArrowDown, Search } from "lucide-react";
+import { useState, useMemo } from "react";
 import type { StockData } from "@shared/schema";
 
 interface LiveStockTickerProps {
@@ -6,6 +7,7 @@ interface LiveStockTickerProps {
 }
 
 export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
+  const [searchTerm, setSearchTerm] = useState("");
   const formatPrice = (price: number) => {
     return `₨${price.toFixed(2)}`;
   };
@@ -24,6 +26,15 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
     const sign = change >= 0 ? '+' : '';
     return `${sign}${change.toFixed(2)} (${sign}${changePercent.toFixed(1)}%)`;
   };
+
+  const filteredStocks = useMemo(() => {
+    if (!searchTerm) return stocks;
+    return stocks.filter(stock => 
+      stock.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      stock.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      stock.sector.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [stocks, searchTerm]);
 
   if (stocks.length === 0) {
     return (
@@ -47,8 +58,23 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
     <section id="stocks" className="mb-8">
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
-          <h3 className="text-lg font-semibold text-slate-900">Live Stock Data</h3>
-          <p className="text-sm text-slate-600">Real-time updates via WebSocket</p>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">Live Stock Data</h3>
+              <p className="text-sm text-slate-600">Auto-refreshing every 30 seconds • {stocks.length} stocks</p>
+            </div>
+          </div>
+          
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+            <input
+              type="text"
+              placeholder="Search stocks by symbol, name, or sector..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+            />
+          </div>
         </div>
         
         <div className="overflow-x-auto">
@@ -58,13 +84,14 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Symbol</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Name</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Price</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">High</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Low</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Change</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Volume</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-200">
-              {stocks.slice(0, 20).map((stock) => (
+              {filteredStocks.map((stock) => (
                 <tr key={stock.symbol} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-slate-900 font-mono">{stock.symbol}</div>
@@ -74,9 +101,13 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
                     <div className="text-xs text-slate-500">{stock.sector}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="text-sm font-mono font-medium text-slate-900">
-                      {formatPrice(stock.current)}
-                    </div>
+                    <div className="text-sm font-medium text-slate-900 font-mono">{formatPrice(stock.current)}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="text-sm font-medium text-slate-900 font-mono">{formatPrice(stock.high)}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="text-sm font-medium text-slate-900 font-mono">{formatPrice(stock.low)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <div className="flex items-center justify-end space-x-1">
@@ -94,12 +125,6 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <div className="text-sm font-mono text-slate-900">{formatVolume(stock.volume)}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success/10 text-success">
-                      <div className="w-1.5 h-1.5 bg-success rounded-full mr-1 animate-pulse"></div>
-                      Live
-                    </span>
                   </td>
                 </tr>
               ))}

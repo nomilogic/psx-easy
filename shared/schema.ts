@@ -1,4 +1,3 @@
-
 import { z } from "zod";
 import {
   pgTable,
@@ -84,7 +83,7 @@ export const companies = pgTable("companies", {
   fiscalYearEnd: text("fiscal_year_end"),
   keyPeople: jsonb("key_people"),
   businessDescription: text("business_description"),
-  
+
   // Additional financial ratios
   roa: real("roa"),
   roe: real("roe"),
@@ -107,13 +106,13 @@ export const companies = pgTable("companies", {
   beta: real("beta"),
   payoutRatio: real("payout_ratio"),
   retentionRatio: real("retention_ratio"),
-  
+
   // Comprehensive data as JSON
   financialData: jsonb("financial_data"),
   ratiosData: jsonb("ratios_data"),
   payoutsData: jsonb("payouts_data"),
   announcements: jsonb("announcements"),
-  
+
   lastUpdated: timestamp("last_updated").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -290,9 +289,9 @@ export interface CompanyData {
   registrar?: string;
   auditor?: string;
   fiscalYearEnd?: string;
-  keyPeople?: Array<{name: string, role: string}>;
+  keyPeople?: Array<{ name: string; role: string }>;
   businessDescription?: string;
-  
+
   // Additional Financial Ratios
   roa?: number; // Return on Assets
   roe?: number; // Return on Equity
@@ -313,7 +312,7 @@ export interface CompanyData {
   enterpriseValue?: number;
   evToEbitda?: number;
   beta?: number;
-  
+
   // Dividend and Payout Information
   payoutRatio?: number;
   retentionRatio?: number;
@@ -322,7 +321,7 @@ export interface CompanyData {
     dividendPerShare: number;
     payoutRatio?: number;
   }>;
-  
+
   // Comprehensive Financial Data
   financialData?: Array<{
     year: string;
@@ -330,7 +329,7 @@ export interface CompanyData {
     profitAfterTax?: number;
     eps?: number;
   }>;
-  
+
   // Comprehensive Ratios Data
   ratiosData?: Array<{
     year: string;
@@ -339,7 +338,7 @@ export interface CompanyData {
     epsGrowth?: number;
     peg?: number;
   }>;
-  
+
   // Comprehensive Payouts Data
   payoutsData?: Array<{
     date: string;
@@ -347,13 +346,13 @@ export interface CompanyData {
     details?: string;
     bookClosure?: string;
   }>;
-  
+
   // Company Announcements by Category
   announcements?: {
     [category: string]: Array<{
       date: string;
       title: string;
-      hasDocument: boolean;
+      document: string;
     }>;
   };
 }
