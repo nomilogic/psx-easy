@@ -1,25 +1,40 @@
+import { eq, desc, and } from "drizzle-orm";
+import { db, supabase } from "./db";
 import {
+  stocksTable,
+  sectorsTable,
+  marketSummariesTable,
+  companiesTable,
+  stockTimeSeriesTable,
   type StockData,
   type SectorData,
-  type PerformersData,
+  type MarketSummary,
+  type CompanyData,
   type ChartTimeInterval,
   type SystemStatus,
-  type MarketSummary as LegacyMarketSummary,
-  type CompanyData,
-  stocks,
-  marketSummaries,
-  sectors,
-  stockTimeSeries,
-  companies,
-  type InsertStock,
-  type InsertMarketSummary,
-  type InsertSector,
-  type InsertStockTimeSeries,
-  type InsertCompany,
+  type PerformersData,
+  type StockTimeSeries,
 } from "@shared/schema";
-import { db } from "./db";
 import { PSXService } from "./services/psx-service";
-import { eq, desc } from "drizzle-orm";
+import {
+  type StockData as LegacyStockData,
+  type SectorData as LegacySectorData,
+  type PerformersData as LegacyPerformersData,
+  type ChartTimeInterval as LegacyChartTimeInterval,
+  type SystemStatus as LegacySystemStatus,
+  type MarketSummary as LegacyMarketSummary,
+  type CompanyData as LegacyCompanyData,
+  stocks as legacyStocks,
+  marketSummaries as legacyMarketSummaries,
+  sectors as legacySectors,
+  stockTimeSeries as legacyStockTimeSeries,
+  companies as legacyCompanies,
+  type InsertStock as LegacyInsertStock,
+  type InsertMarketSummary as LegacyInsertMarketSummary,
+  type InsertSector as LegacyInsertSector,
+  type InsertStockTimeSeries as LegacyInsertStockTimeSeries,
+  type InsertCompany as LegacyInsertCompany,
+} from "@shared/schema";
 
 export interface IStorage {
   // Market data methods
@@ -71,53 +86,50 @@ export class DatabaseStorage implements IStorage {
 
   async getMarketData(): Promise<StockData[]> {
     try {
-      // First try to get fresh data from PSX service
-      const result = await PSXService.fetchMarketData();
-      
-      if (result && result.length > 0) {
-        const mappedData = result.map((stock) => ({
-          symbol: stock.symbol,
-          name: stock.name,
-          sector: stock.sector,
-          ldcp: stock.ldcp,
-          open: stock.open,
-          high: stock.high,
-          low: stock.low,
-          current: stock.current,
-          change: stock.change,
-          changePercent: stock.changePercent,
-          volume: stock.volume,
-          isPositive: stock.isPositive,
-        }));
-        
-        // Store the fresh data in database for backup
-        await this.setMarketData(mappedData);
-        return mappedData;
+      // First try to get from PSX service
+      const psxData = await PSXService.fetchMarketData();
+      if (psxData && psxData.length > 0) {
+        console.log(`Got ${psxData.length} stocks from PSX service`);
+        // Store in database for caching
+        await this.setMarketData(psxData);
+        return psxData;
       }
     } catch (error) {
-      console.warn("PSX service failed, falling back to database data:", error);
+      console.error("PSX service failed, falling back to database data:", error);
     }
-    
-    // If PSX service fails, fall back to database data
-    return this.getMarketDataFromDatabase();
+
+    // Try database first
+    try {
+      return await this.getMarketDataFromDatabase();
+    } catch (dbError) {
+      console.error("Database failed, trying Supabase direct query:", dbError);
+      // Fallback to Supabase direct query
+      return this.getMarketDataFromSupabase();
+    }
   }
 
-  async getMarketDataFromDatabase(): Promise<StockData[]> {
-    const dbResult = await db.select().from(stocks);
-    return dbResult.map((stock) => ({
-      symbol: stock.symbol,
-      name: stock.name,
-      sector: stock.sector,
-      ldcp: stock.ldcp,
-      open: stock.open,
-      high: stock.high,
-      low: stock.low,
-      current: stock.current,
-      change: stock.change,
-      changePercent: stock.changePercent,
-      volume: stock.volume,
-      isPositive: stock.isPositive,
-    }));
+  private async getMarketDataFromDatabase(): Promise<StockData[]> {
+    const stocks = await db.select().from(stocksTable).orderBy(desc(stocksTable.volume));
+    return stocks;
+  }
+
+  private async getMarketDataFromSupabase(): Promise<StockData[]> {
+    try {
+      const { data, error } = await supabase
+        .from('stocks')
+        .select('*')
+        .order('volume', { ascending: false });
+
+      if (error) {
+        console.error("Supabase query error:", error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error("Supabase fallback failed:", error);
+      return [];
+    }
   }
 
   async setMarketData(data: StockData[]): Promise<void> {
@@ -127,10 +139,10 @@ export class DatabaseStorage implements IStorage {
       // Use transaction to ensure atomicity
       await db.transaction(async (tx) => {
         // Delete existing data
-        await tx.delete(stocks);
+        await tx.delete(stocksTable);
 
         // Insert new data using upsert to handle duplicates
-        const insertData: InsertStock[] = data.map((stock) => ({
+        const insertData: LegacyInsertStock[] = data.map((stock) => ({
           symbol: stock.symbol,
           name: stock.name,
           sector: stock.sector,
@@ -150,8 +162,8 @@ export class DatabaseStorage implements IStorage {
         for (let i = 0; i < insertData.length; i += batchSize) {
           const batch = insertData.slice(i, i + batchSize);
           for (const stock of batch) {
-            await tx.insert(stocks).values(stock).onConflictDoUpdate({
-              target: stocks.symbol,
+            await tx.insert(stocksTable).values(stock).onConflictDoUpdate({
+              target: stocksTable.symbol,
               set: {
                 name: stock.name,
                 sector: stock.sector,
@@ -177,25 +189,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMarketSummary(): Promise<LegacyMarketSummary | null> {
-    const result = await db
-      .select()
-      .from(marketSummaries)
-      .orderBy(desc(marketSummaries.createdAt))
-      .limit(1);
-    if (result.length === 0) return null;
+    try {
+      const summaries = await db
+        .select()
+        .from(marketSummariesTable)
+        .orderBy(desc(marketSummariesTable.timestamp))
+        .limit(1);
 
-    const summary = result[0];
-    return {
-      totalStocks: summary.totalStocks,
-      gainers: summary.gainers,
-      losers: summary.losers,
-      unchanged: summary.unchanged,
-      totalVolume: summary.totalVolume,
-    } as LegacyMarketSummary;
+      return summaries[0] || null;
+    } catch (error) {
+      console.error("Database failed for market summary, trying Supabase:", error);
+      try {
+        const { data, error: supabaseError } = await supabase
+          .from('market_summaries')
+          .select('*')
+          .order('timestamp', { ascending: false })
+          .limit(1);
+
+        if (supabaseError) {
+          console.error("Supabase market summary error:", supabaseError);
+          return null;
+        }
+
+        return data?.[0] || null;
+      } catch (supabaseErr) {
+        console.error("Supabase fallback failed for market summary:", supabaseErr);
+        return null;
+      }
+    }
   }
 
   async setMarketSummary(summary: LegacyMarketSummary): Promise<void> {
-    const insertData: InsertMarketSummary = {
+    const insertData: LegacyInsertMarketSummary = {
       totalStocks: summary.totalStocks,
       gainers: summary.gainers,
       losers: summary.losers,
@@ -203,14 +228,14 @@ export class DatabaseStorage implements IStorage {
       totalVolume: summary.totalVolume,
     };
 
-    await db.insert(marketSummaries).values(insertData);
+    await db.insert(marketSummariesTable).values(insertData);
   }
 
   async getStock(symbol: string): Promise<StockData | null> {
     const result = await db
       .select()
-      .from(stocks)
-      .where(eq(stocks.symbol, symbol));
+      .from(stocksTable)
+      .where(eq(stocksTable.symbol, symbol));
     if (result.length === 0) return null;
 
     const stock = result[0];
@@ -236,9 +261,9 @@ export class DatabaseStorage implements IStorage {
   ): Promise<any | null> {
     const result = await db
       .select()
-      .from(stockTimeSeries)
-      .where(eq(stockTimeSeries.symbol, symbol))
-      .orderBy(desc(stockTimeSeries.updatedAt))
+      .from(stockTimeSeriesTable)
+      .where(eq(stockTimeSeriesTable.symbol, symbol))
+      .orderBy(desc(stockTimeSeriesTable.updatedAt))
       .limit(1);
 
     if (result.length === 0) return null;
@@ -251,19 +276,19 @@ export class DatabaseStorage implements IStorage {
     data: any,
   ): Promise<void> {
     // Delete existing time series for this symbol and interval
-    await db.delete(stockTimeSeries).where(eq(stockTimeSeries.symbol, symbol));
+    await db.delete(stockTimeSeriesTable).where(eq(stockTimeSeriesTable.symbol, symbol));
 
-    const insertData: InsertStockTimeSeries = {
+    const insertData: LegacyInsertStockTimeSeries = {
       symbol,
       interval,
       data,
     };
 
-    await db.insert(stockTimeSeries).values(insertData);
+    await db.insert(stockTimeSeriesTable).values(insertData);
   }
 
   async getSectors(): Promise<SectorData[]> {
-    const result = await db.select().from(sectors);
+    const result = await db.select().from(sectorsTable);
     return result.map((sector) => ({
       name: sector.name,
       code: sector.code,
@@ -273,17 +298,17 @@ export class DatabaseStorage implements IStorage {
 
   async setSectors(sectorsData: SectorData[]): Promise<void> {
     // Delete existing data
-    await db.delete(sectors);
+    await db.delete(sectorsTable);
 
     // Insert new data
     if (sectorsData.length > 0) {
-      const insertData: InsertSector[] = sectorsData.map((sector) => ({
+      const insertData: LegacyInsertSector[] = sectorsData.map((sector) => ({
         name: sector.name,
         code: sector.code,
         volume: sector.volume,
       }));
 
-      await db.insert(sectors).values(insertData);
+      await db.insert(sectorsTable).values(insertData);
     }
   }
 
@@ -302,19 +327,19 @@ export class DatabaseStorage implements IStorage {
   async getCompany(symbol: string): Promise<CompanyData | null> {
     const upperSymbol = symbol.toUpperCase();
     console.log(`Searching database for company: ${upperSymbol}`);
-    
+
     const result = await db
       .select()
-      .from(companies)
-      .where(eq(companies.symbol, upperSymbol));
-    
+      .from(companiesTable)
+      .where(eq(companiesTable.symbol, upperSymbol));
+
     console.log(`Database query result for ${upperSymbol}: ${result.length} records found`);
-    
+
     if (result.length === 0) return null;
-    
+
     const company = result[0];
     console.log(`Found company in database: ${company.name} (${company.symbol})`);
-    
+
     return {
       symbol: company.symbol,
       name: company.name,
@@ -349,8 +374,8 @@ export class DatabaseStorage implements IStorage {
   async setCompany(companyData: CompanyData): Promise<void> {
     try {
       console.log(`Attempting to save/update company data for ${companyData.symbol} in database`);
-      
-      const insertData: InsertCompany = {
+
+      const insertData: LegacyInsertCompany = {
         symbol: companyData.symbol.toUpperCase(),
         name: companyData.name,
         sector: companyData.sector || null,
@@ -382,16 +407,16 @@ export class DatabaseStorage implements IStorage {
 
       // Use upsert logic - insert or update if exists
       const result = await db
-        .insert(companies)
+        .insert(companiesTable)
         .values(insertData)
         .onConflictDoUpdate({
-          target: companies.symbol,
+          target: companiesTable.symbol,
           set: {
             ...insertData,
             lastUpdated: new Date(),
           },
         })
-        .returning({ symbol: companies.symbol, lastUpdated: companies.lastUpdated });
+        .returning({ symbol: companiesTable.symbol, lastUpdated: companiesTable.lastUpdated });
 
       console.log(`Successfully saved/updated company data for ${companyData.symbol}:`, result);
     } catch (error) {
@@ -401,7 +426,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllCompanies(): Promise<CompanyData[]> {
-    const result = await db.select().from(companies);
+    const result = await db.select().from(companiesTable);
     return result.map((company) => ({
       symbol: company.symbol,
       name: company.name,
@@ -440,7 +465,7 @@ export class DatabaseStorage implements IStorage {
         const batchSize = 50;
         for (let i = 0; i < companiesData.length; i += batchSize) {
           const batch = companiesData.slice(i, i + batchSize);
-          const insertData: InsertCompany[] = batch.map((company) => ({
+          const insertData: LegacyInsertCompany[] = batch.map((company) => ({
             symbol: company.symbol.toUpperCase(),
             name: company.name,
             sector: company.sector || null,
@@ -470,10 +495,10 @@ export class DatabaseStorage implements IStorage {
 
           for (const company of insertData) {
             await tx
-              .insert(companies)
+              .insert(companiesTable)
               .values(company)
               .onConflictDoUpdate({
-                target: companies.symbol,
+                target: companiesTable.symbol,
                 set: {
                   ...company,
                   lastUpdated: new Date(),
