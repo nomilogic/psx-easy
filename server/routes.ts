@@ -262,6 +262,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Database inspection endpoint
+  app.get("/api/debug/db-counts", async (req, res) => {
+    try {
+      const stocks = await storage.getMarketData();
+      const marketSummary = await storage.getMarketSummary();
+      const sectors = await storage.getSectors();
+      const companies = await storage.getAllCompanies();
+      
+      res.json({
+        stocks: stocks.length,
+        marketSummary: marketSummary ? 'exists' : 'null',
+        sectors: sectors.length,
+        companies: companies.length,
+        lastFetchTime: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error checking database:", error);
+      res.status(500).json({ error: "Failed to check database" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket server setup
