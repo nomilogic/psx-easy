@@ -198,7 +198,7 @@ export class DatabaseStorage implements IStorage {
       const summaries = await db
         .select()
         .from(marketSummariesTable)
-        .orderBy(desc(marketSummariesTable.timestamp))
+        .orderBy(desc(marketSummariesTable.createdAt))
         .limit(1);
 
       return summaries[0] || null;
@@ -208,7 +208,7 @@ export class DatabaseStorage implements IStorage {
         const { data, error: supabaseError } = await supabase
           .from('market_summaries')
           .select('*')
-          .order('timestamp', { ascending: false })
+          .order('created_at', { ascending: false })
           .limit(1);
 
         if (supabaseError) {
