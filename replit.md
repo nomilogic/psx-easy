@@ -27,7 +27,7 @@ The application follows a monorepo structure with clearly separated frontend and
 ### Backend Architecture
 - **Framework**: Express.js with TypeScript
 - **Database**: PostgreSQL with Drizzle ORM
-- **Database Provider**: Neon Database (serverless PostgreSQL)
+- **Database Provider**: Supabase (PostgreSQL with real-time features)
 - **Real-time**: WebSocket server for live data streaming
 - **External Data**: PSX service for scraping stock market data
 - **Storage**: PostgreSQL database persistence with Drizzle ORM and type-safe database operations
@@ -84,7 +84,7 @@ The application follows a monorepo structure with clearly separated frontend and
 
 ### External Services
 - **Data Source**: Pakistan Stock Exchange (PSX) data scraping
-- **Database Hosting**: Neon Database for serverless PostgreSQL
+- **Database Hosting**: Supabase for PostgreSQL with real-time capabilities
 - **WebSocket Communication**: Real-time bidirectional client-server communication
 
 ## Deployment Strategy
@@ -116,6 +116,7 @@ The application follows a monorepo structure with clearly separated frontend and
 **Radix UI + shadcn/ui**: Provides accessible, unstyled components with a consistent design system, ensuring both accessibility and customization flexibility.
 
 ### Recent Updates (January 27, 2025)
+- **Database Migration**: Switched from Neon to Supabase for enhanced PostgreSQL features and better real-time capabilities
 - **Enhanced Search**: Added instant search functionality that filters stocks as you type
 - **Sortable Columns**: All table columns (symbol, name, price, high, low, change, volume) are now sortable
 - **Clickable Rows**: Stock table rows navigate to individual stock detail pages
