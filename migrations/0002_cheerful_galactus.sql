@@ -1,0 +1,24 @@
+ALTER TABLE "companies" DROP COLUMN "roa";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "roe";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "current_ratio";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "quick_ratio";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "cash_ratio";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "debt_to_equity";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "debt_ratio";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "equity_ratio";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "gross_profit_margin";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "net_profit_margin";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "operating_margin";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "asset_turnover";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "interest_coverage";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "working_capital";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "price_to_sales";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "price_to_cash_flow";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "enterprise_value";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "ev_to_ebitda";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "beta";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "payout_ratio";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "retention_ratio";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "financial_data";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "ratios_data";--> statement-breakpoint
+ALTER TABLE "companies" DROP COLUMN "payouts_data";
