@@ -83,41 +83,12 @@ export const companies = pgTable("companies", {
   fiscalYearEnd: text("fiscal_year_end"),
   keyPeople: jsonb("key_people"),
   businessDescription: text("business_description"),
-
-  // Additional financial ratios
-  roa: real("roa"),
-  roe: real("roe"),
-  currentRatio: real("current_ratio"),
-  quickRatio: real("quick_ratio"),
-  cashRatio: real("cash_ratio"),
-  debtToEquity: real("debt_to_equity"),
-  debtRatio: real("debt_ratio"),
-  equityRatio: real("equity_ratio"),
-  grossProfitMargin: real("gross_profit_margin"),
-  netProfitMargin: real("net_profit_margin"),
-  operatingMargin: real("operating_margin"),
-  assetTurnover: real("asset_turnover"),
-  interestCoverage: real("interest_coverage"),
-  workingCapital: real("working_capital"),
-  priceToSales: real("price_to_sales"),
-  priceToCashFlow: real("price_to_cash_flow"),
-  enterpriseValue: real("enterprise_value"),
-  evToEbitda: real("ev_to_ebitda"),
-  beta: real("beta"),
-  payoutRatio: real("payout_ratio"),
-  retentionRatio: real("retention_ratio"),
-
-  // Comprehensive data as JSON
-  financialData: jsonb("financial_data"),
-  ratiosData: jsonb("ratios_data"),
-  payoutsData: jsonb("payouts_data"),
   announcements: jsonb("announcements"),
-
   lastUpdated: timestamp("last_updated").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Zod Schemas
+// Create Zod schemas for validation
 export const insertStockSchema = createInsertSchema(stocks).omit({
   id: true,
   updatedAt: true,
