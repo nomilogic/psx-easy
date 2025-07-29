@@ -357,7 +357,7 @@ export class CompanyService {
       }
 
       // Extract CEO and key people information
-      const keyPeople: Array<{name: string, role: string}> = [];
+      const keyPeople: Array<{ name: string; role: string }> = [];
       $(".profile__item--people .tbl__body tr").each((_, row) => {
         const cells = $(row).find("td");
         if (cells.length >= 2) {
@@ -367,7 +367,10 @@ export class CompanyService {
           if (name && role) {
             keyPeople.push({ name, role });
 
-            if (role.toLowerCase().includes("ceo") || role.toLowerCase().includes("chief executive")) {
+            if (
+              role.toLowerCase().includes("ceo") ||
+              role.toLowerCase().includes("chief executive")
+            ) {
               companyData.ceo = name;
             }
           }
@@ -461,28 +464,50 @@ export class CompanyService {
           } else if (metric.includes("book value")) {
             const book = parseFloat(latestValue);
             if (!isNaN(book)) companyData.bookValue = book;
-          } else if (metric.includes("p/b ratio") || metric.includes("price to book")) {
+          } else if (
+            metric.includes("p/b ratio") ||
+            metric.includes("price to book")
+          ) {
             const pb = parseFloat(latestValue);
             if (!isNaN(pb)) companyData.pbRatio = pb;
-          } else if (metric.includes("p/e ratio") || metric.includes("price earnings")) {
+          } else if (
+            metric.includes("p/e ratio") ||
+            metric.includes("price earnings")
+          ) {
             const pe = parseFloat(latestValue);
             if (!isNaN(pe)) companyData.peRatio = pe;
-          } else if (metric.includes("roa") || metric.includes("return on assets")) {
+          } else if (
+            metric.includes("roa") ||
+            metric.includes("return on assets")
+          ) {
             const roa = parseFloat(latestValue);
             if (!isNaN(roa)) companyData.roa = roa;
-          } else if (metric.includes("roe") || metric.includes("return on equity")) {
+          } else if (
+            metric.includes("roe") ||
+            metric.includes("return on equity")
+          ) {
             const roe = parseFloat(latestValue);
             if (!isNaN(roe)) companyData.roe = roe;
           } else if (metric.includes("current ratio")) {
             const current = parseFloat(latestValue);
             if (!isNaN(current)) companyData.currentRatio = current;
-          } else if (metric.includes("debt to equity") || metric.includes("debt/equity")) {
+          } else if (
+            metric.includes("debt to equity") ||
+            metric.includes("debt/equity")
+          ) {
             const debtEquity = parseFloat(latestValue);
             if (!isNaN(debtEquity)) companyData.debtToEquity = debtEquity;
-          } else if (metric.includes("gross profit margin") || metric.includes("gross margin")) {
+          } else if (
+            metric.includes("gross profit margin") ||
+            metric.includes("gross margin")
+          ) {
             const grossMargin = parseFloat(latestValue);
-            if (!isNaN(grossMargin)) companyData.grossProfitMargin = grossMargin;
-          } else if (metric.includes("net profit margin") || metric.includes("net margin")) {
+            if (!isNaN(grossMargin))
+              companyData.grossProfitMargin = grossMargin;
+          } else if (
+            metric.includes("net profit margin") ||
+            metric.includes("net margin")
+          ) {
             const netMargin = parseFloat(latestValue);
             if (!isNaN(netMargin)) companyData.netProfitMargin = netMargin;
           } else if (metric.includes("operating margin")) {
@@ -490,7 +515,8 @@ export class CompanyService {
             if (!isNaN(opMargin)) companyData.operatingMargin = opMargin;
           } else if (metric.includes("asset turnover")) {
             const assetTurnover = parseFloat(latestValue);
-            if (!isNaN(assetTurnover)) companyData.assetTurnover = assetTurnover;
+            if (!isNaN(assetTurnover))
+              companyData.assetTurnover = assetTurnover;
           } else if (metric.includes("quick ratio")) {
             const quickRatio = parseFloat(latestValue);
             if (!isNaN(quickRatio)) companyData.quickRatio = quickRatio;
@@ -502,7 +528,9 @@ export class CompanyService {
       });
 
       // Extract dividend and payout information
-      $(".company__dividends .tbl__body tr, .dividend__history .tbl__body tr").each((_, row) => {
+      $(
+        ".company__dividends .tbl__body tr, .dividend__history .tbl__body tr",
+      ).each((_, row) => {
         const cells = $(row).find("td");
         if (cells.length >= 3) {
           const year = $(cells[0]).text().trim();
@@ -514,58 +542,80 @@ export class CompanyService {
             companyData.dividendHistory.push({
               year,
               dividendPerShare,
-              payoutRatio: !isNaN(payoutRatio) ? payoutRatio : undefined
+              payoutRatio: !isNaN(payoutRatio) ? payoutRatio : undefined,
             });
           }
         }
       });
 
       // Extract comprehensive financial data from financials section
-      const financialData: Array<{year: string, sales?: number, profitAfterTax?: number, eps?: number}> = [];
+      const financialData: Array<{
+        year: string;
+        sales?: number;
+        profitAfterTax?: number;
+        eps?: number;
+      }> = [];
 
       // Annual financials
-      $("#financials .tabs__panel[data-name='Annual'] table tbody tr").each((_, row) => {
-        const cells = $(row).find("td");
-        if (cells.length >= 2) {
-          const metric = $(cells[0]).text().trim().toLowerCase();
+      $("#financials .tabs__panel[data-name='Annual'] table tbody tr").each(
+        (_, row) => {
+          const cells = $(row).find("td");
+          if (cells.length >= 2) {
+            const metric = $(cells[0]).text().trim().toLowerCase();
 
-          // Extract years from header if not done
-          if (financialData.length === 0) {
-            const headers = $(row).closest("table").find("thead th");
-            headers.each((index, header) => {
-              if (index > 0) { // Skip first column which is metric name
-                const year = $(header).text().trim();
-                if (year) {
-                  financialData.push({ year });
+            // Extract years from header if not done
+            if (financialData.length === 0) {
+              const headers = $(row).closest("table").find("thead th");
+              headers.each((index, header) => {
+                if (index > 0) {
+                  // Skip first column which is metric name
+                  const year = $(header).text().trim();
+                  if (year) {
+                    financialData.push({ year });
+                  }
                 }
-              }
-            });
-          }
+              });
+            }
 
-          // Extract financial metrics for each year
-          for (let i = 1; i < cells.length && i - 1 < financialData.length; i++) {
-            const value = $(cells[i]).text().trim().replace(/[(),]/g, "").replace(/,/g, "");
-            const numValue = parseFloat(value);
+            // Extract financial metrics for each year
+            for (
+              let i = 1;
+              i < cells.length && i - 1 < financialData.length;
+              i++
+            ) {
+              const value = $(cells[i])
+                .text()
+                .trim()
+                .replace(/[(),]/g, "")
+                .replace(/,/g, "");
+              const numValue = parseFloat(value);
 
-            if (!isNaN(numValue)) {
-              if (metric.includes("sales")) {
-                financialData[i - 1].sales = numValue;
-              } else if (metric.includes("profit after taxation")) {
-                financialData[i - 1].profitAfterTax = numValue;
-              } else if (metric === "eps") {
-                financialData[i - 1].eps = numValue;
+              if (!isNaN(numValue)) {
+                if (metric.includes("sales")) {
+                  financialData[i - 1].sales = numValue;
+                } else if (metric.includes("profit after taxation")) {
+                  financialData[i - 1].profitAfterTax = numValue;
+                } else if (metric === "eps") {
+                  financialData[i - 1].eps = numValue;
+                }
               }
             }
           }
-        }
-      });
+        },
+      );
 
       if (financialData.length > 0) {
         companyData.financialData = financialData;
       }
 
       // Extract ratios data
-      const ratiosData: Array<{year: string, grossProfitMargin?: number, netProfitMargin?: number, epsGrowth?: number, peg?: number}> = [];
+      const ratiosData: Array<{
+        year: string;
+        grossProfitMargin?: number;
+        netProfitMargin?: number;
+        epsGrowth?: number;
+        peg?: number;
+      }> = [];
 
       $("#ratios .tbl__body tr").each((_, row) => {
         const cells = $(row).find("td");
@@ -587,7 +637,11 @@ export class CompanyService {
 
           // Extract ratio metrics for each year
           for (let i = 1; i < cells.length && i - 1 < ratiosData.length; i++) {
-            const value = $(cells[i]).text().trim().replace(/[()%]/g, "").replace(/,/g, "");
+            const value = $(cells[i])
+              .text()
+              .trim()
+              .replace(/[()%]/g, "")
+              .replace(/,/g, "");
             const numValue = parseFloat(value);
 
             if (!isNaN(numValue)) {
@@ -610,7 +664,12 @@ export class CompanyService {
       }
 
       // Enhanced dividend and payout extraction from payouts section
-      const payoutsData: Array<{date: string, financialResults?: string, details?: string, bookClosure?: string}> = [];
+      const payoutsData: Array<{
+        date: string;
+        financialResults?: string;
+        details?: string;
+        bookClosure?: string;
+      }> = [];
 
       $("#payouts .tbl__body tr").each((_, row) => {
         const cells = $(row).find("td");
@@ -618,14 +677,15 @@ export class CompanyService {
           const date = $(cells[0]).text().trim();
           const financialResults = $(cells[1]).text().trim();
           const details = $(cells[2]).text().trim();
-          const bookClosure = cells.length > 3 ? $(cells[3]).text().trim() : undefined;
+          const bookClosure =
+            cells.length > 3 ? $(cells[3]).text().trim() : undefined;
 
           if (date) {
             payoutsData.push({
               date,
               financialResults: financialResults || undefined,
               details: details || undefined,
-              bookClosure
+              bookClosure,
             });
           }
         }
@@ -635,124 +695,90 @@ export class CompanyService {
         companyData.payoutsData = payoutsData;
       }
 
-      // Extract announcements by category - look for various heading types
-      const announcementSections = $('h3, h4, h5, .section-heading').filter((_, el) => {
-        const text = $(el).text().trim().toLowerCase();
-        return text.includes('announcement') || 
-               text.includes('corporate action') || 
-               text.includes('financial result') ||
-               text.includes('dividend') ||
-               text.includes('rights') ||
-               text.includes('notice') ||
-               text.includes('disclosure') ||
-               text.includes('agm') ||
-               text.includes('egm') ||
-               text.includes('board meeting');
-      });
+      // Extract announcements data by category
+      const announcements: {
+        [key: string]: Array<{ date: string; title: string; document: string }>;
+      } = {};
 
-      console.log(`Found ${announcementSections.length} announcement sections for ${symbol}`);
+      $("#announcements .tabs__panel").each((_, panel) => {
+        const panelName = $(panel).attr("data-name");
+        if (panelName) {
+          const categoryAnnouncements: Array<{
+            date: string;
+            title: string;
+            document: string;
+          }> = [];
 
-      const announcements: { [category: string]: Array<{ date: string; title: string; documentUrl?: string }> } = {};
+          $(panel)
+            .find(".tbl__body tr")
+            .each((_, row) => {
+              const cells = $(row).find("td");
+              if (cells.length >= 2) {
+                const date = $(cells[0]).text().trim();
+                const title = $(cells[1]).text().trim();
+                const document =
+                  this.BASE_URL + $($(cells[2]).find("a")[1]).attr("href") ||
+                  "";
 
-      announcementSections.each((_, section) => {
-        const categoryTitle = $(section).text().trim();
-        const table = $(section).next('table');
-
-        if (table.length > 0) {
-          const categoryAnnouncements: Array<{ date: string; title: string; documentUrl?: string }> = [];
-
-          table.find('tbody tr').each((_, row) => {
-            const cells = $(row).find('td');
-            if (cells.length >= 2) {
-              const date = $(cells[0]).text().trim();
-              const titleCell = $(cells[1]);
-              const title = titleCell.text().trim();
-              
-              // Look for any link in the title cell
-              const documentLink = titleCell.find('a').first();
-              let documentUrl: string | undefined;
-
-              if (documentLink.length > 0) {
-                const href = documentLink.attr('href');
-                if (href) {
-                  // Convert relative URLs to absolute URLs
-                  documentUrl = href.startsWith('http') 
-                    ? href 
-                    : href.startsWith('/') 
-                      ? `https://dps.psx.com.pk${href}`
-                      : `https://dps.psx.com.pk/${href}`;
+                if (date && title) {
+                  categoryAnnouncements.push({ date, title, document });
                 }
               }
-
-              if (date && title) {
-                const announcement: { date: string; title: string; documentUrl?: string } = {
-                  date,
-                  title
-                };
-
-                if (documentUrl) {
-                  announcement.documentUrl = documentUrl;
-                }
-
-                categoryAnnouncements.push(announcement);
-              }
-            }
-          });
+            });
 
           if (categoryAnnouncements.length > 0) {
-            announcements[categoryTitle] = categoryAnnouncements;
+            announcements[panelName] = categoryAnnouncements;
           }
         }
       });
 
       if (Object.keys(announcements).length > 0) {
         companyData.announcements = announcements;
-        console.log(`Extracted announcements for ${symbol}:`, Object.keys(announcements).length, 'categories');
-        
-        // Debug: log first few announcements
-        Object.entries(announcements).forEach(([category, items]) => {
-          console.log(`Category "${category}": ${items.length} announcements`);
-          if (items.length > 0) {
-            console.log(`Sample announcement:`, items[0]);
-          }
-        });
       }
 
       // Extract additional financial metrics from any remaining financial tables
-      $(".financials .tbl__body tr, .financial__ratios .tbl__body tr").each((_, row) => {
-        const cells = $(row).find("td");
-        if (cells.length >= 2) {
-          const metric = $(cells[0]).text().trim().toLowerCase();
-          const value = $(cells[1]).text().trim().replace(/,/g, "");
-          const numValue = parseFloat(value);
+      $(".financials .tbl__body tr, .financial__ratios .tbl__body tr").each(
+        (_, row) => {
+          const cells = $(row).find("td");
+          if (cells.length >= 2) {
+            const metric = $(cells[0]).text().trim().toLowerCase();
+            const value = $(cells[1]).text().trim().replace(/,/g, "");
+            const numValue = parseFloat(value);
 
-          if (!isNaN(numValue)) {
-            if (metric.includes("payout ratio")) {
-              companyData.payoutRatio = numValue;
-            } else if (metric.includes("retention ratio")) {
-              companyData.retentionRatio = numValue;
-            } else if (metric.includes("interest coverage")) {
-              companyData.interestCoverage = numValue;
-            } else if (metric.includes("debt ratio")) {
-              companyData.debtRatio = numValue;
-            } else if (metric.includes("equity ratio")) {
-              companyData.equityRatio = numValue;
-            } else if (metric.includes("working capital")) {
-              companyData.workingCapital = numValue;
-            } else if (metric.includes("price to sales") || metric.includes("p/s ratio")) {
-              companyData.priceToSales = numValue;
-            } else if (metric.includes("price to cash flow") || metric.includes("p/cf ratio")) {
-              companyData.priceToCashFlow = numValue;
-            } else if (metric.includes("enterprise value")) {
-              companyData.enterpriseValue = numValue;
-            } else if (metric.includes("ev/ebitda")) {
-              companyData.evToEbitda = numValue;
-            } else if (metric.includes("beta")) {
-              companyData.beta = numValue;
+            if (!isNaN(numValue)) {
+              if (metric.includes("payout ratio")) {
+                companyData.payoutRatio = numValue;
+              } else if (metric.includes("retention ratio")) {
+                companyData.retentionRatio = numValue;
+              } else if (metric.includes("interest coverage")) {
+                companyData.interestCoverage = numValue;
+              } else if (metric.includes("debt ratio")) {
+                companyData.debtRatio = numValue;
+              } else if (metric.includes("equity ratio")) {
+                companyData.equityRatio = numValue;
+              } else if (metric.includes("working capital")) {
+                companyData.workingCapital = numValue;
+              } else if (
+                metric.includes("price to sales") ||
+                metric.includes("p/s ratio")
+              ) {
+                companyData.priceToSales = numValue;
+              } else if (
+                metric.includes("price to cash flow") ||
+                metric.includes("p/cf ratio")
+              ) {
+                companyData.priceToCashFlow = numValue;
+              } else if (metric.includes("enterprise value")) {
+                companyData.enterpriseValue = numValue;
+              } else if (metric.includes("ev/ebitda")) {
+                companyData.evToEbitda = numValue;
+              } else if (metric.includes("beta")) {
+                companyData.beta = numValue;
+              }
             }
           }
-        }
-      });
+        },
+      );
 
       // Extract EPS from financials section
       $(".company__financials .tbl__body tr").each((_, row) => {
@@ -803,7 +829,11 @@ export class CompanyService {
 
       // Extract phone number
       const phoneElement = $(".profile__item .item__head")
-        .filter((_, el) => $(el).text().trim().includes("PHONE") || $(el).text().trim().includes("TEL"))
+        .filter(
+          (_, el) =>
+            $(el).text().trim().includes("PHONE") ||
+            $(el).text().trim().includes("TEL"),
+        )
         .next("p");
       if (phoneElement.length) {
         companyData.phone = phoneElement.text().trim();

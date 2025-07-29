@@ -1,4 +1,3 @@
-
 import { z } from "zod";
 import {
   pgTable,
@@ -6,7 +5,6 @@ import {
   text,
   real,
   integer,
-  bigint,
   boolean,
   timestamp,
   jsonb,
@@ -27,7 +25,7 @@ export const stocks = pgTable("stocks", {
   current: real("current").notNull(),
   change: real("change").notNull(),
   changePercent: real("change_percent").notNull(),
-  volume: bigint("volume", { mode: "number" }).notNull(),
+  volume: integer("volume").notNull(),
   isPositive: boolean("is_positive").notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -38,7 +36,7 @@ export const marketSummaries = pgTable("market_summaries", {
   gainers: integer("gainers").notNull(),
   losers: integer("losers").notNull(),
   unchanged: integer("unchanged").notNull(),
-  totalVolume: bigint("total_volume", { mode: "number" }).notNull(),
+  totalVolume: integer("total_volume").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -46,7 +44,7 @@ export const sectors = pgTable("sectors", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   code: text("code").notNull().unique(),
-  volume: bigint("volume", { mode: "number" }).notNull(),
+  volume: integer("volume").notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
@@ -69,7 +67,7 @@ export const companies = pgTable("companies", {
   address: text("address"),
   ceo: text("ceo"),
   marketCap: real("market_cap"),
-  sharesOutstanding: bigint("shares_outstanding", { mode: "number" }),
+  sharesOutstanding: integer("shares_outstanding"),
   peRatio: real("pe_ratio"),
   pbRatio: real("pb_ratio"),
   dividendYield: real("dividend_yield"),
@@ -85,7 +83,7 @@ export const companies = pgTable("companies", {
   fiscalYearEnd: text("fiscal_year_end"),
   keyPeople: jsonb("key_people"),
   businessDescription: text("business_description"),
-  
+
   // Additional financial ratios
   roa: real("roa"),
   roe: real("roe"),
@@ -100,21 +98,21 @@ export const companies = pgTable("companies", {
   operatingMargin: real("operating_margin"),
   assetTurnover: real("asset_turnover"),
   interestCoverage: real("interest_coverage"),
-  workingCapital: bigint("working_capital", { mode: "number" }),
+  workingCapital: real("working_capital"),
   priceToSales: real("price_to_sales"),
   priceToCashFlow: real("price_to_cash_flow"),
-  enterpriseValue: bigint("enterprise_value", { mode: "number" }),
+  enterpriseValue: real("enterprise_value"),
   evToEbitda: real("ev_to_ebitda"),
   beta: real("beta"),
   payoutRatio: real("payout_ratio"),
   retentionRatio: real("retention_ratio"),
-  
+
   // Comprehensive data as JSON
   financialData: jsonb("financial_data"),
   ratiosData: jsonb("ratios_data"),
   payoutsData: jsonb("payouts_data"),
   announcements: jsonb("announcements"),
-  
+
   lastUpdated: timestamp("last_updated").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -291,9 +289,9 @@ export interface CompanyData {
   registrar?: string;
   auditor?: string;
   fiscalYearEnd?: string;
-  keyPeople?: Array<{name: string, role: string}>;
+  keyPeople?: Array<{ name: string; role: string }>;
   businessDescription?: string;
-  
+
   // Additional Financial Ratios
   roa?: number; // Return on Assets
   roe?: number; // Return on Equity
@@ -314,7 +312,7 @@ export interface CompanyData {
   enterpriseValue?: number;
   evToEbitda?: number;
   beta?: number;
-  
+
   // Dividend and Payout Information
   payoutRatio?: number;
   retentionRatio?: number;
@@ -323,7 +321,7 @@ export interface CompanyData {
     dividendPerShare: number;
     payoutRatio?: number;
   }>;
-  
+
   // Comprehensive Financial Data
   financialData?: Array<{
     year: string;
@@ -331,7 +329,7 @@ export interface CompanyData {
     profitAfterTax?: number;
     eps?: number;
   }>;
-  
+
   // Comprehensive Ratios Data
   ratiosData?: Array<{
     year: string;
@@ -340,7 +338,7 @@ export interface CompanyData {
     epsGrowth?: number;
     peg?: number;
   }>;
-  
+
   // Comprehensive Payouts Data
   payoutsData?: Array<{
     date: string;
@@ -348,13 +346,13 @@ export interface CompanyData {
     details?: string;
     bookClosure?: string;
   }>;
-  
+
   // Company Announcements by Category
   announcements?: {
     [category: string]: Array<{
       date: string;
       title: string;
-      documentUrl?: string;
+      document: string;
     }>;
   };
 }

@@ -4,7 +4,6 @@ import MarketOverview from "@/components/market-overview";
 import LiveStockTicker from "@/components/live-stock-ticker";
 import ApiDocumentation from "@/components/api-documentation";
 import WebSocketInfo from "@/components/websocket-info";
-import SystemStatus from "@/components/system-status";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { ChartLine, Wifi, WifiOff } from "lucide-react";
 import type { StockData, MarketSummary } from "@shared/schema";
@@ -13,27 +12,44 @@ export default function Dashboard() {
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const { isConnected, marketData, marketSummary } = useWebSocket();
 
-  // Fallback queries in case WebSocket is not connected
+  // Fallback queries with 30-second auto-refresh
   const { data: fallbackStocks } = useQuery({
     queryKey: ['/api/stocks'],
     enabled: !isConnected,
     refetchInterval: 30000,
+    staleTime: 25000,
   });
 
   const { data: fallbackSummary } = useQuery({
     queryKey: ['/api/market/overview'],
     enabled: !isConnected,
     refetchInterval: 30000,
+    staleTime: 25000,
   });
 
-  const stocks: StockData[] = marketData || fallbackStocks || [];
-  const summary: MarketSummary | null = marketSummary || fallbackSummary || null;
+  // Additional query for auto-refresh when WebSocket is connected
+  const { data: refreshStocks } = useQuery({
+    queryKey: ['/api/stocks'],
+    enabled: isConnected,
+    refetchInterval: 30000,
+    staleTime: 25000,
+  });
+
+  const { data: refreshSummary } = useQuery({
+    queryKey: ['/api/market/overview'],
+    enabled: isConnected,
+    refetchInterval: 30000,
+    staleTime: 25000,
+  });
+
+  const stocks: StockData[] = marketData || refreshStocks || fallbackStocks || [];
+  const summary: MarketSummary | null = marketSummary || refreshSummary || fallbackSummary || null;
 
   useEffect(() => {
-    if (marketData || marketSummary) {
+    if (marketData || marketSummary || refreshStocks || refreshSummary) {
       setLastUpdate(new Date());
     }
-  }, [marketData, marketSummary]);
+  }, [marketData, marketSummary, refreshStocks, refreshSummary]);
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('en-US', {
@@ -88,7 +104,6 @@ export default function Dashboard() {
         <LiveStockTicker stocks={stocks} />
         <ApiDocumentation />
         <WebSocketInfo />
-        <SystemStatus />
       </div>
 
       <footer className="bg-white border-t border-slate-200 mt-12">
