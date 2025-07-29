@@ -4,8 +4,8 @@
 
 This is a full-stack web application that provides real-time Pakistan Stock Exchange (PSX) market data through a React frontend and Express.js backend. The application features live stock tickers, market summaries, WebSocket real-time updates, and a comprehensive API for financial data.
 
-**Status**: ✅ Fully functional with PostgreSQL database persistence, live PSX data, sorting, search, and navigation features
-**Last Updated**: January 27, 2025
+**Status**: ✅ Fully functional with PostgreSQL database persistence and demonstration data
+**Last Updated**: January 26, 2025
 
 ## User Preferences
 
@@ -48,9 +48,9 @@ The application follows a monorepo structure with clearly separated frontend and
 
 ### Frontend Components
 - **Market Overview**: Dashboard displaying market summary statistics
-- **Live Stock Ticker**: Real-time stock price updates with instant search and sortable columns
-- **Stock Detail Pages**: Individual stock pages with comprehensive company information
+- **Live Stock Ticker**: Real-time stock price updates with WebSocket
 - **API Documentation**: Interactive documentation with endpoint testing
+- **System Status**: Server health and performance metrics display
 - **WebSocket Info**: Connection status and real-time data management
 
 ## Data Flow
@@ -114,11 +114,3 @@ The application follows a monorepo structure with clearly separated frontend and
 **TanStack Query**: Chosen for sophisticated caching, background updates, and optimistic updates, reducing server load and improving user experience.
 
 **Radix UI + shadcn/ui**: Provides accessible, unstyled components with a consistent design system, ensuring both accessibility and customization flexibility.
-
-### Recent Updates (January 27, 2025)
-- **Enhanced Search**: Added instant search functionality that filters stocks as you type
-- **Sortable Columns**: All table columns (symbol, name, price, high, low, change, volume) are now sortable
-- **Clickable Rows**: Stock table rows navigate to individual stock detail pages
-- **Stock Detail Pages**: Complete company information pages with financial metrics, key people, and announcements
-- **High/Low Columns**: Added visual High and Low price columns with color coding
-- **Improved Navigation**: Seamless navigation between dashboard and stock details using wouter routing

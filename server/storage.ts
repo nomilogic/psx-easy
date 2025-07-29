@@ -341,8 +341,6 @@ export class DatabaseStorage implements IStorage {
       fiscalYearEnd: company.fiscalYearEnd || undefined,
       keyPeople: company.keyPeople as Array<{name: string, role: string}> || undefined,
       businessDescription: company.businessDescription || undefined,
-      // Include announcements data
-      announcements: company.announcements as { [category: string]: Array<{ date: string; title: string; documentUrl?: string }> } || undefined,
     };
   }
 
@@ -376,8 +374,6 @@ export class DatabaseStorage implements IStorage {
         fiscalYearEnd: companyData.fiscalYearEnd || null,
         keyPeople: companyData.keyPeople || null,
         businessDescription: companyData.businessDescription || null,
-        // Include announcements
-        announcements: (companyData as any).announcements || null,
       };
 
       // Use upsert logic - insert or update if exists
