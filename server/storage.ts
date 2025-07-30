@@ -1,4 +1,4 @@
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import { db, supabase } from "./db";
 import {
   stocks as stocksTable,
@@ -160,20 +160,11 @@ export class DatabaseStorage implements IStorage {
     if (data.length === 0) return;
 
     try {
-      // Use smaller batches and faster operations
-      const batchSize = 50;
+      // Use much smaller batches and faster operations
+      const batchSize = 20; // Reduced from 50 to 20
       
-      // First, try to delete old data (with timeout handling)
-      try {
-        await Promise.race([
-          db.delete(stocksTable),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Delete timeout')), 5000)
-          )
-        ]);
-      } catch (deleteError) {
-        console.warn("Delete operation failed or timed out, continuing with upsert:", deleteError);
-      }
+      // Skip delete operation to avoid locks, use upsert instead
+      console.log(`Starting to upsert ${data.length} stocks in batches of ${batchSize}`);
 
       // Insert new data in smaller batches
       const insertData: LegacyInsertStock[] = data.map((stock) => ({
@@ -191,56 +182,95 @@ export class DatabaseStorage implements IStorage {
         isPositive: stock.isPositive,
       }));
 
-      // Process in smaller batches with timeout protection
+      // Process in smaller batches with shorter timeout and better error handling
+      let successCount = 0;
       for (let i = 0; i < insertData.length; i += batchSize) {
         const batch = insertData.slice(i, i + batchSize);
         
         try {
           await Promise.race([
-            this.insertBatch(batch),
+            this.insertBatchOptimized(batch),
             new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Batch timeout')), 8000)
+              setTimeout(() => reject(new Error('Batch timeout')), 3000) // Reduced timeout
             )
           ]);
           
-          // Small delay between batches to prevent overwhelming the DB
+          successCount += batch.length;
+          
+          // Smaller delay between batches
           if (i + batchSize < insertData.length) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 50));
           }
         } catch (batchError) {
           console.warn(`Batch ${i}-${i + batchSize} failed:`, batchError);
-          // Continue with next batch instead of failing completely
+          // Try individual inserts for failed batch
+          await this.insertIndividually(batch);
         }
       }
+      
+      console.log(`Successfully processed ${successCount}/${data.length} stocks`);
     } catch (error) {
       console.error("Error updating market data:", error);
       // Don't throw error to prevent cascading failures
     }
   }
 
-  private async insertBatch(batch: LegacyInsertStock[]): Promise<void> {
-    // Use a more efficient bulk insert approach
+  private async insertBatchOptimized(batch: LegacyInsertStock[]): Promise<void> {
+    // Use single bulk insert with conflict resolution
+    await db
+      .insert(stocksTable)
+      .values(batch)
+      .onConflictDoUpdate({
+        target: stocksTable.symbol,
+        set: {
+          name: sql.raw('EXCLUDED.name'),
+          sector: sql.raw('EXCLUDED.sector'),
+          ldcp: sql.raw('EXCLUDED.ldcp'),
+          open: sql.raw('EXCLUDED.open'),
+          high: sql.raw('EXCLUDED.high'),
+          low: sql.raw('EXCLUDED.low'),
+          current: sql.raw('EXCLUDED.current'),
+          change: sql.raw('EXCLUDED.change'),
+          changePercent: sql.raw('EXCLUDED.change_percent'),
+          volume: sql.raw('EXCLUDED.volume'),
+          isPositive: sql.raw('EXCLUDED.is_positive'),
+          updatedAt: new Date(),
+        },
+      });
+  }
+
+  private async insertIndividually(batch: LegacyInsertStock[]): Promise<void> {
+    // Fallback method for failed batches - insert one by one
     for (const stock of batch) {
-      await db
-        .insert(stocksTable)
-        .values(stock)
-        .onConflictDoUpdate({
-          target: stocksTable.symbol,
-          set: {
-            name: stock.name,
-            sector: stock.sector,
-            ldcp: stock.ldcp,
-            open: stock.open,
-            high: stock.high,
-            low: stock.low,
-            current: stock.current,
-            change: stock.change,
-            changePercent: stock.changePercent,
-            volume: stock.volume,
-            isPositive: stock.isPositive,
-            updatedAt: new Date(),
-          },
-        });
+      try {
+        await Promise.race([
+          db
+            .insert(stocksTable)
+            .values(stock)
+            .onConflictDoUpdate({
+              target: stocksTable.symbol,
+              set: {
+                name: stock.name,
+                sector: stock.sector,
+                ldcp: stock.ldcp,
+                open: stock.open,
+                high: stock.high,
+                low: stock.low,
+                current: stock.current,
+                change: stock.change,
+                changePercent: stock.changePercent,
+                volume: stock.volume,
+                isPositive: stock.isPositive,
+                updatedAt: new Date(),
+              },
+            }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Individual insert timeout')), 1000)
+          )
+        ]);
+      } catch (error) {
+        console.warn(`Failed to insert individual stock ${stock.symbol}:`, error);
+      }
     }
   }
 
