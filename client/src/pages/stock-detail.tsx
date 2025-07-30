@@ -1,11 +1,18 @@
+
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ArrowUp, ArrowDown, TrendingUp, TrendingDown, Building2, Globe, Phone, MapPin, User, Calendar, DollarSign, BarChart3, PieChart } from "lucide-react";
+import { ArrowLeft, ArrowUp, ArrowDown, TrendingUp, TrendingDown, Building2, Globe, Phone, MapPin, User, Calendar, DollarSign, BarChart3, PieChart, FileText, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
 
 import type { StockData, CompanyData } from "@shared/schema";
 
 export default function StockDetail() {
   const { symbol } = useParams<{ symbol: string }>();
+  const [activeAnnouncementTab, setActiveAnnouncementTab] = useState<string>("");
+  const [announcementPage, setAnnouncementPage] = useState<{[key: string]: number}>({});
+  const [payoutsPage, setPayoutsPage] = useState(1);
+  
+  const ITEMS_PER_PAGE = 5;
 
   const { data: stock, isLoading: stockLoading } = useQuery({
     queryKey: ['/api/stocks'],
@@ -19,6 +26,14 @@ export default function StockDetail() {
 
   const stockData = (stock as StockData[])?.find((s: StockData) => s.symbol === symbol?.toUpperCase());
   const companyData = company as CompanyData;
+
+  // Set default active tab when announcements data loads
+  if (companyData?.announcements && activeAnnouncementTab === "") {
+    const categories = Object.keys(companyData.announcements);
+    if (categories.length > 0) {
+      setActiveAnnouncementTab(categories[0]);
+    }
+  }
 
   const formatPrice = (price: number) => {
     return `₨${price.toFixed(2)}`;
@@ -74,6 +89,55 @@ export default function StockDetail() {
       return 'N/A';
     }
     return value.toFixed(2);
+  };
+
+  // Pagination helper functions
+  const getPaginatedData = <T,>(data: T[], page: number, itemsPerPage: number = ITEMS_PER_PAGE): T[] => {
+    const startIndex = (page - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return data.slice(startIndex, endIndex);
+  };
+
+  const getTotalPages = (totalItems: number, itemsPerPage: number = ITEMS_PER_PAGE): number => {
+    return Math.ceil(totalItems / itemsPerPage);
+  };
+
+  const PaginationControls = ({ 
+    currentPage, 
+    totalPages, 
+    onPageChange, 
+    className = "" 
+  }: { 
+    currentPage: number; 
+    totalPages: number; 
+    onPageChange: (page: number) => void;
+    className?: string;
+  }) => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className={`flex items-center justify-center space-x-2 mt-4 ${className}`}>
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        
+        <span className="text-sm text-slate-600">
+          Page {currentPage} of {totalPages}
+        </span>
+        
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    );
   };
 
   if (stockLoading) {
@@ -229,7 +293,7 @@ export default function StockDetail() {
               <div className="space-y-4">
                 <h4 className="font-medium text-slate-900 mb-4 flex items-center">
                   <BarChart3 className="w-4 h-4 mr-2" />
-                  Financial Metrics
+                  Key Metrics
                 </h4>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -237,6 +301,20 @@ export default function StockDetail() {
                     <div className="p-3 bg-slate-50 rounded-lg">
                       <p className="text-xs text-slate-500">Market Cap</p>
                       <p className="font-semibold">{formatMarketCap(companyData.marketCap)}</p>
+                    </div>
+                  )}
+
+                  {companyData.sharesOutstanding && (
+                    <div className="p-3 bg-slate-50 rounded-lg">
+                      <p className="text-xs text-slate-500">Shares Outstanding</p>
+                      <p className="font-semibold">{formatNumber(companyData.sharesOutstanding)}</p>
+                    </div>
+                  )}
+
+                  {companyData.freeFloat && (
+                    <div className="p-3 bg-slate-50 rounded-lg">
+                      <p className="text-xs text-slate-500">Free Float</p>
+                      <p className="font-semibold">{formatPercentage(companyData.freeFloat)}</p>
                     </div>
                   )}
 
@@ -315,171 +393,37 @@ export default function StockDetail() {
                 </div>
               </div>
             )}
-
-            {/* Announcements */}
-            {companyData.announcements && typeof companyData.announcements === 'object' && Object.keys(companyData.announcements).length > 0 && (
-              <div className="mt-8 pt-6 border-t border-slate-200">
-                <h4 className="font-medium text-slate-900 mb-4">Recent Announcements</h4>
-                <div className="space-y-4">
-                  {Object.entries(companyData.announcements as any).map(([category, announcements]: [string, any]) => (
-                    <div key={category} className="bg-slate-50 rounded-lg p-4">
-                      <h5 className="font-medium text-slate-900 mb-3 capitalize">{category}</h5>
-                      <div className="space-y-2">
-                        {Array.isArray(announcements) && announcements.slice(0, 5).map((announcement: any, index: number) => (
-                          <div key={index} className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <p className="text-sm text-slate-700">{announcement.title}</p>
-                              <p className="text-xs text-slate-500 mt-1">{announcement.date}</p>
-                            </div>
-                            {announcement.documentUrl && (
-                              <a 
-                                href={announcement.documentUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-primary hover:underline text-xs ml-4"
-                              >
-                                View
-                              </a>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
-        {/* Equity Profile Section */}
-        {companyData.equityProfile && companyData.equityProfile.length > 0 && (
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <PieChart className="h-5 w-5" />
-              Equity Profile
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-200 dark:border-gray-700">
-                <thead>
-                  <tr className="bg-gray-50 dark:bg-gray-800">
-                    <th className="border border-gray-200 dark:border-gray-700 p-3 text-left font-medium">Year</th>
-                    <th className="border border-gray-200 dark:border-gray-700 p-3 text-left font-medium">Market Cap</th>
-                    <th className="border border-gray-200 dark:border-gray-700 p-3 text-left font-medium">Shares Outstanding</th>
-                    <th className="border border-gray-200 dark:border-gray-700 p-3 text-left font-medium">Free Float %</th>
-                    <th className="border border-gray-200 dark:border-gray-700 p-3 text-left font-medium">Book Value</th>
-                    <th className="border border-gray-200 dark:border-gray-700 p-3 text-left font-medium">P/B Ratio</th>
-                    <th className="border border-gray-200 dark:border-gray-700 p-3 text-left font-medium">Dividend Yield</th>
-                    <th className="border border-gray-200 dark:border-gray-700 p-3 text-left font-medium">EPS</th>
-                    <th className="border border-gray-200 dark:border-gray-700 p-3 text-left font-medium">P/E Ratio</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {companyData.equityProfile.map((profile, index) => (
-                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                      <td className="border border-gray-200 dark:border-gray-700 p-3 font-medium">{profile.year}</td>
-                      <td className="border border-gray-200 dark:border-gray-700 p-3">
-                        {profile.marketCap ? `₨${formatNumber(profile.marketCap)}` : 'N/A'}
-                      </td>
-                      <td className="border border-gray-200 dark:border-gray-700 p-3">
-                        {formatNumber(profile.sharesOutstanding)}
-                      </td>
-                      <td className="border border-gray-200 dark:border-gray-700 p-3">
-                        {formatPercentage(profile.freeFloat)}
-                      </td>
-                      <td className="border border-gray-200 dark:border-gray-700 p-3">
-                        {profile.bookValue ? `₨${formatRatio(profile.bookValue)}` : 'N/A'}
-                      </td>
-                      <td className="border border-gray-200 dark:border-gray-700 p-3">
-                        {formatRatio(profile.priceToBook)}
-                      </td>
-                      <td className="border border-gray-200 dark:border-gray-700 p-3">
-                        {formatPercentage(profile.dividendYield)}
-                      </td>
-                      <td className="border border-gray-200 dark:border-gray-700 p-3">
-                        {profile.earningsPerShare ? `₨${formatRatio(profile.earningsPerShare)}` : 'N/A'}
-                      </td>
-                      <td className="border border-gray-200 dark:border-gray-700 p-3">
-                        {formatRatio(profile.priceEarningsRatio)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Financial Ratios Section */}
-        {companyData.ratiosData && companyData.ratiosData.length > 0 && (
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Financial Ratios
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-200 dark:border-gray-700">
-                <thead>
-                  <tr className="bg-gray-50 dark:bg-gray-800">
-                    <th className="border border-gray-200 dark:border-gray-700 p-3 text-left font-medium">Year</th>
-                    <th className="border border-gray-200 dark:border-gray-700 p-3 text-left font-medium">Gross Profit Margin</th>
-                    <th className="border border-gray-200 dark:border-gray-700 p-3 text-left font-medium">Net Profit Margin</th>
-                    <th className="border border-gray-200 dark:border-gray-700 p-3 text-left font-medium">EPS Growth</th>
-                    <th className="border border-gray-200 dark:border-gray-700 p-3 text-left font-medium">PEG Ratio</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {companyData.ratiosData.map((ratios, index) => (
-                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                      <td className="border border-gray-200 dark:border-gray-700 p-3 font-medium">{ratios.year}</td>
-                      <td className="border border-gray-200 dark:border-gray-700 p-3">
-                        {formatPercentage(ratios.grossProfitMargin)}
-                      </td>
-                      <td className="border border-gray-200 dark:border-gray-700 p-3">
-                        {formatPercentage(ratios.netProfitMargin)}
-                      </td>
-                      <td className="border border-gray-200 dark:border-gray-700 p-3">
-                        {formatPercentage(ratios.epsGrowth)}
-                      </td>
-                      <td className="border border-gray-200 dark:border-gray-700 p-3">
-                        {formatRatio(ratios.peg)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Financial Data Section */}
-        {companyData.financialData && companyData.financialData.length > 0 && (
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
+        {/* Financial Performance Section */}
+        {companyData?.financialData && companyData.financialData.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6 flex items-center">
+              <DollarSign className="w-5 h-5 mr-2" />
               Financial Performance
             </h3>
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-200 dark:border-gray-700">
+              <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-gray-50 dark:bg-gray-800">
-                    <th className="border border-gray-200 dark:border-gray-700 p-3 text-left font-medium">Year</th>
-                    <th className="border border-gray-200 dark:border-gray-700 p-3 text-left font-medium">Sales</th>
-                    <th className="border border-gray-200 dark:border-gray-700 p-3 text-left font-medium">Profit After Tax</th>
-                    <th className="border border-gray-200 dark:border-gray-700 p-3 text-left font-medium">EPS</th>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-3 px-4 font-medium text-slate-900">Year</th>
+                    <th className="text-right py-3 px-4 font-medium text-slate-900">Sales</th>
+                    <th className="text-right py-3 px-4 font-medium text-slate-900">Profit After Tax</th>
+                    <th className="text-right py-3 px-4 font-medium text-slate-900">EPS</th>
                   </tr>
                 </thead>
                 <tbody>
                   {companyData.financialData.map((financial, index) => (
-                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                      <td className="border border-gray-200 dark:border-gray-700 p-3 font-medium">{financial.year}</td>
-                      <td className="border border-gray-200 dark:border-gray-700 p-3">
+                    <tr key={index} className="border-b border-slate-100 hover:bg-slate-50">
+                      <td className="py-3 px-4 font-medium text-slate-900">{financial.year}</td>
+                      <td className="py-3 px-4 text-right text-slate-700">
                         {financial.sales ? `₨${formatNumber(financial.sales)}` : 'N/A'}
                       </td>
-                      <td className="border border-gray-200 dark:border-gray-700 p-3">
+                      <td className="py-3 px-4 text-right text-slate-700">
                         {financial.profitAfterTax ? `₨${formatNumber(financial.profitAfterTax)}` : 'N/A'}
                       </td>
-                      <td className="border border-gray-200 dark:border-gray-700 p-3">
+                      <td className="py-3 px-4 text-right text-slate-700">
                         {financial.eps ? `₨${formatRatio(financial.eps)}` : 'N/A'}
                       </td>
                     </tr>
@@ -490,12 +434,233 @@ export default function StockDetail() {
           </div>
         )}
 
+        {/* Financial Ratios Section */}
+        {companyData?.ratiosData && companyData.ratiosData.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6 flex items-center">
+              <BarChart3 className="w-5 h-5 mr-2" />
+              Financial Ratios
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-3 px-4 font-medium text-slate-900">Year</th>
+                    <th className="text-right py-3 px-4 font-medium text-slate-900">Gross Profit Margin</th>
+                    <th className="text-right py-3 px-4 font-medium text-slate-900">Net Profit Margin</th>
+                    <th className="text-right py-3 px-4 font-medium text-slate-900">EPS Growth</th>
+                    <th className="text-right py-3 px-4 font-medium text-slate-900">PEG Ratio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {companyData.ratiosData.map((ratios, index) => (
+                    <tr key={index} className="border-b border-slate-100 hover:bg-slate-50">
+                      <td className="py-3 px-4 font-medium text-slate-900">{ratios.year}</td>
+                      <td className="py-3 px-4 text-right text-slate-700">
+                        {formatPercentage(ratios.grossProfitMargin)}
+                      </td>
+                      <td className="py-3 px-4 text-right text-slate-700">
+                        {formatPercentage(ratios.netProfitMargin)}
+                      </td>
+                      <td className="py-3 px-4 text-right text-slate-700">
+                        {formatPercentage(ratios.epsGrowth)}
+                      </td>
+                      <td className="py-3 px-4 text-right text-slate-700">
+                        {formatRatio(ratios.peg)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Equity Profile Section */}
+        {companyData?.equityProfile && companyData.equityProfile.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6 flex items-center">
+              <PieChart className="w-5 h-5 mr-2" />
+              Equity Profile
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-3 px-4 font-medium text-slate-900">Year</th>
+                    <th className="text-right py-3 px-4 font-medium text-slate-900">Market Cap</th>
+                    <th className="text-right py-3 px-4 font-medium text-slate-900">Shares Outstanding</th>
+                    <th className="text-right py-3 px-4 font-medium text-slate-900">Free Float %</th>
+                    <th className="text-right py-3 px-4 font-medium text-slate-900">Book Value</th>
+                    <th className="text-right py-3 px-4 font-medium text-slate-900">P/B Ratio</th>
+                    <th className="text-right py-3 px-4 font-medium text-slate-900">Dividend Yield</th>
+                    <th className="text-right py-3 px-4 font-medium text-slate-900">EPS</th>
+                    <th className="text-right py-3 px-4 font-medium text-slate-900">P/E Ratio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {companyData.equityProfile.map((profile, index) => (
+                    <tr key={index} className="border-b border-slate-100 hover:bg-slate-50">
+                      <td className="py-3 px-4 font-medium text-slate-900">{profile.year}</td>
+                      <td className="py-3 px-4 text-right text-slate-700">
+                        {profile.marketCap ? `₨${formatNumber(profile.marketCap)}` : 'N/A'}
+                      </td>
+                      <td className="py-3 px-4 text-right text-slate-700">
+                        {formatNumber(profile.sharesOutstanding)}
+                      </td>
+                      <td className="py-3 px-4 text-right text-slate-700">
+                        {formatPercentage(profile.freeFloat)}
+                      </td>
+                      <td className="py-3 px-4 text-right text-slate-700">
+                        {profile.bookValue ? `₨${formatRatio(profile.bookValue)}` : 'N/A'}
+                      </td>
+                      <td className="py-3 px-4 text-right text-slate-700">
+                        {formatRatio(profile.priceToBook)}
+                      </td>
+                      <td className="py-3 px-4 text-right text-slate-700">
+                        {formatPercentage(profile.dividendYield)}
+                      </td>
+                      <td className="py-3 px-4 text-right text-slate-700">
+                        {profile.earningsPerShare ? `₨${formatRatio(profile.earningsPerShare)}` : 'N/A'}
+                      </td>
+                      <td className="py-3 px-4 text-right text-slate-700">
+                        {formatRatio(profile.priceEarningsRatio)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Payouts Data Section */}
+        {companyData?.payoutsData && companyData.payoutsData.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6 flex items-center">
+              <Calendar className="w-5 h-5 mr-2" />
+              Dividend Payouts
+            </h3>
+            
+            <div className="space-y-4">
+              {getPaginatedData(companyData.payoutsData, payoutsPage).map((payout, index) => (
+                <div key={index} className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">Date</p>
+                      <p className="text-sm text-slate-600">{payout.date}</p>
+                    </div>
+                    {payout.financialResults && (
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">Financial Results</p>
+                        <p className="text-sm text-slate-600">{payout.financialResults}</p>
+                      </div>
+                    )}
+                    {payout.details && (
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">Details</p>
+                        <p className="text-sm text-slate-600">{payout.details}</p>
+                      </div>
+                    )}
+                    {payout.bookClosure && (
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">Book Closure</p>
+                        <p className="text-sm text-slate-600">{payout.bookClosure}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <PaginationControls
+              currentPage={payoutsPage}
+              totalPages={getTotalPages(companyData.payoutsData.length)}
+              onPageChange={setPayoutsPage}
+            />
+          </div>
+        )}
+
+        {/* Announcements Section with Tabs */}
+        {companyData?.announcements && typeof companyData.announcements === 'object' && Object.keys(companyData.announcements).length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6 flex items-center">
+              <FileText className="w-5 h-5 mr-2" />
+              Company Announcements
+            </h3>
+
+            {/* Tab Navigation */}
+            <div className="border-b border-slate-200 mb-6">
+              <nav className="flex space-x-8 overflow-x-auto">
+                {Object.keys(companyData.announcements).map((category) => (
+                  <button
+                    key={category}
+                    onClick={() => setActiveAnnouncementTab(category)}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                      activeAnnouncementTab === category
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                    }`}
+                  >
+                    {category.replace(/_/g, ' ').toUpperCase()}
+                    <span className="ml-2 text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full">
+                      {(companyData.announcements as any)[category]?.length || 0}
+                    </span>
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            {/* Tab Content */}
+            {activeAnnouncementTab && (companyData.announcements as any)[activeAnnouncementTab] && (
+              <div>
+                <div className="space-y-4">
+                  {getPaginatedData(
+                    (companyData.announcements as any)[activeAnnouncementTab],
+                    announcementPage[activeAnnouncementTab] || 1
+                  ).map((announcement: any, index: number) => (
+                    <div key={index} className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-slate-900 mb-2">{announcement.title}</h4>
+                          <p className="text-sm text-slate-500 mb-3">{announcement.date}</p>
+                        </div>
+                        {announcement.document && (
+                          <a
+                            href={announcement.document}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors ml-4"
+                          >
+                            <FileText className="w-4 h-4 mr-1" />
+                            View Document
+                            <ExternalLink className="w-3 h-3 ml-1" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <PaginationControls
+                  currentPage={announcementPage[activeAnnouncementTab] || 1}
+                  totalPages={getTotalPages((companyData.announcements as any)[activeAnnouncementTab]?.length || 0)}
+                  onPageChange={(page) => setAnnouncementPage({
+                    ...announcementPage,
+                    [activeAnnouncementTab]: page
+                  })}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Company Description */}
-        {companyData.description && (
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold mb-4">About {companyData.name}</h3>
-            <p className="text-muted-foreground leading-relaxed">
-              {companyData.description}
+        {companyData?.businessDescription && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 className="text-xl font-semibold text-slate-900 mb-4">Business Description</h3>
+            <p className="text-slate-600 leading-relaxed">
+              {companyData.businessDescription}
             </p>
           </div>
         )}
