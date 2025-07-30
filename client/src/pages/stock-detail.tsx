@@ -237,13 +237,13 @@ export default function StockDetail() {
 
         {/* Company Information */}
         {companyData && !companyLoading && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-            <h3 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-              <Building2 className="w-5 h-5 mr-2" />
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-5">
+            <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center">
+              <Building2 className="w-4 h-4 mr-2" />
               Company Information
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Basic Info */}
               <div className="space-y-3">
                 {companyData.description && (
@@ -399,53 +399,37 @@ export default function StockDetail() {
 
             {/* Equity Profile Section - Moved here after Key People */}
             {companyData.equityProfile && companyData.equityProfile.length > 0 && (
-              <div className="mt-6 pt-4 border-t border-slate-200">
-                <h4 className="font-medium text-slate-900 mb-3 flex items-center">
+              <div className="mt-4 pt-3 border-t border-slate-200">
+                <h4 className="font-medium text-slate-900 mb-2 flex items-center">
                   <PieChart className="w-4 h-4 mr-2" />
                   Equity Profile
                 </h4>
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
+                <div className="overflow-x-auto bg-blue-50 rounded-lg p-3">
+                  <table className="w-full border-collapse text-xs">
                     <thead>
-                      <tr className="border-b border-slate-200">
-                        <th className="text-left py-2 px-3 font-medium text-slate-900 text-sm">Year</th>
-                        <th className="text-right py-2 px-3 font-medium text-slate-900 text-sm">Market Cap</th>
-                        <th className="text-right py-2 px-3 font-medium text-slate-900 text-sm">Shares Outstanding</th>
-                        <th className="text-right py-2 px-3 font-medium text-slate-900 text-sm">Free Float %</th>
-                        <th className="text-right py-2 px-3 font-medium text-slate-900 text-sm">Book Value</th>
-                        <th className="text-right py-2 px-3 font-medium text-slate-900 text-sm">P/B Ratio</th>
-                        <th className="text-right py-2 px-3 font-medium text-slate-900 text-sm">Dividend Yield</th>
-                        <th className="text-right py-2 px-3 font-medium text-slate-900 text-sm">EPS</th>
-                        <th className="text-right py-2 px-3 font-medium text-slate-900 text-sm">P/E Ratio</th>
+                      <tr className="border-b border-blue-200">
+                        <th className="text-left py-1.5 px-2 font-medium text-blue-900">Year</th>
+                        <th className="text-right py-1.5 px-2 font-medium text-blue-900">Market Cap (000's)</th>
+                        <th className="text-right py-1.5 px-2 font-medium text-blue-900">Shares</th>
+                        <th className="text-right py-1.5 px-2 font-medium text-blue-900">Free Float</th>
+                        <th className="text-right py-1.5 px-2 font-medium text-blue-900">Free Float %</th>
                       </tr>
                     </thead>
                     <tbody>
                       {companyData.equityProfile.map((profile, index) => (
-                        <tr key={index} className="border-b border-slate-100 hover:bg-slate-50">
-                          <td className="py-2 px-3 font-medium text-slate-900 text-sm">{profile.year}</td>
-                          <td className="py-2 px-3 text-right text-slate-700 text-sm">
-                            {profile.marketCap ? `₨${formatNumber(profile.marketCap)}` : 'N/A'}
+                        <tr key={index} className="border-b border-blue-100 hover:bg-blue-100">
+                          <td className="py-1.5 px-2 font-medium text-slate-900">{profile.year}</td>
+                          <td className="py-1.5 px-2 text-right text-slate-700">
+                            {profile.marketCap ? `${formatNumber(profile.marketCap)}` : 'N/A'}
                           </td>
-                          <td className="py-2 px-3 text-right text-slate-700 text-sm">
+                          <td className="py-1.5 px-2 text-right text-slate-700">
                             {formatNumber(profile.sharesOutstanding)}
                           </td>
-                          <td className="py-2 px-3 text-right text-slate-700 text-sm">
-                            {formatPercentage(profile.freeFloat)}
+                          <td className="py-1.5 px-2 text-right text-slate-700">
+                            {profile.freeFloat ? formatNumber(profile.freeFloat) : 'N/A'}
                           </td>
-                          <td className="py-2 px-3 text-right text-slate-700 text-sm">
-                            {profile.bookValue ? `₨${formatRatio(profile.bookValue)}` : 'N/A'}
-                          </td>
-                          <td className="py-2 px-3 text-right text-slate-700 text-sm">
-                            {formatRatio(profile.priceToBook)}
-                          </td>
-                          <td className="py-2 px-3 text-right text-slate-700 text-sm">
-                            {formatPercentage(profile.dividendYield)}
-                          </td>
-                          <td className="py-2 px-3 text-right text-slate-700 text-sm">
-                            {profile.earningsPerShare ? `₨${formatRatio(profile.earningsPerShare)}` : 'N/A'}
-                          </td>
-                          <td className="py-2 px-3 text-right text-slate-700 text-sm">
-                            {formatRatio(profile.priceEarningsRatio)}
+                          <td className="py-1.5 px-2 text-right text-slate-700">
+                            {formatPercentage(profile.freeFloatPercentage || profile.freeFloat)}
                           </td>
                         </tr>
                       ))}
@@ -459,32 +443,32 @@ export default function StockDetail() {
 
         {/* Financial Performance Section */}
         {companyData?.financialData && companyData.financialData.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-            <h3 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-              <DollarSign className="w-5 h-5 mr-2" />
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-5">
+            <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center">
+              <DollarSign className="w-4 h-4 mr-2" />
               Financial Performance
             </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
+            <div className="overflow-x-auto bg-green-50 rounded-lg p-3">
+              <table className="w-full border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="text-left py-2 px-3 font-medium text-slate-900 text-sm">Year</th>
-                    <th className="text-right py-2 px-3 font-medium text-slate-900 text-sm">Sales</th>
-                    <th className="text-right py-2 px-3 font-medium text-slate-900 text-sm">Profit After Tax</th>
-                    <th className="text-right py-2 px-3 font-medium text-slate-900 text-sm">EPS</th>
+                  <tr className="border-b border-green-200">
+                    <th className="text-left py-1.5 px-2 font-medium text-green-900">Year</th>
+                    <th className="text-right py-1.5 px-2 font-medium text-green-900">Sales</th>
+                    <th className="text-right py-1.5 px-2 font-medium text-green-900">Profit After Tax</th>
+                    <th className="text-right py-1.5 px-2 font-medium text-green-900">EPS</th>
                   </tr>
                 </thead>
                 <tbody>
                   {companyData.financialData.map((financial, index) => (
-                    <tr key={index} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="py-2 px-3 font-medium text-slate-900 text-sm">{financial.year}</td>
-                      <td className="py-2 px-3 text-right text-slate-700 text-sm">
+                    <tr key={index} className="border-b border-green-100 hover:bg-green-100">
+                      <td className="py-1.5 px-2 font-medium text-slate-900">{financial.year}</td>
+                      <td className="py-1.5 px-2 text-right text-slate-700">
                         {financial.sales ? `₨${formatNumber(financial.sales)}` : 'N/A'}
                       </td>
-                      <td className="py-2 px-3 text-right text-slate-700 text-sm">
+                      <td className="py-1.5 px-2 text-right text-slate-700">
                         {financial.profitAfterTax ? `₨${formatNumber(financial.profitAfterTax)}` : 'N/A'}
                       </td>
-                      <td className="py-2 px-3 text-right text-slate-700 text-sm">
+                      <td className="py-1.5 px-2 text-right text-slate-700">
                         {financial.eps ? `₨${formatRatio(financial.eps)}` : 'N/A'}
                       </td>
                     </tr>
@@ -497,36 +481,36 @@ export default function StockDetail() {
 
         {/* Financial Ratios Section */}
         {companyData?.ratiosData && companyData.ratiosData.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-            <h3 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-              <BarChart3 className="w-5 h-5 mr-2" />
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-5">
+            <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center">
+              <BarChart3 className="w-4 h-4 mr-2" />
               Financial Ratios
             </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
+            <div className="overflow-x-auto bg-purple-50 rounded-lg p-3">
+              <table className="w-full border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="text-left py-2 px-3 font-medium text-slate-900 text-sm">Year</th>
-                    <th className="text-right py-2 px-3 font-medium text-slate-900 text-sm">Gross Profit Margin</th>
-                    <th className="text-right py-2 px-3 font-medium text-slate-900 text-sm">Net Profit Margin</th>
-                    <th className="text-right py-2 px-3 font-medium text-slate-900 text-sm">EPS Growth</th>
-                    <th className="text-right py-2 px-3 font-medium text-slate-900 text-sm">PEG Ratio</th>
+                  <tr className="border-b border-purple-200">
+                    <th className="text-left py-1.5 px-2 font-medium text-purple-900">Year</th>
+                    <th className="text-right py-1.5 px-2 font-medium text-purple-900">Gross Profit Margin</th>
+                    <th className="text-right py-1.5 px-2 font-medium text-purple-900">Net Profit Margin</th>
+                    <th className="text-right py-1.5 px-2 font-medium text-purple-900">EPS Growth</th>
+                    <th className="text-right py-1.5 px-2 font-medium text-purple-900">PEG Ratio</th>
                   </tr>
                 </thead>
                 <tbody>
                   {companyData.ratiosData.map((ratios, index) => (
-                    <tr key={index} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="py-2 px-3 font-medium text-slate-900 text-sm">{ratios.year}</td>
-                      <td className="py-2 px-3 text-right text-slate-700 text-sm">
+                    <tr key={index} className="border-b border-purple-100 hover:bg-purple-100">
+                      <td className="py-1.5 px-2 font-medium text-slate-900">{ratios.year}</td>
+                      <td className="py-1.5 px-2 text-right text-slate-700">
                         {formatPercentage(ratios.grossProfitMargin)}
                       </td>
-                      <td className="py-2 px-3 text-right text-slate-700 text-sm">
+                      <td className="py-1.5 px-2 text-right text-slate-700">
                         {formatPercentage(ratios.netProfitMargin)}
                       </td>
-                      <td className="py-2 px-3 text-right text-slate-700 text-sm">
+                      <td className="py-1.5 px-2 text-right text-slate-700">
                         {formatPercentage(ratios.epsGrowth)}
                       </td>
-                      <td className="py-2 px-3 text-right text-slate-700 text-sm">
+                      <td className="py-1.5 px-2 text-right text-slate-700">
                         {formatRatio(ratios.peg)}
                       </td>
                     </tr>
@@ -539,74 +523,67 @@ export default function StockDetail() {
 
         {/* Payouts Data Section */}
         {companyData?.payoutsData && companyData.payoutsData.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-            <h3 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-              <Calendar className="w-5 h-5 mr-2" />
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-5">
+            <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center">
+              <Calendar className="w-4 h-4 mr-2" />
               Dividend Payouts
             </h3>
             
-            <div className="space-y-3">
-              {getPaginatedData(companyData.payoutsData, payoutsPage).map((payout, index) => (
-                <div key={index} className="border border-slate-200 rounded-lg p-3 hover:bg-slate-50">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">Date</p>
-                      <p className="text-sm text-slate-600">{payout.date}</p>
-                    </div>
-                    {payout.financialResults && (
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">Financial Results</p>
-                        <p className="text-sm text-slate-600">{payout.financialResults}</p>
-                      </div>
-                    )}
-                    {payout.details && (
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">Details</p>
-                        <p className="text-sm text-slate-600">{payout.details}</p>
-                      </div>
-                    )}
-                    {payout.bookClosure && (
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">Book Closure</p>
-                        <p className="text-sm text-slate-600">{payout.bookClosure}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto bg-orange-50 rounded-lg p-3">
+              <table className="w-full border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-orange-200">
+                    <th className="text-left py-1.5 px-2 font-medium text-orange-900">Date</th>
+                    <th className="text-left py-1.5 px-2 font-medium text-orange-900">Financial Results</th>
+                    <th className="text-left py-1.5 px-2 font-medium text-orange-900">Details</th>
+                    <th className="text-left py-1.5 px-2 font-medium text-orange-900">Book Closure</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {getPaginatedData(companyData.payoutsData, payoutsPage).map((payout, index) => (
+                    <tr key={index} className="border-b border-orange-100 hover:bg-orange-100">
+                      <td className="py-1.5 px-2 text-slate-900">{payout.date}</td>
+                      <td className="py-1.5 px-2 text-slate-700">{payout.financialResults || 'N/A'}</td>
+                      <td className="py-1.5 px-2 text-slate-700">{payout.details || 'N/A'}</td>
+                      <td className="py-1.5 px-2 text-slate-700">{payout.bookClosure || 'N/A'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             <PaginationControls
               currentPage={payoutsPage}
               totalPages={getTotalPages(companyData.payoutsData.length)}
               onPageChange={setPayoutsPage}
+              className="mt-2"
             />
           </div>
         )}
 
         {/* Announcements Section with Tabs */}
         {companyData?.announcements && typeof companyData.announcements === 'object' && Object.keys(companyData.announcements).length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-            <h3 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-              <FileText className="w-5 h-5 mr-2" />
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-5">
+            <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center">
+              <FileText className="w-4 h-4 mr-2" />
               Company Announcements
             </h3>
 
             {/* Tab Navigation */}
-            <div className="border-b border-slate-200 mb-4">
-              <nav className="flex space-x-6 overflow-x-auto">
+            <div className="border-b border-slate-200 mb-3">
+              <nav className="flex space-x-4 overflow-x-auto">
                 {Object.keys(companyData.announcements).map((category) => (
                   <button
                     key={category}
                     onClick={() => setActiveAnnouncementTab(category)}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                    className={`py-1.5 px-1 border-b-2 font-medium text-xs whitespace-nowrap ${
                       activeAnnouncementTab === category
                         ? 'border-primary text-primary'
                         : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                     }`}
                   >
                     {category.replace(/_/g, ' ').toUpperCase()}
-                    <span className="ml-2 text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full">
+                    <span className="ml-1 text-xs bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full">
                       {(companyData.announcements as any)[category]?.length || 0}
                     </span>
                   </button>
@@ -617,26 +594,26 @@ export default function StockDetail() {
             {/* Tab Content */}
             {activeAnnouncementTab && (companyData.announcements as any)[activeAnnouncementTab] && (
               <div>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {getPaginatedData(
                     (companyData.announcements as any)[activeAnnouncementTab],
                     announcementPage[activeAnnouncementTab] || 1
                   ).map((announcement: any, index: number) => (
-                    <div key={index} className="border border-slate-200 rounded-lg p-3 hover:bg-slate-50">
+                    <div key={index} className="border border-slate-200 rounded-lg p-3 hover:bg-slate-50 text-sm">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h4 className="font-medium text-slate-900 mb-1">{announcement.title}</h4>
-                          <p className="text-sm text-slate-500 mb-2">{announcement.date}</p>
+                          <h4 className="font-medium text-slate-900 mb-1 text-sm">{announcement.title}</h4>
+                          <p className="text-xs text-slate-500">{announcement.date}</p>
                         </div>
                         {announcement.document && (
                           <a
                             href={announcement.document}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors ml-4"
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium text-primary bg-primary/10 rounded-md hover:bg-primary/20 transition-colors ml-3"
                           >
-                            <FileText className="w-4 h-4 mr-1" />
-                            View Document
+                            <FileText className="w-3 h-3 mr-1" />
+                            View
                             <ExternalLink className="w-3 h-3 ml-1" />
                           </a>
                         )}
@@ -652,6 +629,7 @@ export default function StockDetail() {
                     ...announcementPage,
                     [activeAnnouncementTab]: page
                   })}
+                  className="mt-2"
                 />
               </div>
             )}
@@ -660,8 +638,8 @@ export default function StockDetail() {
 
         {/* Company Description */}
         {companyData?.businessDescription && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h3 className="text-xl font-semibold text-slate-900 mb-4">Business Description</h3>
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+            <h3 className="text-lg font-semibold text-slate-900 mb-3">Business Description</h3>
             <p className="text-slate-600 leading-relaxed">
               {companyData.businessDescription}
             </p>
