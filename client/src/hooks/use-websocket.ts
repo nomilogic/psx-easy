@@ -11,6 +11,9 @@ interface WebSocketState {
 }
 
 export function useWebSocket(): WebSocketState {
+  const [stocks, setStocks] = useState<StockData[]>([]);
+  const [marketSummary, setMarketSummary] = useState<MarketSummary | null>(null);
+  const [wsConnected, setWsConnected] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [marketData, setMarketData] = useState<StockData[] | null>(null);
   const [marketSummary, setMarketSummary] = useState<MarketSummary | null>(null);
@@ -26,13 +29,14 @@ export function useWebSocket(): WebSocketState {
     try {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const wsUrl = `${protocol}//${window.location.host}/ws`;
-      
+
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {
         console.log("WebSocket connected");
+        setWsConnected(true);
         setIsConnected(true);
-        
+
         // Clear any pending reconnection attempts
         if (reconnectTimeoutRef.current) {
           clearTimeout(reconnectTimeoutRef.current);
@@ -43,7 +47,7 @@ export function useWebSocket(): WebSocketState {
       wsRef.current.onmessage = (event) => {
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
-          
+
           switch (message.type) {
             case 'market_update':
               if (message.data.stocks) {
@@ -69,8 +73,9 @@ export function useWebSocket(): WebSocketState {
 
       wsRef.current.onclose = () => {
         console.log("WebSocket disconnected");
+        setWsConnected(false);
         setIsConnected(false);
-        
+
         // Attempt to reconnect after 5 seconds
         reconnectTimeoutRef.current = setTimeout(() => {
           console.log("Attempting to reconnect WebSocket...");
@@ -93,12 +98,12 @@ export function useWebSocket(): WebSocketState {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
-    
+
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
     }
-    
+
     setIsConnected(false);
   };
 
@@ -122,12 +127,5 @@ export function useWebSocket(): WebSocketState {
     }
   }, [isConnected]);
 
-  return {
-    isConnected,
-    marketData,
-    marketSummary,
-    connectedClients,
-    connect,
-    disconnect
-  };
+  return { stocks, marketSummary, isConnected };
 }
