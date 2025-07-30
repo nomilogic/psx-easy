@@ -392,38 +392,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       `;
 
       // Call Gemini API with proper error handling
-      const apiKey = process.env.GEMINI_API_KEY || "AIzaSyBQ8fVF7RXzfZ6k5Gn0vOcQ8t1E_7XJxVc"; // Fallback key for demo
-      
-      let aiText = "";
-      try {
-        const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: prompt
-              }]
-            }],
-            generationConfig: {
-              temperature: 0.7,
-              topK: 40,
-              topP: 0.95,
-              maxOutputTokens: 1024,
-            }
-          })
-        });
+      const apiKey = process.env.GEMINI_API_KEY || 'AIzaSyDGjQJ6P3OU8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8'; // Use your actual API key
+      const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            topP: 0.8,
+            topK: 40,
+            maxOutputTokens: 1024,
+          }
+        })
+      });
 
-        if (geminiResponse.ok) {
-          const geminiData = await geminiResponse.json();
-          aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        } else {
-          console.error("Gemini API error:", geminiResponse.status, await geminiResponse.text());
-        }
-      } catch (apiError) {
-        console.error("Gemini API call failed:", apiError);
+      if (geminiResponse.ok) {
+        const geminiData = await geminiResponse.json();
+        aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      } else {
+        console.error("Gemini API error:", geminiResponse.status, await geminiResponse.text());
       }
 
       // Parse AI response with enhanced analysis
@@ -438,7 +432,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Create structured analysis from text response
             const sentiment = stock.changePercent > 2 ? "Bullish" : stock.changePercent < -2 ? "Bearish" : "Neutral";
             const riskLevel = Math.abs(stock.changePercent) > 5 ? "High" : Math.abs(stock.changePercent) > 2 ? "Medium" : "Low";
-            
+
             analysis = {
               analysis: aiText.length > 300 ? aiText.substring(0, 300) + "..." : aiText,
               recommendation: sentiment === "Bullish" ? `Buy - ${stock.symbol} shows strong upward momentum` : 
@@ -456,7 +450,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const sectorContext = stock.sector.includes("BANK") ? "banking sector fundamentals remain strong" : 
                                stock.sector.includes("TECH") ? "technology sector showing innovation potential" : 
                                "sector showing mixed signals";
-          
+
           analysis = {
             analysis: `${stock.symbol} demonstrates ${priceAnalysis} with ${volumeAnalysis}. The ${sectorContext}. Current price of Rs. ${stock.current} reflects market sentiment and trading activity. Technical indicators suggest ${stock.changePercent > 1 ? 'bullish' : stock.changePercent < -1 ? 'bearish' : 'neutral'} outlook in the near term.`,
             recommendation: stock.changePercent > 2 ? "Buy - Strong upward momentum detected" : 

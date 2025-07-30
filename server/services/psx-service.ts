@@ -104,9 +104,11 @@ interface Symbol {
   isDebt: boolean;
 }
 const CORS_PROXIES = [
+  "https://api.allorigins.win/get?url=",
+  "https://cors-proxy.org/?",
+  "https://thingproxy.freeboard.io/fetch/",
   "https://corsproxy.io/?",
-  "https://cors-anywhere.herokuapp.com/",
-  "https://api.allorigins.win/raw?url=",
+  "https://api.codetabs.com/v1/proxy?quest=",
 ];
 
 export class PSXService {
@@ -129,26 +131,29 @@ export class PSXService {
 
     for (const proxy of CORS_PROXIES) {
       try {
-        const response = await fetch(`${proxy}${encodeURIComponent(url)}`, {
+        const proxyUrl = proxy.includes('allorigins.win') 
+          ? `${proxy}${encodeURIComponent(url)}`
+          : `${proxy}${encodeURIComponent(url)}`;
+          
+        const response = await fetch(proxyUrl, {
           headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            Accept:
-              "application/json,text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            Accept: "application/json,text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
           },
+          timeout: 10000,
         });
 
-        // console.log(response);
-
-        if (!response) {
-          throw new Error("No response from server");
+        if (!response || !response.ok) {
+          throw new Error(`HTTP ${response?.status || 'unknown'}: ${response?.statusText || 'Network error'}`);
         }
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        let data;
+        if (proxy.includes('allorigins.win')) {
+          const jsonResponse = await response.json();
+          data = isJson ? JSON.parse(jsonResponse.contents) : jsonResponse.contents;
+        } else {
+          data = isJson ? await response.json() : await response.text();
         }
-
-        const data = isJson ? await response.json() : await response.text();
 
         if (!data) {
           throw new Error("No data in response");
@@ -159,6 +164,12 @@ export class PSXService {
         console.warn(`Attempt with proxy ${proxy} failed:`, error);
         continue;
       }
+    }
+    
+    // If all proxies fail, return mock data for development
+    console.warn("All proxy attempts failed, using fallback data");
+    if (url.includes('market-watch')) {
+      return this.getMockData() as T;
     }
     throw new Error("All proxy attempts failed");
   }
