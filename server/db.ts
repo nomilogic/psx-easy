@@ -32,9 +32,9 @@ export const pool = new Pool({
   },
   max: 10, // Reduced max connections
   min: 2,  // Minimum connections
-  connectionTimeoutMillis: 10000, // Reduced timeout
-  idleTimeoutMillis: 30000,
-  acquireTimeoutMillis: 10000, // Add acquire timeout
-  statementTimeout: 15000, // Add statement timeout (15 seconds)
+  connectionTimeoutMillis: 30000, // Increased timeout
+  idleTimeoutMillis: 60000,
+  acquireTimeoutMillis: 30000, // Increased acquire timeout
+  statementTimeout: 45000, // Increased statement timeout (45 seconds)
 });
 export const db = drizzle({ client: pool, schema });

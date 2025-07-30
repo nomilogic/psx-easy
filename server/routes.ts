@@ -394,13 +394,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         Promise.race([
           storage.getMarketData(),
           new Promise<StockData[]>((_, reject) => 
-            setTimeout(() => reject(new Error('Market data timeout')), 8000)
+            setTimeout(() => reject(new Error('Market data timeout')), 25000)
           )
         ]),
         Promise.race([
           storage.getMarketSummary(),
           new Promise<MarketSummary | null>((_, reject) => 
-            setTimeout(() => reject(new Error('Market summary timeout')), 5000)
+            setTimeout(() => reject(new Error('Market summary timeout')), 15000)
           )
         ])
       ]);

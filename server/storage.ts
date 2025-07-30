@@ -95,7 +95,7 @@ export class DatabaseStorage implements IStorage {
       const psxData = await Promise.race([
         PSXService.fetchMarketData(),
         new Promise<null>((_, reject) => 
-          setTimeout(() => reject(new Error('PSX service timeout')), 10000)
+          setTimeout(() => reject(new Error('PSX service timeout')), 30000)
         )
       ]);
       
@@ -119,7 +119,7 @@ export class DatabaseStorage implements IStorage {
       return await Promise.race([
         this.getMarketDataFromDatabase(),
         new Promise<StockData[]>((_, reject) => 
-          setTimeout(() => reject(new Error('Database timeout')), 5000)
+          setTimeout(() => reject(new Error('Database timeout')), 15000)
         )
       ]);
     } catch (dbError) {
@@ -191,7 +191,7 @@ export class DatabaseStorage implements IStorage {
           await Promise.race([
             this.insertBatchOptimized(batch),
             new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Batch timeout')), 3000) // Reduced timeout
+              setTimeout(() => reject(new Error('Batch timeout')), 10000) // Increased timeout
             )
           ]);
           
@@ -265,7 +265,7 @@ export class DatabaseStorage implements IStorage {
               },
             }),
           new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Individual insert timeout')), 1000)
+            setTimeout(() => reject(new Error('Individual insert timeout')), 5000)
           )
         ]);
       } catch (error) {
