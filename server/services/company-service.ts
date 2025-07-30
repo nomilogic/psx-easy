@@ -320,6 +320,10 @@ export class CompanyService {
       symbol: symbol,
       name: symbol + " Limited", // Default fallback
       description: "",
+      financials: {
+        annual: [],
+        quarterly: []
+      }
     };
 
     try {
@@ -548,7 +552,7 @@ export class CompanyService {
               currentProfile.sharesOutstanding = numValue;
             } else if (label.includes("free float")) {
               if (value.includes("%")) {
-                currentProfile.freeFloatPercentage = numValue;
+                currentProfile.freeFloat = numValue / 100; // Convert percentage to decimal
               } else {
                 currentProfile.freeFloat = numValue;
               }
@@ -746,6 +750,7 @@ export class CompanyService {
       financialSelectors.forEach((selector) => {
         $(selector).each((_, row) => {
           const cells = $(row).find("td");
+          console.log("Cells: ", cells);
           if (cells.length >= 2) {
             const metric = $(cells[0]).text().trim().toLowerCase();
 
@@ -769,20 +774,20 @@ export class CompanyService {
             }
 
             // If still no financial data structure, create one based on cell count
-            if (financialData.length === 0 && cells.length > 1) {
-              for (let i = 1; i < cells.length; i++) {
-                const cellYear = $(cells[i]).text().trim();
-                if (/^\d{4}$/.test(cellYear)) {
-                  financialData.push({ year: cellYear });
-                } else {
-                  // If no year in cell, create generic year entries
-                  const currentYear = new Date().getFullYear();
-                  financialData.push({
-                    year: (currentYear - (cells.length - 1 - i)).toString(),
-                  });
-                }
-              }
-            }
+            // if (financialData.length === 0 && cells.length > 1) {
+            //   for (let i = 1; i < cells.length; i++) {
+            //     const cellYear = $(cells[i]).text().trim();
+            //     if (/^\d{4}$/.test(cellYear)) {
+            //       financialData.push({ year: cellYear });
+            //     } else {
+            //       // If no year in cell, create generic year entries
+            //       const currentYear = new Date().getFullYear();
+            //       financialData.push({
+            //         year: (currentYear - (cells.length - 1 - i)).toString(),
+            //       });
+            //     }
+            //   }
+            // }
 
             // Extract financial metrics for each year
             for (
@@ -804,8 +809,7 @@ export class CompanyService {
                   metric.includes("turnover")
                 ) {
                   financialData[i - 1].sales = numValue;
-                  // Store latest sales value for company summary
-                  if (i === 1) companyData.sales = numValue;
+                  // Sales data stored in financialData array
                 } else if (
                   metric.includes("profit after taxation") ||
                   metric.includes("net income") ||
@@ -817,8 +821,7 @@ export class CompanyService {
                   metric.includes("earnings per share")
                 ) {
                   financialData[i - 1].eps = numValue;
-                  // Store latest EPS value for company summary
-                  if (i === 1) companyData.eps = numValue;
+                  // EPS data stored in financialData array
                 }
               }
             }

@@ -123,3 +123,6 @@ The application follows a monorepo structure with clearly separated frontend and
 - **Stock Detail Pages**: Complete company information pages with financial metrics, key people, and announcements
 - **High/Low Columns**: Added visual High and Low price columns with color coding
 - **Improved Navigation**: Seamless navigation between dashboard and stock details using wouter routing
+- **Performance Optimization**: Dashboard loads data instantly from cache, 30-second auto-refresh via WebSocket
+- **Pagination System**: Added pagination controls with 10/25/50/100 records per page options
+- **Financial Data Structure**: Implemented proper parsing of annual and quarterly financial data with structured tables showing Sales, Profit after Taxation, and EPS with proper formatting and negative value highlighting
