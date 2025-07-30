@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, ExternalLink, TrendingUp, Globe, DollarSign } from "lucide-react";
+import { Clock, ExternalLink, TrendingUp, Globe, DollarSign, Brain } from "lucide-react";
 
 interface NewsItem {
   id: string;
