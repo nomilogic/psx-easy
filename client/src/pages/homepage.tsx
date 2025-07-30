@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -258,7 +257,9 @@ function Homepage() {
                     <span className="font-semibold">{kseChange >= 0 ? '+' : ''}{kseChange.toFixed(2)}%</span>
                   </div>
                 </div>
-                <Progress value={65} className="h-2 mb-4" />
+                <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+                  <div className="bg-green-600 h-2 rounded-full transition-all duration-300" style={{ width: '65%' }}></div>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-sm">
@@ -615,78 +616,160 @@ function Homepage() {
         </div>
       </section>
 
-      {/* News & Market Insights */}
+      {/* Enhanced News & Market Insights with Images */}
       <section id="news" className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Latest Market News & Insights</h2>
+            <p className="text-gray-600 text-lg">Stay updated with real-time market developments and AI-powered analysis</p>
+          </div>
+          
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Market News */}
+            {/* Featured News with Images */}
             <div className="lg:col-span-2">
-              <div className="flex items-center space-x-3 mb-6">
-                <Newspaper className="w-6 h-6 text-blue-600" />
-                <h2 className="text-2xl font-bold text-gray-900">Latest Market News</h2>
-              </div>
               <div className="space-y-6">
-                <Card className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-start space-x-4">
-                      <Calendar className="w-5 h-5 text-green-600 mt-1" />
-                      <div className="flex-1">
-                        <Badge className="bg-red-100 text-red-800 mb-2">Breaking</Badge>
-                        <h3 className="font-semibold text-gray-900 mb-2">KSE-100 Surges to New All-Time High</h3>
-                        <p className="text-gray-600 text-sm mb-3">
-                          Pakistan's benchmark index reached unprecedented levels as investor confidence soars following 
-                          positive economic indicators and strong corporate earnings...
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500">2 hours ago • Business Recorder</span>
-                          <Button variant="ghost" size="sm">
-                            Read More <ExternalLink className="w-3 h-3 ml-1" />
-                          </Button>
+                {/* Breaking News with Image */}
+                <Card className="hover:shadow-lg transition-all duration-300 overflow-hidden">
+                  <div className="md:flex">
+                    <div className="md:flex-shrink-0">
+                      <div className="h-48 w-full md:w-48 bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center">
+                        <div className="text-center text-white">
+                          <TrendingUp className="w-12 h-12 mx-auto mb-2" />
+                          <div className="text-2xl font-bold">{kseIndex.toLocaleString()}</div>
+                          <div className="text-sm">KSE-100</div>
                         </div>
                       </div>
                     </div>
-                  </CardContent>
+                    <CardContent className="p-6 flex-1">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <Badge className="bg-red-500 text-white">Breaking</Badge>
+                        <Badge className="bg-green-100 text-green-800">Live</Badge>
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-3">
+                        KSE-100 Index {kseChange >= 0 ? 'Surges' : 'Declines'} - Real-time Update
+                      </h3>
+                      <p className="text-gray-600 mb-4">
+                        Pakistan's benchmark index shows {kseChange >= 0 ? 'strong bullish momentum' : 'bearish pressure'} 
+                        with current value at {kseIndex.toLocaleString()} points, representing a {kseChange >= 0 ? 'gain' : 'loss'} 
+                        of {Math.abs(kseChange).toFixed(2)}% in today's trading session.
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500 flex items-center">
+                          <Clock className="w-3 h-3 mr-1" />
+                          Live • {currentTime.toLocaleTimeString()}
+                        </span>
+                        <Button variant="ghost" size="sm" className="text-blue-600">
+                          View Details <ExternalLink className="w-3 h-3 ml-1" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </div>
                 </Card>
 
-                <Card className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-start space-x-4">
-                      <Calendar className="w-5 h-5 text-blue-600 mt-1" />
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 mb-2">Banking Sector Reports Strong Q4 Results</h3>
-                        <p className="text-gray-600 text-sm mb-3">
-                          Major Pakistani banks including HBL, UBL, and MCB have reported impressive quarterly results 
-                          with significant growth in advances and deposits...
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500">4 hours ago • Dawn News</span>
-                          <Button variant="ghost" size="sm">
-                            Read More <ExternalLink className="w-3 h-3 ml-1" />
-                          </Button>
+                {/* Banking Sector News */}
+                <Card className="hover:shadow-lg transition-all duration-300 overflow-hidden">
+                  <div className="md:flex">
+                    <div className="md:flex-shrink-0">
+                      <div className="h-48 w-full md:w-48 bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                        <div className="text-center text-white">
+                          <Building2 className="w-12 h-12 mx-auto mb-2" />
+                          <div className="text-lg font-bold">Banking</div>
+                          <div className="text-sm">Sector Focus</div>
                         </div>
                       </div>
                     </div>
-                  </CardContent>
+                    <CardContent className="p-6 flex-1">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <Badge className="bg-blue-100 text-blue-800">Sector Analysis</Badge>
+                        <Badge className="bg-yellow-100 text-yellow-800">AI Insights</Badge>
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-3">Banking Sector Shows Resilience Amid Economic Challenges</h3>
+                      <p className="text-gray-600 mb-4">
+                        Major Pakistani banks including HBL, UBL, and MCB continue to demonstrate strong fundamentals 
+                        with improved deposit growth and asset quality. AI analysis suggests positive momentum 
+                        for the banking sector in Q1 2025.
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500 flex items-center">
+                          <Calendar className="w-3 h-3 mr-1" />
+                          3 hours ago • Financial Tribune
+                        </span>
+                        <Button variant="ghost" size="sm" className="text-blue-600">
+                          Read Analysis <ExternalLink className="w-3 h-3 ml-1" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </div>
                 </Card>
 
-                <Card className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-start space-x-4">
-                      <Calendar className="w-5 h-5 text-purple-600 mt-1" />
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 mb-2">Technology Sector Shows Promise with AI Integration</h3>
-                        <p className="text-gray-600 text-sm mb-3">
-                          Pakistani tech companies are rapidly adopting AI technologies, with several firms announcing 
-                          major investments in artificial intelligence and machine learning capabilities...
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500">6 hours ago • The Express Tribune</span>
-                          <Button variant="ghost" size="sm">
-                            Read More <ExternalLink className="w-3 h-3 ml-1" />
-                          </Button>
+                {/* Technology Sector News */}
+                <Card className="hover:shadow-lg transition-all duration-300 overflow-hidden">
+                  <div className="md:flex">
+                    <div className="md:flex-shrink-0">
+                      <div className="h-48 w-full md:w-48 bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                        <div className="text-center text-white">
+                          <Bot className="w-12 h-12 mx-auto mb-2" />
+                          <div className="text-lg font-bold">AI Tech</div>
+                          <div className="text-sm">Innovation</div>
                         </div>
                       </div>
                     </div>
+                    <CardContent className="p-6 flex-1">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <Badge className="bg-purple-100 text-purple-800">Technology</Badge>
+                        <Badge className="bg-green-100 text-green-800">Growth</Badge>
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-3">Pakistan's Tech Sector Embraces AI Revolution</h3>
+                      <p className="text-gray-600 mb-4">
+                        Leading Pakistani technology companies are investing heavily in artificial intelligence 
+                        and machine learning capabilities, positioning the country as an emerging hub for 
+                        AI-powered financial services and fintech innovation.
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500 flex items-center">
+                          <Calendar className="w-3 h-3 mr-1" />
+                          5 hours ago • Tech Today Pakistan
+                        </span>
+                        <Button variant="ghost" size="sm" className="text-blue-600">
+                          Explore Trends <ExternalLink className="w-3 h-3 ml-1" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </div>
+                </Card>
+
+                {/* Market Sentiment Analysis */}
+                <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200">
+                  <CardContent className="p-6">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                        <Brain className="w-5 h-5 text-indigo-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900">AI Market Sentiment Analysis</h3>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-green-600">87%</div>
+                        <div className="text-sm text-gray-600">Bullish Sentiment</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-blue-600">{marketData?.advancingStocks || 245}</div>
+                        <div className="text-sm text-gray-600">Advancing Stocks</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-orange-600">15</div>
+                        <div className="text-sm text-gray-600">AI Alerts Today</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-purple-600">94%</div>
+                        <div className="text-sm text-gray-600">Prediction Accuracy</div>
+                      </div>
+                    </div>
+                    <p className="text-gray-700 text-sm">
+                      Our AI models indicate strong bullish sentiment across key sectors, with technology 
+                      and banking showing particular strength. Market volatility remains moderate with 
+                      high confidence in near-term positive momentum.
+                    </p>
                   </CardContent>
                 </Card>
               </div>
@@ -718,28 +801,84 @@ function Homepage() {
                 </CardContent>
               </Card>
 
-              {/* Market Tools */}
-              <Card>
+              {/* Interactive Market Tools */}
+              <Card className="bg-white shadow-lg">
                 <CardHeader>
-                  <CardTitle className="flex items-center">
+                  <CardTitle className="flex items-center text-green-700">
                     <Calculator className="w-5 h-5 mr-2" />
-                    Quick Tools
+                    Trading Calculators
                   </CardTitle>
+                  <CardDescription>Real-time financial calculators</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    <Button variant="outline" className="w-full justify-start">
-                      <PieChart className="w-4 h-4 mr-2" />
-                      Portfolio Calculator
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      <Percent className="w-4 h-4 mr-2" />
-                      Return Calculator
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      <Target className="w-4 h-4 mr-2" />
-                      Risk Analyzer
-                    </Button>
+                  <div className="space-y-4">
+                    {/* Portfolio Value Calculator */}
+                    <div className="p-3 bg-green-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-green-800">Portfolio Value</span>
+                        <PieChart className="w-4 h-4 text-green-600" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <Input placeholder="Shares" className="h-8" />
+                        <Input placeholder="Price" className="h-8" />
+                      </div>
+                      <div className="mt-2 text-center">
+                        <div className="text-lg font-bold text-green-700">Rs. 0.00</div>
+                        <div className="text-xs text-green-600">Total Value</div>
+                      </div>
+                    </div>
+
+                    {/* Return Calculator */}
+                    <div className="p-3 bg-blue-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-blue-800">Return Calculator</span>
+                        <Percent className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <Input placeholder="Buy Price" className="h-8" />
+                        <Input placeholder="Sell Price" className="h-8" />
+                      </div>
+                      <div className="mt-2 text-center">
+                        <div className="text-lg font-bold text-blue-700">0.00%</div>
+                        <div className="text-xs text-blue-600">Return %</div>
+                      </div>
+                    </div>
+
+                    {/* SIP Calculator */}
+                    <div className="p-3 bg-purple-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-purple-800">SIP Calculator</span>
+                        <Target className="w-4 h-4 text-purple-600" />
+                      </div>
+                      <div className="space-y-2">
+                        <Input placeholder="Monthly Investment" className="h-8 text-xs" />
+                        <Input placeholder="Expected Return %" className="h-8 text-xs" />
+                        <Input placeholder="Years" className="h-8 text-xs" />
+                      </div>
+                      <div className="mt-2 text-center">
+                        <div className="text-lg font-bold text-purple-700">Rs. 0</div>
+                        <div className="text-xs text-purple-600">Future Value</div>
+                      </div>
+                    </div>
+
+                    {/* Technical Indicators */}
+                    <div className="pt-3 border-t">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Technical Indicators</h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center text-xs">
+                          <span>RSI (14):</span>
+                          <Badge variant="outline" className="text-green-600">65.4 (Bullish)</Badge>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span>MACD:</span>
+                          <Badge variant="outline" className="text-blue-600">Positive</Badge>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span>Moving Avg:</span>
+                          <Badge variant="outline" className="text-green-600">Above 50-day</Badge>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

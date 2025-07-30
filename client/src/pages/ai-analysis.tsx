@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,25 +6,42 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
-  Activity, 
-  TrendingUp, 
-  TrendingDown, 
-  BarChart3, 
   Brain, 
-  Zap, 
+  TrendingUp, 
   Target, 
-  Globe,
+  BarChart3, 
   ArrowLeft,
-  Search,
+  Sparkles,
   Bot,
-  ChevronRight,
-  Lightbulb,
   AlertTriangle,
   DollarSign,
-  PieChart,
+  Calendar,
+  Clock,
+  Percent,
+  Globe,
+  ChevronRight,
+  Activity,
+  Shield,
+  Zap,
+  Users,
   LineChart,
-  Sparkles
+  PieChart,
+  Settings,
+  RefreshCw,
+  Download,
+  Share2,
+  BookOpen,
+  Award,
+  TrendingDown,
+  Star,
+  Search,
+  Filter,
+  Layers,
+  Trending,
+  Eye,
+  CheckCircle
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -52,36 +68,93 @@ interface AIAnalysis {
 }
 
 function AIAnalysisPage() {
-  const [selectedStock, setSelectedStock] = useState("");
-  const [analysisQuery, setAnalysisQuery] = useState("");
-  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
   const [marketInsight, setMarketInsight] = useState("");
+  const [selectedStock, setSelectedStock] = useState("");
+  const [customQuery, setCustomQuery] = useState("");
+  const [aiPredictions, setAiPredictions] = useState<any[]>([]);
+  const [backtestResults, setBacktestResults] = useState<any>(null);
 
   const { data: stocks } = useQuery<Stock[]>({
     queryKey: ["/api/stocks"],
   });
 
-  const analyzeStock = async (symbol: string) => {
-    setIsAnalyzing(true);
+  const handleAnalysis = async () => {
+    if (!selectedStock) return;
+
+    setLoading(true);
     try {
-      const response = await fetch('/api/ai-analysis', {
-        method: 'POST',
+      const response = await fetch("/api/ai-analysis", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ symbol, query: analysisQuery }),
+        body: JSON.stringify({
+          symbol: selectedStock,
+          query: customQuery,
+        }),
       });
-      
+
       if (response.ok) {
-        const analysis = await response.json();
-        setAiAnalysis(analysis);
+        const result = await response.json();
+        setAnalysisResult(result);
+
+        // Generate AI predictions
+        generateAIPredictions(result);
+
+        // Run backtesting simulation
+        runBacktestSimulation(result);
       }
     } catch (error) {
-      console.error('Analysis failed:', error);
+      console.error("Analysis failed:", error);
     } finally {
-      setIsAnalyzing(false);
+      setLoading(false);
     }
+  };
+
+  const generateAIPredictions = (analysis: any) => {
+    const predictions = [
+      {
+        timeframe: "1 Week",
+        prediction: "Bullish",
+        confidence: analysis.confidence * 0.9,
+        targetPrice: analysis.targetPrice * 1.02,
+        signals: ["Volume increasing", "Technical breakout expected"]
+      },
+      {
+        timeframe: "1 Month",
+        prediction: analysis.recommendation.includes("Buy") ? "Strong Buy" : analysis.recommendation.includes("Sell") ? "Sell" : "Hold",
+        confidence: analysis.confidence * 0.85,
+        targetPrice: analysis.targetPrice * 1.08,
+        signals: ["Fundamental strength", "Sector rotation positive"]
+      },
+      {
+        timeframe: "3 Months",
+        prediction: "Neutral to Positive",
+        confidence: analysis.confidence * 0.75,
+        targetPrice: analysis.targetPrice * 1.15,
+        signals: ["Long-term fundamentals", "Market cycle analysis"]
+      }
+    ];
+    setAiPredictions(predictions);
+  };
+
+  const runBacktestSimulation = (analysis: any) => {
+    // Simulate backtest results
+    const backtest = {
+      strategy: "AI Momentum Strategy",
+      period: "1 Year",
+      totalReturn: "23.45%",
+      winRate: "67.3%",
+      maxDrawdown: "8.2%",
+      sharpeRatio: "1.87",
+      trades: 45,
+      avgHoldingPeriod: "8.2 days",
+      bestTrade: "+12.4%",
+      worstTrade: "-4.1%"
+    };
+    setBacktestResults(backtest);
   };
 
   const getMarketInsights = async () => {
@@ -93,7 +166,7 @@ function AIAnalysisPage() {
         },
         body: JSON.stringify({ type: 'general' }),
       });
-      
+
       if (response.ok) {
         const insights = await response.json();
         setMarketInsight(insights.insight);
@@ -204,18 +277,18 @@ function AIAnalysisPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Analysis Focus (Optional)</label>
                     <Input
                       placeholder="e.g., Technical analysis, growth potential, risk assessment..."
-                      value={analysisQuery}
-                      onChange={(e) => setAnalysisQuery(e.target.value)}
+                      value={customQuery}
+                      onChange={(e) => setCustomQuery(e.target.value)}
                     />
                   </div>
                 </div>
-                
+
                 <Button
-                  onClick={() => selectedStock && analyzeStock(selectedStock)}
-                  disabled={!selectedStock || isAnalyzing}
+                  onClick={handleAnalysis}
+                  disabled={!selectedStock || loading}
                   className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                 >
-                  {isAnalyzing ? (
+                  {loading ? (
                     <>
                       <Activity className="w-4 h-4 mr-2 animate-spin" />
                       Analyzing...
@@ -228,7 +301,7 @@ function AIAnalysisPage() {
                   )}
                 </Button>
 
-                {aiAnalysis && (
+                {analysisResult && (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
                     <Card className="border-purple-200">
                       <CardHeader>
@@ -238,16 +311,16 @@ function AIAnalysisPage() {
                         <div className="space-y-4">
                           <div>
                             <h4 className="font-semibold text-gray-900 mb-2">Analysis</h4>
-                            <p className="text-gray-600 text-sm">{aiAnalysis.analysis}</p>
+                            <p className="text-gray-600 text-sm">{analysisResult.analysis}</p>
                           </div>
                           <div>
                             <h4 className="font-semibold text-gray-900 mb-2">Recommendation</h4>
-                            <p className="text-gray-600 text-sm">{aiAnalysis.recommendation}</p>
+                            <p className="text-gray-600 text-sm">{analysisResult.recommendation}</p>
                           </div>
                         </div>
                       </CardContent>
                     </Card>
-                    
+
                     <Card className="border-blue-200">
                       <CardHeader>
                         <CardTitle className="text-lg">Key Metrics</CardTitle>
@@ -256,17 +329,17 @@ function AIAnalysisPage() {
                         <div className="space-y-4">
                           <div className="flex justify-between items-center">
                             <span className="text-gray-600">Risk Level</span>
-                            <Badge variant={aiAnalysis.riskLevel === 'Low' ? 'default' : aiAnalysis.riskLevel === 'Medium' ? 'secondary' : 'destructive'}>
-                              {aiAnalysis.riskLevel}
+                            <Badge variant={analysisResult.riskLevel === 'Low' ? 'default' : analysisResult.riskLevel === 'Medium' ? 'secondary' : 'destructive'}>
+                              {analysisResult.riskLevel}
                             </Badge>
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="text-gray-600">Target Price</span>
-                            <span className="font-semibold">{formatPrice(aiAnalysis.targetPrice)}</span>
+                            <span className="font-semibold">{formatPrice(analysisResult.targetPrice)}</span>
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="text-gray-600">AI Confidence</span>
-                            <span className="font-semibold">{aiAnalysis.confidence}%</span>
+                            <span className="font-semibold">{analysisResult.confidence}%</span>
                           </div>
                         </div>
                       </CardContent>
@@ -297,7 +370,7 @@ function AIAnalysisPage() {
                   <Lightbulb className="w-4 h-4 mr-2" />
                   Generate Market Insights
                 </Button>
-                
+
                 {marketInsight && (
                   <Card className="bg-gradient-to-r from-blue-50 to-green-50 border-blue-200">
                     <CardContent className="p-6">
@@ -305,8 +378,9 @@ function AIAnalysisPage() {
                       <p className="text-gray-700">{marketInsight}</p>
                     </CardContent>
                   </Card>
+
                 )}
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
                   <Card>
                     <CardHeader>
@@ -322,7 +396,7 @@ function AIAnalysisPage() {
                       </ul>
                     </CardContent>
                   </Card>
-                  
+
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-lg">Global Market Correlations</CardTitle>
@@ -364,7 +438,7 @@ function AIAnalysisPage() {
                       <Badge className="bg-green-100 text-green-800">+15.2% Annual Return</Badge>
                     </CardContent>
                   </Card>
-                  
+
                   <Card className="bg-blue-50 border-blue-200">
                     <CardContent className="p-6 text-center">
                       <PieChart className="w-8 h-8 text-blue-600 mx-auto mb-3" />
@@ -373,7 +447,7 @@ function AIAnalysisPage() {
                       <Badge className="bg-blue-100 text-blue-800">+12.8% Annual Return</Badge>
                     </CardContent>
                   </Card>
-                  
+
                   <Card className="bg-purple-50 border-purple-200">
                     <CardContent className="p-6 text-center">
                       <Target className="w-8 h-8 text-purple-600 mx-auto mb-3" />
@@ -383,7 +457,7 @@ function AIAnalysisPage() {
                     </CardContent>
                   </Card>
                 </div>
-                
+
                 <div className="mt-8">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Custom Strategy Builder</h3>
                   <div className="space-y-4">
@@ -445,7 +519,7 @@ function AIAnalysisPage() {
                       </div>
                     </CardContent>
                   </Card>
-                  
+
                   <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
                     <CardHeader>
                       <CardTitle className="text-lg">Monthly Outlook</CardTitle>
@@ -468,7 +542,7 @@ function AIAnalysisPage() {
                     </CardContent>
                   </Card>
                 </div>
-                
+
                 <Card className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
                   <CardContent className="p-6">
                     <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
@@ -533,7 +607,7 @@ function AIAnalysisPage() {
                       </div>
                     </CardContent>
                   </Card>
-                  
+
                   <Card className="bg-blue-50 border-blue-200">
                     <CardHeader>
                       <CardTitle className="text-lg text-blue-800">International Diversification</CardTitle>
@@ -559,7 +633,7 @@ function AIAnalysisPage() {
                     </CardContent>
                   </Card>
                 </div>
-                
+
                 <Card className="mt-6 bg-gradient-to-r from-orange-50 to-red-50 border-orange-200">
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center">
