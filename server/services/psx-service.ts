@@ -184,7 +184,7 @@ export class PSXService {
       );
       const symbols = JSON.parse(response) as Symbol[];
       console.log(`Fetched ${symbols.length} symbols from PSX service`);
-      
+
       this.symbolsCache = symbols.reduce(
         (acc: { [symbolId: string]: Symbol }, symbol) => {
           acc[symbol.symbol] = symbol;
@@ -206,12 +206,12 @@ export class PSXService {
       await this.fetchSymbols(); // Call fetchSymbols first to get proper names and sectors
       const html = await this.fetchWithRetry<string>(this.API_URL, false);
       const stockData = this.parseHTMLData(html);
-      console.log(stockData, "stockData");
-      
+      //console.log(stockData, "stockData");
+
       // Map stock data with proper names and sectors from symbols service
       stockData.forEach((stock) => {
         const symbolInfo = this.symbolsCache?.[stock.symbol];
-        
+
         if (symbolInfo) {
           // Use proper company name from symbols service
           stock.name = symbolInfo.name || `${stock.symbol} Limited`;
@@ -222,7 +222,7 @@ export class PSXService {
           stock.name = `${stock.symbol} Limited`;
         }
       });
-      
+
       return stockData;
     } catch (error) {
       console.error("Error fetching market data:", error);
@@ -359,25 +359,25 @@ export class PSXService {
         const change = parseFloat($(cells[8]).attr("data-order") || "0");
         const changePercent = parseFloat($(cells[9]).attr("data-order") || "0");
         const volume = parseInt($(cells[10]).attr("data-order") || "0", 10);
-        console.log($(cells[10]).attr("data-order"), "data-tippy");
+        // console.log($(cells[10]).attr("data-order"), "data-tippy");
         const isPositive = change >= 0;
 
         if (symbol) {
-          console.log(
-            symbol,
-            name,
-            sector,
-            ldcp,
-            open,
-            high,
-            low,
-            current,
-            change,
-            changePercent,
-            volume,
-            isPositive,
-            "symbol",
-          );
+          // console.log(
+          //   symbol,
+          //   name,
+          //   sector,
+          //   ldcp,
+          //   open,
+          //   high,
+          //   low,
+          //   current,
+          //   change,
+          //   changePercent,
+          //   volume,
+          //   isPositive,
+          //   "symbol",
+          // );
           stocks.push({
             symbol,
             name,

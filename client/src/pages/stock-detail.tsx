@@ -564,7 +564,7 @@ export default function StockDetail() {
                                 : "N/A"}
                             </td>
                             <td className="py-1.5 px-2 text-right text-slate-700">
-                              {formatNumber(profile.sharesOutstanding)}
+                              {formatNumber(profile.sharesOutstanding || 0)}
                             </td>
                             <td className="py-1.5 px-2 text-right text-slate-700">
                               {profile.freeFloat
@@ -574,7 +574,8 @@ export default function StockDetail() {
                             <td className="py-1.5 px-2 text-right text-slate-700">
                               {formatPercentage(
                                 profile.freeFloatPercentage ||
-                                  profile.freeFloat,
+                                  profile.freeFloat ||
+                                  null,
                               )}
                             </td>
                           </tr>
@@ -588,178 +589,264 @@ export default function StockDetail() {
         )}
 
         {/* Financial Performance Section - New Structure */}
-        {companyData?.financials && (companyData.financials.annual?.length > 0 || companyData.financials.quarterly?.length > 0) && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
-              <DollarSign className="w-5 h-5 mr-2" />
-              Financial Performance
-            </h3>
-            <p className="text-sm text-slate-600 mb-4">All numbers in thousands (000's) except EPS</p>
-            
-            {/* Annual Financial Data */}
-            {companyData.financials.annual && companyData.financials.annual.length > 0 && (
-              <div className="mb-6">
-                <h4 className="font-medium text-slate-900 mb-3">Annual Results</h4>
-                <div className="overflow-x-auto bg-blue-50 rounded-lg p-4">
-                  <table className="w-full border-collapse text-sm">
-                    <thead>
-                      <tr className="border-b border-blue-200">
-                        <th className="text-left py-2 px-3 font-medium text-blue-900">Metric</th>
-                        {companyData.financials.annual.map((data, index) => (
-                          <th key={index} className="text-right py-2 px-3 font-medium text-blue-900">
-                            {data.year}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="border-b border-blue-100 hover:bg-blue-100">
-                        <td className="py-2 px-3 font-medium text-slate-900">Sales</td>
-                        {companyData.financials.annual.map((data, index) => (
-                          <td key={index} className="py-2 px-3 text-right text-slate-700 font-mono">
-                            {data.sales ? formatNumber(data.sales) : '-'}
-                          </td>
-                        ))}
-                      </tr>
-                      <tr className="border-b border-blue-100 hover:bg-blue-100">
-                        <td className="py-2 px-3 font-medium text-slate-900">Profit after Taxation</td>
-                        {companyData.financials.annual.map((data, index) => (
-                          <td key={index} className={`py-2 px-3 text-right font-mono ${
-                            data.profitAfterTax && data.profitAfterTax < 0 ? 'text-red-600' : 'text-slate-700'
-                          }`}>
-                            {data.profitAfterTax !== undefined ? formatNumber(data.profitAfterTax) : '-'}
-                          </td>
-                        ))}
-                      </tr>
-                      <tr className="border-b border-blue-100 hover:bg-blue-100">
-                        <td className="py-2 px-3 font-medium text-slate-900">EPS</td>
-                        {companyData.financials.annual.map((data, index) => (
-                          <td key={index} className={`py-2 px-3 text-right font-mono ${
-                            data.eps && data.eps < 0 ? 'text-red-600' : 'text-slate-700'
-                          }`}>
-                            {data.eps !== undefined ? data.eps.toFixed(2) : '-'}
-                          </td>
-                        ))}
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+        {companyData.financialData &&
+          (companyData.financialData.annual?.length > 0 ||
+            companyData.financialData.quarterly?.length > 0) && (
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+                <DollarSign className="w-5 h-5 mr-2" />
+                Financial Performance
+              </h3>
+              <p className="text-sm text-slate-600 mb-4">
+                All numbers in thousands (000's) except EPS
+              </p>
 
-            {/* Quarterly Financial Data */}
-            {companyData.financials.quarterly && companyData.financials.quarterly.length > 0 && (
-              <div>
-                <h4 className="font-medium text-slate-900 mb-3">Quarterly Results</h4>
-                <div className="overflow-x-auto bg-green-50 rounded-lg p-4">
-                  <table className="w-full border-collapse text-sm">
-                    <thead>
-                      <tr className="border-b border-green-200">
-                        <th className="text-left py-2 px-3 font-medium text-green-900">Metric</th>
-                        {companyData.financials.quarterly.map((data, index) => (
-                          <th key={index} className="text-right py-2 px-3 font-medium text-green-900">
-                            {data.year}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="border-b border-green-100 hover:bg-green-100">
-                        <td className="py-2 px-3 font-medium text-slate-900">Sales</td>
-                        {companyData.financials.quarterly.map((data, index) => (
-                          <td key={index} className="py-2 px-3 text-right text-slate-700 font-mono">
-                            {data.sales ? formatNumber(data.sales) : '-'}
-                          </td>
-                        ))}
-                      </tr>
-                      <tr className="border-b border-green-100 hover:bg-green-100">
-                        <td className="py-2 px-3 font-medium text-slate-900">Profit after Taxation</td>
-                        {companyData.financials.quarterly.map((data, index) => (
-                          <td key={index} className={`py-2 px-3 text-right font-mono ${
-                            data.profitAfterTax && data.profitAfterTax < 0 ? 'text-red-600' : 'text-slate-700'
-                          }`}>
-                            {data.profitAfterTax !== undefined ? formatNumber(data.profitAfterTax) : '-'}
-                          </td>
-                        ))}
-                      </tr>
-                      <tr className="border-b border-green-100 hover:bg-green-100">
-                        <td className="py-2 px-3 font-medium text-slate-900">EPS</td>
-                        {companyData.financials.quarterly.map((data, index) => (
-                          <td key={index} className={`py-2 px-3 text-right font-mono ${
-                            data.eps && data.eps < 0 ? 'text-red-600' : 'text-slate-700'
-                          }`}>
-                            {data.eps !== undefined ? data.eps.toFixed(2) : '-'}
-                          </td>
-                        ))}
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+              {/* Annual Financial Data */}
+              {companyData.financialData.annual &&
+                companyData.financialData.annual.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="font-medium text-slate-900 mb-3">
+                      Annual Results
+                    </h4>
+                    <div className="overflow-x-auto bg-blue-50 rounded-lg p-4">
+                      <table className="w-full border-collapse text-sm">
+                        <thead>
+                          <tr className="border-b border-blue-200">
+                            <th className="text-left py-2 px-3 font-medium text-blue-900">
+                              Metric
+                            </th>
+                            {companyData.financialData.annual.map(
+                              (data, index) => (
+                                <th
+                                  key={index}
+                                  className="text-right py-2 px-3 font-medium text-blue-900"
+                                >
+                                  {data.label}
+                                </th>
+                              ),
+                            )}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-b border-blue-100 hover:bg-blue-100">
+                            <td className="py-2 px-3 font-medium text-slate-900">
+                              Sales
+                            </td>
+                            {companyData.financialData.annual.map(
+                              (data, index) => (
+                                <td
+                                  key={index}
+                                  className="py-2 px-3 text-right text-slate-700 font-mono"
+                                >
+                                  {data.sales ? formatNumber(data.sales) : "-"}
+                                </td>
+                              ),
+                            )}
+                          </tr>
+                          <tr className="border-b border-blue-100 hover:bg-blue-100">
+                            <td className="py-2 px-3 font-medium text-slate-900">
+                              Profit after Taxation
+                            </td>
+                            {companyData.financialData.annual.map(
+                              (data, index) => (
+                                <td
+                                  key={index}
+                                  className={`py-2 px-3 text-right font-mono ${
+                                    data.profitAfterTax &&
+                                    data.profitAfterTax < 0
+                                      ? "text-red-600"
+                                      : "text-slate-700"
+                                  }`}
+                                >
+                                  {data.profitAfterTax !== undefined
+                                    ? formatNumber(data.profitAfterTax)
+                                    : "-"}
+                                </td>
+                              ),
+                            )}
+                          </tr>
+                          <tr className="border-b border-blue-100 hover:bg-blue-100">
+                            <td className="py-2 px-3 font-medium text-slate-900">
+                              EPS
+                            </td>
+                            {companyData.financialData.annual.map(
+                              (data, index) => (
+                                <td
+                                  key={index}
+                                  className={`py-2 px-3 text-right font-mono ${
+                                    data.eps && data.eps < 0
+                                      ? "text-red-600"
+                                      : "text-slate-700"
+                                  }`}
+                                >
+                                  {data.eps !== undefined
+                                    ? data.eps.toFixed(2)
+                                    : "-"}
+                                </td>
+                              ),
+                            )}
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+              {/* Quarterly Financial Data */}
+              {companyData.financialData.quarterly &&
+                companyData.financialData.quarterly.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-slate-900 mb-3">
+                      Quarterly Results
+                    </h4>
+                    <div className="overflow-x-auto bg-green-50 rounded-lg p-4">
+                      <table className="w-full border-collapse text-sm">
+                        <thead>
+                          <tr className="border-b border-green-200">
+                            <th className="text-left py-2 px-3 font-medium text-green-900">
+                              Metric
+                            </th>
+                            {companyData.financialData.quarterly.map(
+                              (data, index) => (
+                                <th
+                                  key={index}
+                                  className="text-right py-2 px-3 font-medium text-green-900"
+                                >
+                                  {data.label}
+                                </th>
+                              ),
+                            )}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-b border-green-100 hover:bg-green-100">
+                            <td className="py-2 px-3 font-medium text-slate-900">
+                              Sales
+                            </td>
+                            {companyData.financialData.quarterly.map(
+                              (data, index) => (
+                                <td
+                                  key={index}
+                                  className="py-2 px-3 text-right text-slate-700 font-mono"
+                                >
+                                  {data.sales ? formatNumber(data.sales) : "-"}
+                                </td>
+                              ),
+                            )}
+                          </tr>
+                          <tr className="border-b border-green-100 hover:bg-green-100">
+                            <td className="py-2 px-3 font-medium text-slate-900">
+                              Profit after Taxation
+                            </td>
+                            {companyData.financialData.quarterly.map(
+                              (data, index) => (
+                                <td
+                                  key={index}
+                                  className={`py-2 px-3 text-right font-mono ${
+                                    data.profitAfterTax &&
+                                    data.profitAfterTax < 0
+                                      ? "text-red-600"
+                                      : "text-slate-700"
+                                  }`}
+                                >
+                                  {data.profitAfterTax !== undefined
+                                    ? formatNumber(data.profitAfterTax)
+                                    : "-"}
+                                </td>
+                              ),
+                            )}
+                          </tr>
+                          <tr className="border-b border-green-100 hover:bg-green-100">
+                            <td className="py-2 px-3 font-medium text-slate-900">
+                              EPS
+                            </td>
+                            {companyData.financialData.quarterly.map(
+                              (data, index) => (
+                                <td
+                                  key={index}
+                                  className={`py-2 px-3 text-right font-mono ${
+                                    data.eps && data.eps < 0
+                                      ? "text-red-600"
+                                      : "text-slate-700"
+                                  }`}
+                                >
+                                  {data.eps !== undefined
+                                    ? data.eps.toFixed(2)
+                                    : "-"}
+                                </td>
+                              ),
+                            )}
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+            </div>
+          )}
 
         {/* Legacy Financial Performance Section - Fallback */}
-        {!companyData?.financials && companyData?.financialData && companyData.financialData.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-5">
-            <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center">
-              <DollarSign className="w-4 h-4 mr-2" />
-              Financial Performance
-            </h3>
-            <div className="overflow-x-auto bg-green-50 rounded-lg p-3">
-              <table className="w-full border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-green-200">
-                    <th className="text-left py-1.5 px-2 font-medium text-green-900">
-                      Year
-                    </th>
-                    <th className="text-right py-1.5 px-2 font-medium text-green-900">
-                      Sales
-                    </th>
-                    <th className="text-right py-1.5 px-2 font-medium text-green-900">
-                      Gross Profit
-                    </th>
-                    <th className="text-right py-1.5 px-2 font-medium text-green-900">
-                      Profit After Tax
-                    </th>
-                    <th className="text-right py-1.5 px-2 font-medium text-green-900">
-                      EPS
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {companyData.financialData.map((financial, index) => (
-                    <tr
-                      key={index}
-                      className="border-b border-green-100 hover:bg-green-100"
-                    >
-                      <td className="py-1.5 px-2 font-medium text-slate-900">
-                        {financial.year}
-                      </td>
-                      <td className="py-1.5 px-2 text-right text-slate-700">
-                        {financial.sales
-                          ? `₨${formatNumber(financial.sales)}`
-                          : "N/A"}
-                      </td>
-
-                      <td className="py-1.5 px-2 text-right text-slate-700">
-                        {financial.profitAfterTax
-                          ? `₨${formatNumber(financial.profitAfterTax)}`
-                          : "N/A"}
-                      </td>
-                      <td className="py-1.5 px-2 text-right text-slate-700">
-                        {financial.eps
-                          ? `₨${formatRatio(financial.eps)}`
-                          : "N/A"}
-                      </td>
+        {!companyData?.financialData &&
+          companyData?.financialData &&
+          companyData.financialData.length > 0 && (
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-5">
+              <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center">
+                <DollarSign className="w-4 h-4 mr-2" />
+                Financial Performance
+              </h3>
+              <div className="overflow-x-auto bg-green-50 rounded-lg p-3">
+                <table className="w-full border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-green-200">
+                      <th className="text-left py-1.5 px-2 font-medium text-green-900">
+                        Year
+                      </th>
+                      <th className="text-right py-1.5 px-2 font-medium text-green-900">
+                        Sales
+                      </th>
+                      <th className="text-right py-1.5 px-2 font-medium text-green-900">
+                        Gross Profit
+                      </th>
+                      <th className="text-right py-1.5 px-2 font-medium text-green-900">
+                        Profit After Tax
+                      </th>
+                      <th className="text-right py-1.5 px-2 font-medium text-green-900">
+                        EPS
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {companyData.financialData.map((financial, index) => (
+                      <tr
+                        key={index}
+                        className="border-b border-green-100 hover:bg-green-100"
+                      >
+                        <td className="py-1.5 px-2 font-medium text-slate-900">
+                          {financial.year}
+                        </td>
+                        <td className="py-1.5 px-2 text-right text-slate-700">
+                          {financial.sales
+                            ? `₨${formatNumber(financial.sales)}`
+                            : "N/A"}
+                        </td>
+
+                        <td className="py-1.5 px-2 text-right text-slate-700">
+                          {financial.profitAfterTax
+                            ? `₨${formatNumber(financial.profitAfterTax)}`
+                            : "N/A"}
+                        </td>
+                        <td className="py-1.5 px-2 text-right text-slate-700">
+                          {financial.eps
+                            ? `₨${formatRatio(financial.eps)}`
+                            : "N/A"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Financial Ratios Section */}
         {companyData?.ratiosData && companyData.ratiosData.length > 0 && (
@@ -974,7 +1061,7 @@ export default function StockDetail() {
           )}
 
         {/* Company Description */}
-        {companyData?.businessDescription && (
+        {/* {companyData?.businessDescription && (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
             <h3 className="text-lg font-semibold text-slate-900 mb-3">
               Business Description
@@ -983,7 +1070,7 @@ export default function StockDetail() {
               {companyData.businessDescription}
             </p>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );

@@ -243,28 +243,6 @@ export interface SystemStatus {
   connectedClients: number;
 }
 
-export interface FinancialData {
-  year: string;
-  sales?: number;
-  profitAfterTax?: number;
-  eps?: number;
-  revenue?: number;
-  grossProfit?: number;
-  operatingProfit?: number;
-  netIncome?: number;
-  totalAssets?: number;
-  totalEquity?: number;
-  totalLiabilities?: number;
-  cashFlow?: number;
-  dividendPerShare?: number;
-  bookValuePerShare?: number;
-  returnOnEquity?: number;
-  returnOnAssets?: number;
-  debtToEquity?: number;
-  currentRatio?: number;
-  quickRatio?: number;
-}
-
 export interface CompanyData {
   symbol: string;
   name: string;
@@ -291,10 +269,6 @@ export interface CompanyData {
   fiscalYearEnd?: string;
   keyPeople?: Array<{ name: string; role: string }>;
   businessDescription?: string;
-  financials?: {
-    annual?: FinancialData[];
-    quarterly?: FinancialData[];
-  };
 
   // Additional Financial Ratios
   roa?: number; // Return on Assets
@@ -316,6 +290,7 @@ export interface CompanyData {
   enterpriseValue?: number;
   evToEbitda?: number;
   beta?: number;
+  sales?: number;
 
   // Free Float Information
   freeFloat?: number;
@@ -330,12 +305,20 @@ export interface CompanyData {
   }>;
 
   // Comprehensive Financial Data
-  financialData?: Array<{
-    year: string;
-    sales?: number;
-    profitAfterTax?: number;
-    eps?: number;
-  }>;
+  financialData?: {
+    annual?: Array<{
+      label: string;
+      sales?: number;
+      profitAfterTax?: number;
+      eps?: number;
+    }>;
+    quarterly?: Array<{
+      label: string;
+      sales?: number;
+      profitAfterTax?: number;
+      eps?: number;
+    }>;
+  };
 
   // Comprehensive Ratios Data
   ratiosData?: Array<{

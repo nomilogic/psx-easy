@@ -322,8 +322,8 @@ export class CompanyService {
       description: "",
       financials: {
         annual: [],
-        quarterly: []
-      }
+        quarterly: [],
+      },
     };
 
     try {
@@ -732,107 +732,77 @@ export class CompanyService {
       });
 
       // Extract comprehensive financial data from financials section
-      const financialData: Array<{
-        year: string;
+      financialEntry: Array<{
+        label: string;
         sales?: number;
         profitAfterTax?: number;
         eps?: number;
-      }> = [];
+      }>;
+      const financialData: FinancialData = parseFinancialData(html);
 
       // Enhanced financial data extraction from multiple possible locations
-      const financialSelectors = [
-        "#financials .tabs__panel[data-name='Annual'] table tbody tr",
-        ".company__financials table tbody tr",
-        ".financials table tbody tr",
-        ".financial__data table tbody tr",
-      ];
+      // $("#financialTab .tabs__panel").each((_, panel) => {
+      //   const tabName = $(panel).attr("data-name")?.toLowerCase(); // "annual" or "quarterly"
+      //   if (!tabName || !["annual", "quarterly"].includes(tabName)) return;
 
-      financialSelectors.forEach((selector) => {
-        $(selector).each((_, row) => {
-          const cells = $(row).find("td");
-          console.log("Cells: ", cells);
-          if (cells.length >= 2) {
-            const metric = $(cells[0]).text().trim().toLowerCase();
+      //   const labels: string[] = [];
 
-            // Extract years from header if not done
-            if (financialData.length === 0) {
-              const headers = $(row)
-                .closest("table")
-                .find("thead th, thead td");
-              if (headers.length > 0) {
-                headers.each((index, header) => {
-                  if (index > 0) {
-                    // Skip first column which is metric name
-                    const year = $(header).text().trim();
-                    if (year && /^\d{4}$/.test(year)) {
-                      // Only accept 4-digit years
-                      financialData.push({ year });
-                    }
-                  }
-                });
-              }
-            }
+      //   // Extract column headers (years or quarters)
+      //   $(panel)
+      //     .find("thead tr th")
+      //     .each((i, el) => {
+      //       if (i === 0) return; // skip first column (metric name)
+      //       const text = $(el).text().trim();
+      //       if (text) labels.push(text);
+      //     });
 
-            // If still no financial data structure, create one based on cell count
-            // if (financialData.length === 0 && cells.length > 1) {
-            //   for (let i = 1; i < cells.length; i++) {
-            //     const cellYear = $(cells[i]).text().trim();
-            //     if (/^\d{4}$/.test(cellYear)) {
-            //       financialData.push({ year: cellYear });
-            //     } else {
-            //       // If no year in cell, create generic year entries
-            //       const currentYear = new Date().getFullYear();
-            //       financialData.push({
-            //         year: (currentYear - (cells.length - 1 - i)).toString(),
-            //       });
-            //     }
-            //   }
-            // }
+      //   // Parse rows
+      //   $(panel)
+      //     .find("tbody tr")
+      //     .each((_, row) => {
+      //       const cells = $(row).find("td");
+      //       const metric = $(cells[0]).text().trim().toLowerCase();
 
-            // Extract financial metrics for each year
-            for (
-              let i = 1;
-              i < cells.length && i - 1 < financialData.length;
-              i++
-            ) {
-              const value = $(cells[i])
-                .text()
-                .trim()
-                .replace(/[(),]/g, "")
-                .replace(/,/g, "");
-              const numValue = parseFloat(value);
+      //       for (let i = 1; i < cells.length; i++) {
+      //         const valueText = $(cells[i]).text().trim();
+      //         const isNegative =
+      //           valueText.includes("(") && valueText.includes(")");
+      //         const number = parseFloat(valueText.replace(/[(),]/g, ""));
+      //         if (isNaN(number)) continue;
 
-              if (!isNaN(numValue) && financialData[i - 1]) {
-                if (
-                  metric.includes("sales") ||
-                  metric.includes("revenue") ||
-                  metric.includes("turnover")
-                ) {
-                  financialData[i - 1].sales = numValue;
-                  // Sales data stored in financialData array
-                } else if (
-                  metric.includes("profit after taxation") ||
-                  metric.includes("net income") ||
-                  metric.includes("profit after tax")
-                ) {
-                  financialData[i - 1].profitAfterTax = numValue;
-                } else if (
-                  metric === "eps" ||
-                  metric.includes("earnings per share")
-                ) {
-                  financialData[i - 1].eps = numValue;
-                  // EPS data stored in financialData array
-                }
-              }
-            }
-          }
-        });
-      });
+      //         const finalValue = isNegative ? -Math.abs(number) : number;
+      //         const label = labels[i - 1];
+      //         if (!label) continue;
 
-      if (financialData.length > 0) {
+      //         const entries = financialData[tabName]!;
+      //         let entry = entries.find((e) => e.label === label);
+      //         if (!entry) {
+      //           entry = { label };
+      //           entries.push(entry);
+      //         }
+
+      //         if (metric.includes("sales") || metric.includes("revenue")) {
+      //           entry.sales = finalValue;
+      //         } else if (
+      //           metric.includes("profit after taxation") ||
+      //           metric.includes("net income")
+      //         ) {
+      //           entry.profitAfterTax = finalValue;
+      //         } else if (
+      //           metric === "eps" ||
+      //           metric.includes("earnings per share")
+      //         ) {
+      //           entry.eps = finalValue;
+      //         }
+      //       }
+      //     });
+      // });
+
+      // Assign to company data
+      console.log("Financial Data:", financialData);
+      if (financialData.annual?.length || financialData.quarterly?.length) {
         companyData.financialData = financialData;
       }
-
       // Extract ratios data
       const ratiosData: Array<{
         year: string;
@@ -1144,4 +1114,129 @@ export class CompanyService {
       return [];
     }
   }
+}
+type FinancialEntry = {
+  label: string;
+  sales?: number;
+  profitAfterTax?: number;
+  eps?: number;
+};
+type FinancialData = {
+  annual: FinancialEntry[];
+  quarterly: FinancialEntry[];
+};
+function parseFinancialData(htmlContent: string): FinancialData {
+  const financialData: FinancialData = {
+    annual: [],
+    quarterly: [],
+  };
+
+  // Helper function to parse numerical values from text, handling negative signs and commas
+  const parseNumber = (text: string | null | undefined): number | null => {
+    if (!text) return null;
+    let cleanedText = text.replace(/,/g, ""); // Remove commas
+    let value = parseFloat(cleanedText);
+
+    // Check for negative numbers wrapped in parentheses, e.g., "(1.37)"
+    if (cleanedText.startsWith("(") && cleanedText.endsWith(")")) {
+      value = -parseFloat(cleanedText.substring(1, cleanedText.length - 1));
+    }
+    return isNaN(value) ? null : value;
+  };
+
+  // Load the HTML into cheerio
+  const $ = cheerio.load(htmlContent);
+
+  // Generic function to parse a financial table (Annual or Quarterly)
+
+  const parseTable = (
+    panelSelector: string,
+    dataArray: FinancialEntry[],
+    isQuarterly: boolean = false,
+  ) => {
+    const panel = $(panelSelector);
+    const table = panel.find("table");
+    const headers: string[] = [];
+    const dataMap = new Map<string, FinancialEntry>();
+
+    // Get headers (years or quarters)
+    table.find("thead th").each((i, el) => {
+      if (i > 0) {
+        // Skip the first empty header
+        headers.push($(el).text().trim());
+      }
+    });
+
+    // Initialize map entries with labels
+    headers.forEach((header) => {
+      dataMap.set(header, { label: header });
+    });
+
+    // Extract data rows
+    table.find("tbody tr").each((rowIndex, rowEl) => {
+      const rowLabel = $(rowEl).find("td").first().text().trim();
+      $(rowEl)
+        .find("td")
+        .slice(1)
+        .each((colIndex, colEl) => {
+          const header = headers[colIndex];
+          const value = parseNumber($(colEl).text().trim());
+          const entry = dataMap.get(header);
+
+          if (entry) {
+            switch (rowLabel) {
+              case "Sales":
+                entry.sales = value!;
+                break;
+              case "Profit after Taxation":
+                entry.profitAfterTax = value!;
+                break;
+              case "EPS":
+                entry.eps = value!;
+                break;
+            }
+          }
+        });
+    });
+
+    // Convert map values to array
+    dataArray.push(...Array.from(dataMap.values()));
+
+    // Sort the data
+    if (isQuarterly) {
+      dataArray.sort((a, b) => {
+        const parseQuarterLabel = (qLabel: string) => {
+          const parts = qLabel.split(" ");
+          const year = parseInt(parts[1]);
+          const quarterNum = parseInt(parts[0].replace("Q", ""));
+          return { year, quarterNum };
+        };
+
+        const aParsed = parseQuarterLabel(a.label);
+        const bParsed = parseQuarterLabel(b.label);
+
+        if (aParsed.year !== bParsed.year) {
+          return aParsed.year - bParsed.year;
+        }
+        return aParsed.quarterNum - bParsed.quarterNum;
+      });
+    } else {
+      dataArray.sort((a, b) => parseInt(a.label) - parseInt(b.label));
+    }
+  };
+
+  // Parse Annual Data
+  parseTable(
+    '#financialTab .tabs__panel[data-name="Annual"]',
+    financialData.annual,
+  );
+
+  // Parse Quarterly Data
+  parseTable(
+    '#financialTab .tabs__panel[data-name="Quarterly"]',
+    financialData.quarterly,
+    true,
+  );
+
+  return financialData;
 }
