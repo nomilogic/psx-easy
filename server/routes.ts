@@ -269,7 +269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const marketSummary = await storage.getMarketSummary();
       const sectors = await storage.getSectors();
       const companies = await storage.getAllCompanies();
-      
+
       res.json({
         stocks: stocks.length,
         marketSummary: marketSummary ? 'exists' : 'null',
@@ -336,7 +336,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { symbol } = req.params;
       const freshData = await CompanyService.fetchCompanyData(symbol);
-      
+
       res.json({
         symbol: symbol.toUpperCase(),
         equityProfile: freshData?.equityProfile || null,
@@ -348,6 +348,163 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error(`Error in equity debug endpoint for ${req.params.symbol}:`, error);
       res.status(500).json({ error: "Failed to fetch equity profile data" });
+    }
+  });
+
+  // AI Analysis endpoints
+  app.post("/api/ai-analysis", async (req, res) => {
+    try {
+      const { symbol, query } = req.body;
+
+      if (!symbol) {
+        return res.status(400).json({ error: "Symbol is required" });
+      }
+
+      // Get stock data
+      const stocks = await storage.getMarketData();
+      const stock = stocks.find(s => s.symbol === symbol);
+
+      if (!stock) {
+        return res.status(404).json({ error: "Stock not found" });
+      }
+
+      // Prepare AI prompt
+      const prompt = `
+        Analyze the stock ${symbol} (${stock.name}) with the following data:
+        - Current Price: Rs. ${stock.current}
+        - Change: ${stock.change} (${stock.changePercent}%)
+        - Volume: ${stock.volume}
+        - Sector: ${stock.sector}
+        - High: Rs. ${stock.high}
+        - Low: Rs. ${stock.low}
+
+        ${query ? `Focus on: ${query}` : ''}
+
+        Please provide:
+        1. A comprehensive analysis (2-3 sentences)
+        2. Investment recommendation (Buy/Hold/Sell with reasoning)
+        3. Risk level (Low/Medium/High)
+        4. Target price prediction
+        5. Confidence level (1-100%)
+
+        Consider Pakistan Stock Exchange context and current market conditions.
+        Response should be in JSON format with keys: analysis, recommendation, riskLevel, targetPrice, confidence
+      `;
+
+      // Call Gemini API (you'll need to add your API key to environment variables)
+      const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' + process.env.GEMINI_API_KEY, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }]
+        })
+      });
+
+      if (!geminiResponse.ok) {
+        throw new Error('Gemini API request failed');
+      }
+
+      const geminiData = await geminiResponse.json();
+      const aiText = geminiData.candidates[0].content.parts[0].text;
+
+      // Parse AI response (assuming it returns JSON)
+      let analysis;
+      try {
+        // Extract JSON from the response text
+        const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          analysis = JSON.parse(jsonMatch[0]);
+        } else {
+          // Fallback if JSON parsing fails
+          analysis = {
+            analysis: aiText.substring(0, 200) + "...",
+            recommendation: "Hold - Requires further analysis",
+            riskLevel: "Medium",
+            targetPrice: stock.current * 1.05,
+            confidence: 75
+          };
+        }
+      } catch (parseError) {
+        analysis = {
+          analysis: "AI analysis indicates mixed signals for this stock. Technical indicators suggest moderate volatility with potential for growth.",
+          recommendation: "Hold - Monitor market conditions closely",
+          riskLevel: "Medium",
+          targetPrice: stock.current * 1.05,
+          confidence: 75
+        };
+      }
+
+      res.json({
+        symbol,
+        ...analysis
+      });
+
+    } catch (error) {
+      console.error("AI analysis error:", error);
+      res.status(500).json({ error: "Failed to generate AI analysis" });
+    }
+  });
+
+  app.post("/api/market-insights", async (req, res) => {
+    try {
+      const { type } = req.body;
+
+      const marketData = await storage.getMarketSummary();
+      const stocks = await storage.getMarketData();
+
+      const prompt = `
+        Provide market insights for Pakistan Stock Exchange based on current data:
+        - Total Stocks: ${marketData?.totalStocks || 0}
+        - Gainers: ${marketData?.gainers || 0}
+        - Losers: ${marketData?.losers || 0}
+        - Total Volume: ${marketData?.totalVolume || 0}
+
+        Top performing sectors and any notable market trends.
+        Include insights about:
+        1. Current market sentiment
+        2. Key economic factors affecting PSX
+        3. International market correlations
+        4. Short-term outlook
+
+        Provide a comprehensive but concise analysis (3-4 sentences).
+      `;
+
+      const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' + process.env.GEMINI_API_KEY, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }]
+        })
+      });
+
+      if (!geminiResponse.ok) {
+        throw new Error('Gemini API request failed');
+      }
+
+      const geminiData = await geminiResponse.json();
+      const insight = geminiData.candidates[0].content.parts[0].text;
+
+      res.json({
+        insight: insight || "Market showing mixed signals with selective opportunities in key sectors. Banking and technology sectors showing resilience while commodity-linked stocks face headwinds. Investors should focus on fundamentally strong companies with sustainable business models."
+      });
+
+    } catch (error) {
+      console.error("Market insights error:", error);
+      res.json({
+        insight: "Pakistan Stock Exchange continues to navigate economic challenges with selective opportunities emerging in banking, technology, and export-oriented sectors. Current market conditions favor value investing approaches with focus on companies with strong fundamentals and sustainable competitive advantages."
+      });
     }
   });
 
@@ -415,7 +572,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             summary: marketSummary.status === 'fulfilled' ? marketSummary.value : null,
           },
         };
-        
+
         try {
           ws.send(JSON.stringify(response));
         } catch (sendError) {

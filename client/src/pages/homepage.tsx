@@ -217,6 +217,134 @@ function Homepage() {
         </div>
       </section>
 
+      {/* Market Data Table Section */}
+      <section id="market-data" className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Live Market Data</h2>
+            <p className="text-gray-600 text-lg">Real-time stock prices updated every 30 seconds</p>
+          </div>
+          
+          <Card className="shadow-lg">
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left py-4 px-6 font-semibold text-gray-900">Symbol</th>
+                      <th className="text-left py-4 px-6 font-semibold text-gray-900">Name</th>
+                      <th className="text-right py-4 px-6 font-semibold text-gray-900">Price</th>
+                      <th className="text-right py-4 px-6 font-semibold text-gray-900">Change</th>
+                      <th className="text-right py-4 px-6 font-semibold text-gray-900">Volume</th>
+                      <th className="text-left py-4 px-6 font-semibold text-gray-900">Sector</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(stocks || []).slice(0, 10).map((stock, index) => (
+                      <tr key={stock.symbol} className="border-t hover:bg-gray-50 cursor-pointer" onClick={() => window.location.href = `/stock/${stock.symbol}`}>
+                        <td className="py-4 px-6">
+                          <div className="font-bold text-gray-900">{stock.symbol}</div>
+                        </td>
+                        <td className="py-4 px-6">
+                          <div className="text-sm text-gray-600 max-w-[200px] truncate">{stock.name}</div>
+                        </td>
+                        <td className="py-4 px-6 text-right">
+                          <div className="font-semibold text-gray-900">{formatPrice(stock.current)}</div>
+                        </td>
+                        <td className="py-4 px-6 text-right">
+                          <div className={`flex items-center justify-end ${stock.isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                            {stock.isPositive ? <TrendingUp className="w-4 h-4 mr-1" /> : <TrendingDown className="w-4 h-4 mr-1" />}
+                            <span className="font-semibold">{stock.changePercent.toFixed(2)}%</span>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6 text-right">
+                          <div className="text-sm text-gray-600">{formatVolume(stock.volume)}</div>
+                        </td>
+                        <td className="py-4 px-6">
+                          <Badge variant="outline" className="text-xs">{stock.sector.substring(0, 15)}...</Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <div className="text-center mt-8">
+            <Link href="/api">
+              <Button size="lg" className="bg-green-600 hover:bg-green-700">
+                View All {stocks?.length || 0} Stocks
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* AI-Powered Analysis Section */}
+      <section className="py-16 bg-gradient-to-br from-purple-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <div className="flex items-center justify-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
+                <Activity className="w-6 h-6 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900">AI-Powered Market Intelligence</h2>
+            </div>
+            <p className="text-gray-600 text-lg max-w-3xl mx-auto">
+              Leverage advanced artificial intelligence to analyze market trends, predict stock movements, 
+              and discover investment opportunities in Pakistan Stock Exchange
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+            <Card className="bg-white shadow-lg hover:shadow-xl transition-shadow">
+              <CardContent className="p-6">
+                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                  <BarChart3 className="w-6 h-6 text-purple-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Smart Stock Analysis</h3>
+                <p className="text-gray-600 mb-4">AI-driven analysis of individual stocks with technical indicators, fundamentals, and market sentiment</p>
+                <Badge className="bg-purple-100 text-purple-800">Powered by Gemini AI</Badge>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-white shadow-lg hover:shadow-xl transition-shadow">
+              <CardContent className="p-6">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                  <TrendingUp className="w-6 h-6 text-blue-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Predictive Insights</h3>
+                <p className="text-gray-600 mb-4">Machine learning models predict price movements and identify emerging market trends</p>
+                <Badge className="bg-blue-100 text-blue-800">Real-time Predictions</Badge>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-white shadow-lg hover:shadow-xl transition-shadow">
+              <CardContent className="p-6">
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                  <Globe className="w-6 h-6 text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Portfolio Optimization</h3>
+                <p className="text-gray-600 mb-4">AI recommendations for portfolio diversification and risk management strategies</p>
+                <Badge className="bg-green-100 text-green-800">Risk Assessment</Badge>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="text-center">
+            <Link href="/ai-analysis">
+              <Button size="lg" className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white">
+                <Activity className="w-5 h-5 mr-2" />
+                Explore AI Analysis Dashboard
+                <ChevronRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Top Gainers Section */}
       <section id="stocks" className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
