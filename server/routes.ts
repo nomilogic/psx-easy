@@ -283,6 +283,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint to show complete company data structure
+  app.get("/api/debug/company/:symbol", async (req, res) => {
+    try {
+      const { symbol } = req.params;
+      console.log(`Debug endpoint called for company: ${symbol}`);
+
+      // First try to fetch fresh data to see what's being parsed
+      const freshData = await CompanyService.fetchCompanyData(symbol);
+      if (freshData) {
+        console.log(`Fresh company data structure for ${symbol}:`, JSON.stringify(freshData, null, 2));
+      }
+
+      // Also get cached data from database
+      const cachedData = await storage.getCompany(symbol.toUpperCase());
+
+      res.json({
+        symbol: symbol.toUpperCase(),
+        freshData: freshData,
+        cachedData: cachedData,
+        freshDataKeys: freshData ? Object.keys(freshData) : [],
+        cachedDataKeys: cachedData ? Object.keys(cachedData) : [],
+        equityProfilePresent: {
+          fresh: !!(freshData?.equityProfile),
+          cached: !!(cachedData?.equityProfile)
+        },
+        financialDataPresent: {
+          fresh: !!(freshData?.financialData),
+          cached: !!(cachedData?.financialData)
+        },
+        ratiosDataPresent: {
+          fresh: !!(freshData?.ratiosData),
+          cached: !!(cachedData?.ratiosData)
+        },
+        freeFloatPresent: {
+          fresh: freshData?.freeFloat !== undefined,
+          cached: cachedData?.freeFloat !== undefined
+        }
+      });
+    } catch (error) {
+      console.error(`Error in debug endpoint for ${req.params.symbol}:`, error);
+      res.status(500).json({ error: "Failed to fetch debug company data" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket server setup
