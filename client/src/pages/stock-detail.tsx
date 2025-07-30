@@ -288,41 +288,6 @@ export default function StockDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Compact Header */}
-      <div 
-        className="bg-gradient-to-r from-green-600 to-blue-600 text-white shadow-md relative"
-        style={{
-          transform: `translateY(${scrollY * 0.3}px)`,
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex items-center justify-between h-12">
-            <div className="flex items-center space-x-6">
-              <Link
-                href="/"
-                className="flex items-center px-3 py-1 text-white hover:text-green-100 transition-colors rounded-md hover:bg-white hover:bg-opacity-10"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                <span className="font-medium">PSX Dashboard</span>
-              </Link>
-              
-              {/* Compact Navigation Menu */}
-              <nav className="hidden lg:flex space-x-1">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => scrollToSection(tab.id)}
-                    className="px-3 py-1 text-sm font-medium text-white hover:text-green-100 transition-colors rounded-md hover:bg-white hover:bg-opacity-10"
-                  >
-                    {tab.label.toUpperCase()}
-                  </button>
-                ))}
-              </nav>
-            </div>
-            <div className="text-sm font-medium">Pakistan Stock Exchange</div>
-          </div>
-        </div>
-      </div>
 
       {/* Compact Stock Header Section */}
       <div className="bg-white shadow-sm border-b border-gray-200">
@@ -378,25 +343,38 @@ export default function StockDetail() {
         </div>
       </div>
 
-      {/* Compact Sticky Tabs Navigation */}
-      <div className="sticky top-0 z-40 bg-white shadow-sm border-b border-gray-200">
+      {/* Compact Sticky Tabs Navigation with Back Button */}
+      <div className="sticky top-0 z-40 bg-gradient-to-r from-green-600 to-blue-600 text-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-1 overflow-x-auto py-1">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => scrollToSection(tab.id)}
-                className={`flex items-center space-x-2 py-2 px-4 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${
-                  activeTab === tab.id
-                    ? "bg-green-600 text-white"
-                    : "text-gray-600 hover:text-green-600 hover:bg-green-50"
-                }`}
+          <div className="flex items-center justify-between py-2">
+            <div className="flex items-center space-x-4">
+              <Link
+                href="/"
+                className="flex items-center px-3 py-1 text-white hover:text-green-100 transition-colors rounded-md hover:bg-white hover:bg-opacity-10"
               >
-                <tab.icon className="w-4 h-4" />
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </nav>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                <span className="font-medium text-sm">PSX Dashboard</span>
+              </Link>
+              
+              <nav className="flex space-x-1 overflow-x-auto">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => scrollToSection(tab.id)}
+                    className={`flex items-center space-x-2 py-2 px-3 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${
+                      activeTab === tab.id
+                        ? "bg-white bg-opacity-20 text-white"
+                        : "text-white hover:bg-white hover:bg-opacity-10"
+                    }`}
+                  >
+                    <tab.icon className="w-4 h-4" />
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
+              </nav>
+            </div>
+            <div className="text-sm font-medium">Pakistan Stock Exchange</div>
+          </div>
         </div>
       </div>
 
