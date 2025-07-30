@@ -336,4 +336,21 @@ export interface CompanyData {
       document: string;
     }>;
   };
+
+  // Comprehensive Equity Profile (Multi-year data)
+  equityProfile?: Array<{
+    year: string;
+    marketCap?: number;
+    sharesOutstanding?: number;
+    freeFloat?: number;
+    freeFloatPercentage?: number;
+    bookValue?: number;
+    priceToBook?: number;
+    dividendPerShare?: number;
+    dividendYield?: number;
+    earningsPerShare?: number;
+    priceEarningsRatio?: number;
+    faceValue?: number;
+    lotSize?: number;
+  }>;
 }

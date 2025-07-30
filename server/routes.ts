@@ -308,6 +308,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fresh: !!(freshData?.equityProfile),
           cached: !!(cachedData?.equityProfile)
         },
+        equityProfileDetails: {
+          fresh: freshData?.equityProfile || null,
+          cached: cachedData?.equityProfile || null
+        },
         financialDataPresent: {
           fresh: !!(freshData?.financialData),
           cached: !!(cachedData?.financialData)
@@ -324,6 +328,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error(`Error in debug endpoint for ${req.params.symbol}:`, error);
       res.status(500).json({ error: "Failed to fetch debug company data" });
+    }
+  });
+
+  // Specific equity profile endpoint for testing
+  app.get("/api/debug/equity/:symbol", async (req, res) => {
+    try {
+      const { symbol } = req.params;
+      const freshData = await CompanyService.fetchCompanyData(symbol);
+      
+      res.json({
+        symbol: symbol.toUpperCase(),
+        equityProfile: freshData?.equityProfile || null,
+        freeFloat: freshData?.freeFloat || null,
+        marketCap: freshData?.marketCap || null,
+        sharesOutstanding: freshData?.sharesOutstanding || null,
+        hasEquityProfile: !!(freshData?.equityProfile && freshData.equityProfile.length > 0)
+      });
+    } catch (error) {
+      console.error(`Error in equity debug endpoint for ${req.params.symbol}:`, error);
+      res.status(500).json({ error: "Failed to fetch equity profile data" });
     }
   });
 

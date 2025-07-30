@@ -425,47 +425,56 @@ export class CompanyService {
         lotSize?: number;
       }> = [];
 
-      // Extract from equity profile tables
-      $("#equity .tabs__panel table tbody tr, .companyEquity table tbody tr").each(
-        (_, row) => {
+      // Extract equity profile data from multiple possible locations
+      const equityTables = [
+        "#equity table tbody tr",
+        ".companyEquity table tbody tr", 
+        ".equity__profile table tbody tr",
+        ".equity-profile table tbody tr"
+      ];
+
+      equityTables.forEach(selector => {
+        $(selector).each((_, row) => {
           const cells = $(row).find("td");
           if (cells.length >= 2) {
             const metric = $(cells[0]).text().trim().toLowerCase();
 
-            // Extract years from header if not done
+            // Initialize equity profile structure if not done
             if (equityProfile.length === 0) {
               const headers = $(row).closest("table").find("thead th");
-              headers.each((index, header) => {
-                if (index > 0) {
-                  // Skip first column which is metric name
-                  const year = $(header).text().trim();
-                  if (year) {
-                    equityProfile.push({ year });
+              if (headers.length > 1) {
+                headers.each((index, header) => {
+                  if (index > 0) {
+                    const year = $(header).text().trim();
+                    if (year && year !== "") {
+                      equityProfile.push({ year });
+                    }
                   }
-                }
-              });
+                });
+              } else {
+                // If no header structure, create current year entry
+                equityProfile.push({ year: new Date().getFullYear().toString() });
+              }
             }
 
-            // Extract equity metrics for each year
-            for (
-              let i = 1;
-              i < cells.length && i - 1 < equityProfile.length;
-              i++
-            ) {
-              const value = $(cells[i])
-                .text()
-                .trim()
-                .replace(/[(),]/g, "")
-                .replace(/,/g, "");
-              const numValue = parseFloat(value);
+            // Extract equity metrics for each year/column
+            for (let i = 1; i < cells.length && i - 1 < equityProfile.length; i++) {
+              const cellText = $(cells[i]).text().trim();
+              const cleanValue = cellText.replace(/[(),]/g, "").replace(/,/g, "");
+              const numValue = parseFloat(cleanValue);
 
-              if (!isNaN(numValue)) {
+              if (!isNaN(numValue) && equityProfile[i - 1]) {
                 if (metric.includes("market cap")) {
                   equityProfile[i - 1].marketCap = numValue;
-                } else if (metric.includes("shares outstanding")) {
+                } else if (metric.includes("shares outstanding") || metric.includes("shares")) {
                   equityProfile[i - 1].sharesOutstanding = numValue;
                 } else if (metric.includes("free float")) {
-                  equityProfile[i - 1].freeFloat = numValue;
+                  // Handle both percentage and count formats
+                  if (cellText.includes("%")) {
+                    equityProfile[i - 1].freeFloatPercentage = numValue;
+                  } else {
+                    equityProfile[i - 1].freeFloat = numValue;
+                  }
                 } else if (metric.includes("book value")) {
                   equityProfile[i - 1].bookValue = numValue;
                 } else if (metric.includes("price to book") || metric.includes("p/b")) {
@@ -486,8 +495,44 @@ export class CompanyService {
               }
             }
           }
-        },
-      );
+        });
+      });
+
+      // Also try to extract equity data from stats cards/items
+      $(".equity__stats .stats_item, .companyEquity .stats_item").each((_, item) => {
+        const label = $(item).find(".stats_label").text().trim().toLowerCase();
+        const value = $(item).find(".stats_value").text().trim();
+        
+        // Ensure we have at least one equity profile entry
+        if (equityProfile.length === 0) {
+          equityProfile.push({ year: new Date().getFullYear().toString() });
+        }
+        
+        const cleanValue = value.replace(/[(),]/g, "").replace(/,/g, "");
+        const numValue = parseFloat(cleanValue);
+        
+        if (!isNaN(numValue)) {
+          const currentProfile = equityProfile[0];
+          
+          if (label.includes("market cap")) {
+            currentProfile.marketCap = numValue;
+          } else if (label.includes("shares") && !label.includes("free float")) {
+            currentProfile.sharesOutstanding = numValue;
+          } else if (label.includes("free float")) {
+            if (value.includes("%")) {
+              currentProfile.freeFloatPercentage = numValue;
+            } else {
+              currentProfile.freeFloat = numValue;
+            }
+          } else if (label.includes("book value")) {
+            currentProfile.bookValue = numValue;
+          } else if (label.includes("face value")) {
+            currentProfile.faceValue = numValue;
+          } else if (label.includes("lot size")) {
+            currentProfile.lotSize = numValue;
+          }
+        }
+      });
 
       if (equityProfile.length > 0) {
         companyData.equityProfile = equityProfile;
