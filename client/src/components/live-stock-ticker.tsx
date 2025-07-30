@@ -1,6 +1,7 @@
-import { ArrowUp, ArrowDown, Search, ChevronUp, ChevronDown } from "lucide-react";
+import { ArrowUp, ArrowDown, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
 import type { StockData } from "@shared/schema";
 
 interface LiveStockTickerProps {
@@ -14,6 +15,8 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>('volume');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [, setLocation] = useLocation();
   const formatPrice = (price: number) => {
     return `₨${price.toFixed(2)}`;
@@ -81,6 +84,18 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
     });
   }, [stocks, searchTerm, sortKey, sortDirection]);
 
+  const paginatedStocks = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredAndSortedStocks.slice(startIndex, startIndex + pageSize);
+  }, [filteredAndSortedStocks, currentPage, pageSize]);
+
+  const totalPages = Math.ceil(filteredAndSortedStocks.length / pageSize);
+
+  // Reset to first page when search term changes
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchTerm, pageSize]);
+
   if (stocks.length === 0) {
     return (
       <section id="stocks" className="mb-8">
@@ -103,14 +118,27 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
     <section id="stocks" className="mb-8">
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-lg font-semibold text-slate-900">Live Stock Data</h3>
               <p className="text-sm text-slate-600">Auto-refreshing every 30 seconds • {searchTerm ? `${filteredAndSortedStocks.length} of ${stocks.length}` : stocks.length} stocks</p>
             </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-600">Show:</span>
+              <select 
+                value={pageSize} 
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="border border-slate-300 rounded-md px-2 py-1 text-sm"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
           </div>
           
-          <div className="relative">
+          <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
             <input
               type="text"
@@ -177,7 +205,7 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-200">
-              {filteredAndSortedStocks.map((stock) => (
+              {paginatedStocks.map((stock) => (
                 <tr 
                   key={stock.symbol} 
                   className="hover:bg-slate-50 transition-colors cursor-pointer"
@@ -221,6 +249,96 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
             </tbody>
           </table>
         </div>
+        
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+            <div className="text-sm text-slate-700">
+              Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, filteredAndSortedStocks.length)} of {filteredAndSortedStocks.length} stocks
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+              
+              <div className="flex items-center space-x-1">
+                {/* Show first page */}
+                {currentPage > 3 && (
+                  <>
+                    <Button
+                      variant={currentPage === 1 ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => setCurrentPage(1)}
+                    >
+                      1
+                    </Button>
+                    {currentPage > 4 && <span className="text-slate-400">...</span>}
+                  </>
+                )}
+                
+                {/* Show pages around current page */}
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const pageNum = Math.max(1, Math.min(totalPages, currentPage - 2 + i));
+                  if (pageNum < 1 || pageNum > totalPages) return null;
+                  if (currentPage <= 3) {
+                    const page = i + 1;
+                    if (page > totalPages) return null;
+                    return (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "secondary" : "ghost"}
+                        size="sm"
+                        onClick={() => setCurrentPage(page)}
+                      >
+                        {page}
+                      </Button>
+                    );
+                  }
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+                
+                {/* Show last page */}
+                {currentPage < totalPages - 2 && (
+                  <>
+                    {currentPage < totalPages - 3 && <span className="text-slate-400">...</span>}
+                    <Button
+                      variant={currentPage === totalPages ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => setCurrentPage(totalPages)}
+                    >
+                      {totalPages}
+                    </Button>
+                  </>
+                )}
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

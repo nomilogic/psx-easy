@@ -428,12 +428,12 @@ export class CompanyService {
       // Extract equity profile data from multiple possible locations
       const equityTables = [
         "#equity table tbody tr",
-        ".companyEquity table tbody tr", 
+        ".companyEquity table tbody tr",
         ".equity__profile table tbody tr",
-        ".equity-profile table tbody tr"
+        ".equity-profile table tbody tr",
       ];
 
-      equityTables.forEach(selector => {
+      equityTables.forEach((selector) => {
         $(selector).each((_, row) => {
           const cells = $(row).find("td");
           if (cells.length >= 2) {
@@ -453,20 +453,31 @@ export class CompanyService {
                 });
               } else {
                 // If no header structure, create current year entry
-                equityProfile.push({ year: new Date().getFullYear().toString() });
+                equityProfile.push({
+                  year: new Date().getFullYear().toString(),
+                });
               }
             }
 
             // Extract equity metrics for each year/column
-            for (let i = 1; i < cells.length && i - 1 < equityProfile.length; i++) {
+            for (
+              let i = 1;
+              i < cells.length && i - 1 < equityProfile.length;
+              i++
+            ) {
               const cellText = $(cells[i]).text().trim();
-              const cleanValue = cellText.replace(/[(),]/g, "").replace(/,/g, "");
+              const cleanValue = cellText
+                .replace(/[(),]/g, "")
+                .replace(/,/g, "");
               const numValue = parseFloat(cleanValue);
 
               if (!isNaN(numValue) && equityProfile[i - 1]) {
                 if (metric.includes("market cap")) {
                   equityProfile[i - 1].marketCap = numValue;
-                } else if (metric.includes("shares outstanding") || metric.includes("shares")) {
+                } else if (
+                  metric.includes("shares outstanding") ||
+                  metric.includes("shares")
+                ) {
                   equityProfile[i - 1].sharesOutstanding = numValue;
                 } else if (metric.includes("free float")) {
                   // Handle both percentage and count formats
@@ -477,15 +488,24 @@ export class CompanyService {
                   }
                 } else if (metric.includes("book value")) {
                   equityProfile[i - 1].bookValue = numValue;
-                } else if (metric.includes("price to book") || metric.includes("p/b")) {
+                } else if (
+                  metric.includes("price to book") ||
+                  metric.includes("p/b")
+                ) {
                   equityProfile[i - 1].priceToBook = numValue;
                 } else if (metric.includes("dividend per share")) {
                   equityProfile[i - 1].dividendPerShare = numValue;
                 } else if (metric.includes("dividend yield")) {
                   equityProfile[i - 1].dividendYield = numValue;
-                } else if (metric.includes("earnings per share") || metric.includes("eps")) {
+                } else if (
+                  metric.includes("earnings per share") ||
+                  metric.includes("eps")
+                ) {
                   equityProfile[i - 1].earningsPerShare = numValue;
-                } else if (metric.includes("price earnings") || metric.includes("p/e")) {
+                } else if (
+                  metric.includes("price earnings") ||
+                  metric.includes("p/e")
+                ) {
                   equityProfile[i - 1].priceEarningsRatio = numValue;
                 } else if (metric.includes("face value")) {
                   equityProfile[i - 1].faceValue = numValue;
@@ -499,74 +519,92 @@ export class CompanyService {
       });
 
       // Also try to extract equity data from stats cards/items
-      $(".equity__stats .stats_item, .companyEquity .stats_item").each((_, item) => {
-        const label = $(item).find(".stats_label").text().trim().toLowerCase();
-        const value = $(item).find(".stats_value").text().trim();
-        
-        // Ensure we have at least one equity profile entry
-        if (equityProfile.length === 0) {
-          equityProfile.push({ year: new Date().getFullYear().toString() });
-        }
-        
-        const cleanValue = value.replace(/[(),]/g, "").replace(/,/g, "");
-        const numValue = parseFloat(cleanValue);
-        
-        if (!isNaN(numValue)) {
-          const currentProfile = equityProfile[0];
-          
-          if (label.includes("market cap")) {
-            currentProfile.marketCap = numValue;
-          } else if (label.includes("shares") && !label.includes("free float")) {
-            currentProfile.sharesOutstanding = numValue;
-          } else if (label.includes("free float")) {
-            if (value.includes("%")) {
-              currentProfile.freeFloatPercentage = numValue;
-            } else {
-              currentProfile.freeFloat = numValue;
-            }
-          } else if (label.includes("book value")) {
-            currentProfile.bookValue = numValue;
-          } else if (label.includes("face value")) {
-            currentProfile.faceValue = numValue;
-          } else if (label.includes("lot size")) {
-            currentProfile.lotSize = numValue;
+      $(".equity__stats .stats_item, .companyEquity .stats_item").each(
+        (_, item) => {
+          const label = $(item)
+            .find(".stats_label")
+            .text()
+            .trim()
+            .toLowerCase();
+          const value = $(item).find(".stats_value").text().trim();
+
+          // Ensure we have at least one equity profile entry
+          if (equityProfile.length === 0) {
+            equityProfile.push({ year: new Date().getFullYear().toString() });
           }
-        }
-      });
+
+          const cleanValue = value.replace(/[(),]/g, "").replace(/,/g, "");
+          const numValue = parseFloat(cleanValue);
+
+          if (!isNaN(numValue)) {
+            const currentProfile = equityProfile[0];
+
+            if (label.includes("market cap")) {
+              currentProfile.marketCap = numValue;
+            } else if (
+              label.includes("shares") &&
+              !label.includes("free float")
+            ) {
+              currentProfile.sharesOutstanding = numValue;
+            } else if (label.includes("free float")) {
+              if (value.includes("%")) {
+                currentProfile.freeFloatPercentage = numValue;
+              } else {
+                currentProfile.freeFloat = numValue;
+              }
+            } else if (label.includes("book value")) {
+              currentProfile.bookValue = numValue;
+            } else if (label.includes("face value")) {
+              currentProfile.faceValue = numValue;
+            } else if (label.includes("lot size")) {
+              currentProfile.lotSize = numValue;
+            }
+          }
+        },
+      );
 
       if (equityProfile.length > 0) {
         companyData.equityProfile = equityProfile;
       }
 
       // Extract current equity profile data from stats items
-      $(".companyEquity .stats_item, .equity__stats .stats_item").each((_, item) => {
-        const label = $(item).find(".stats_label").text().trim().toLowerCase();
-        const value = $(item)
-          .find(".stats_value")
-          .text()
-          .trim()
-          .replace(/,/g, "");
+      $(".companyEquity .stats_item, .equity__stats .stats_item").each(
+        (_, item) => {
+          const label = $(item)
+            .find(".stats_label")
+            .text()
+            .trim()
+            .toLowerCase();
+          const value = $(item)
+            .find(".stats_value")
+            .text()
+            .trim()
+            .replace(/,/g, "");
 
-        if (label.includes("market cap")) {
-          const marketCap = parseFloat(value);
-          if (!isNaN(marketCap)) companyData.marketCap = marketCap;
-        } else if (label.includes("shares") && !label.includes("free float")) {
-          const shares = parseFloat(value);
-          if (!isNaN(shares)) companyData.sharesOutstanding = shares;
-        } else if (label.includes("free float")) {
-          const freeFloat = parseFloat(value);
-          if (!isNaN(freeFloat)) companyData.freeFloat = freeFloat;
-        } else if (label.includes("book value")) {
-          const bookValue = parseFloat(value);
-          if (!isNaN(bookValue)) companyData.bookValue = bookValue;
-        } else if (label.includes("face value")) {
-          const faceValue = parseFloat(value);
-          if (!isNaN(faceValue)) companyData.faceValue = faceValue;
-        } else if (label.includes("lot size")) {
-          const lotSize = parseInt(value, 10);
-          if (!isNaN(lotSize)) companyData.lotSize = lotSize;
-        }
-      });
+          if (label.includes("market cap")) {
+            const marketCap = parseFloat(value);
+            if (!isNaN(marketCap)) companyData.marketCap = marketCap;
+          } else if (
+            label.includes("shares") &&
+            !label.includes("free float")
+          ) {
+            const shares = parseFloat(value);
+            if (!isNaN(shares)) companyData.sharesOutstanding = shares;
+          } else if (label.includes("free float")) {
+            const freeFloat = parseFloat(value);
+            if (!isNaN(freeFloat)) companyData.freeFloat = freeFloat;
+          } else if (label.includes("book value")) {
+            const bookValue = parseFloat(value);
+            if (!isNaN(bookValue)) companyData.bookValue = bookValue;
+          } else if (label.includes("face value")) {
+            const faceValue = parseFloat(value);
+            if (!isNaN(faceValue)) companyData.faceValue = faceValue;
+          } else if (label.includes("lot size")) {
+            const lotSize = parseInt(value, 10);
+            if (!isNaN(lotSize)) companyData.lotSize = lotSize;
+          }
+        },
+      );
 
       // Extract 52-week range from range stats
       $(".stats_value").each((_, element) => {
@@ -702,10 +740,10 @@ export class CompanyService {
         "#financials .tabs__panel[data-name='Annual'] table tbody tr",
         ".company__financials table tbody tr",
         ".financials table tbody tr",
-        ".financial__data table tbody tr"
+        ".financial__data table tbody tr",
       ];
 
-      financialSelectors.forEach(selector => {
+      financialSelectors.forEach((selector) => {
         $(selector).each((_, row) => {
           const cells = $(row).find("td");
           if (cells.length >= 2) {
@@ -713,13 +751,16 @@ export class CompanyService {
 
             // Extract years from header if not done
             if (financialData.length === 0) {
-              const headers = $(row).closest("table").find("thead th, thead td");
-              if (headers.length > 1) {
+              const headers = $(row)
+                .closest("table")
+                .find("thead th, thead td");
+              if (headers.length > 0) {
                 headers.each((index, header) => {
                   if (index > 0) {
                     // Skip first column which is metric name
                     const year = $(header).text().trim();
-                    if (year && /^\d{4}$/.test(year)) { // Only accept 4-digit years
+                    if (year && /^\d{4}$/.test(year)) {
+                      // Only accept 4-digit years
                       financialData.push({ year });
                     }
                   }
@@ -736,13 +777,19 @@ export class CompanyService {
                 } else {
                   // If no year in cell, create generic year entries
                   const currentYear = new Date().getFullYear();
-                  financialData.push({ year: (currentYear - (cells.length - 1 - i)).toString() });
+                  financialData.push({
+                    year: (currentYear - (cells.length - 1 - i)).toString(),
+                  });
                 }
               }
             }
 
             // Extract financial metrics for each year
-            for (let i = 1; i < cells.length && i - 1 < financialData.length; i++) {
+            for (
+              let i = 1;
+              i < cells.length && i - 1 < financialData.length;
+              i++
+            ) {
               const value = $(cells[i])
                 .text()
                 .trim()
@@ -751,15 +798,24 @@ export class CompanyService {
               const numValue = parseFloat(value);
 
               if (!isNaN(numValue) && financialData[i - 1]) {
-                if (metric.includes("sales") || metric.includes("revenue") || metric.includes("turnover")) {
+                if (
+                  metric.includes("sales") ||
+                  metric.includes("revenue") ||
+                  metric.includes("turnover")
+                ) {
                   financialData[i - 1].sales = numValue;
                   // Store latest sales value for company summary
                   if (i === 1) companyData.sales = numValue;
-                } else if (metric.includes("gross profit") && !metric.includes("margin")) {
-                  financialData[i - 1].grossProfit = numValue;
-                } else if (metric.includes("profit after taxation") || metric.includes("net income") || metric.includes("profit after tax")) {
+                } else if (
+                  metric.includes("profit after taxation") ||
+                  metric.includes("net income") ||
+                  metric.includes("profit after tax")
+                ) {
                   financialData[i - 1].profitAfterTax = numValue;
-                } else if (metric === "eps" || metric.includes("earnings per share")) {
+                } else if (
+                  metric === "eps" ||
+                  metric.includes("earnings per share")
+                ) {
                   financialData[i - 1].eps = numValue;
                   // Store latest EPS value for company summary
                   if (i === 1) companyData.eps = numValue;

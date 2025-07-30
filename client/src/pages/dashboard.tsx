@@ -12,44 +12,28 @@ export default function Dashboard() {
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const { isConnected, marketData, marketSummary } = useWebSocket();
 
-  // Fallback queries with 30-second auto-refresh
-  const { data: fallbackStocks } = useQuery({
+  // Initial data load - show immediately
+  const { data: initialStocks } = useQuery<StockData[]>({
     queryKey: ['/api/stocks'],
-    enabled: !isConnected,
-    refetchInterval: 30000,
-    staleTime: 25000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 
-  const { data: fallbackSummary } = useQuery({
+  const { data: initialSummary } = useQuery<MarketSummary>({
     queryKey: ['/api/market/overview'],
-    enabled: !isConnected,
-    refetchInterval: 30000,
-    staleTime: 25000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 
-  // Additional query for auto-refresh when WebSocket is connected
-  const { data: refreshStocks } = useQuery({
-    queryKey: ['/api/stocks'],
-    enabled: isConnected,
-    refetchInterval: 30000,
-    staleTime: 25000,
-  });
-
-  const { data: refreshSummary } = useQuery({
-    queryKey: ['/api/market/overview'],
-    enabled: isConnected,
-    refetchInterval: 30000,
-    staleTime: 25000,
-  });
-
-  const stocks: StockData[] = marketData || refreshStocks || fallbackStocks || [];
-  const summary: MarketSummary | null = marketSummary || refreshSummary || fallbackSummary || null;
+  // Use WebSocket data if available, otherwise use initial API data
+  const stocks: StockData[] = marketData || initialStocks || [];
+  const summary: MarketSummary | null = marketSummary || initialSummary || null;
 
   useEffect(() => {
-    if (marketData || marketSummary || refreshStocks || refreshSummary) {
+    if (marketData || marketSummary) {
       setLastUpdate(new Date());
     }
-  }, [marketData, marketSummary, refreshStocks, refreshSummary]);
+  }, [marketData, marketSummary]);
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('en-US', {

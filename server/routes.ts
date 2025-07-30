@@ -487,8 +487,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initial data fetch
   fetchAndBroadcastData();
 
-  // Set up periodic data fetching (every 5 minutes)
-  setInterval(fetchAndBroadcastData, 300000);
+  // Set up periodic data fetching (every 30 seconds for live updates)
+  setInterval(fetchAndBroadcastData, 30000);
 
   // Periodic company data fetching (once per day)
   async function fetchAllCompaniesDataPeriodically() {
