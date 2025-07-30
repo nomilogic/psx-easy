@@ -291,6 +291,9 @@ export interface CompanyData {
   evToEbitda?: number;
   beta?: number;
 
+  // Free Float Information
+  freeFloat?: number;
+
   // Dividend and Payout Information
   payoutRatio?: number;
   retentionRatio?: number;

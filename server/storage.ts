@@ -438,6 +438,13 @@ export class DatabaseStorage implements IStorage {
         fiscalYearEnd: companyData.fiscalYearEnd || null,
         keyPeople: companyData.keyPeople || null,
         businessDescription: companyData.businessDescription || null,
+        freeFloat: (companyData as any).freeFloat || null,
+        payoutRatio: (companyData as any).payoutRatio || null,
+        retentionRatio: (companyData as any).retentionRatio || null,
+        financialData: (companyData as any).financialData || null,
+        ratiosData: (companyData as any).ratiosData || null,
+        equityProfile: (companyData as any).equityProfile || null,
+        payoutsData: (companyData as any).payoutsData || null,
         // Include announcements
         announcements: (companyData as any).announcements || null,
       };
