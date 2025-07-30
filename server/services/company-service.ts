@@ -697,33 +697,52 @@ export class CompanyService {
         eps?: number;
       }> = [];
 
-      // Annual financials
-      $("#financials .tabs__panel[data-name='Annual'] table tbody tr").each(
-        (_, row) => {
+      // Enhanced financial data extraction from multiple possible locations
+      const financialSelectors = [
+        "#financials .tabs__panel[data-name='Annual'] table tbody tr",
+        ".company__financials table tbody tr",
+        ".financials table tbody tr",
+        ".financial__data table tbody tr"
+      ];
+
+      financialSelectors.forEach(selector => {
+        $(selector).each((_, row) => {
           const cells = $(row).find("td");
           if (cells.length >= 2) {
             const metric = $(cells[0]).text().trim().toLowerCase();
 
             // Extract years from header if not done
             if (financialData.length === 0) {
-              const headers = $(row).closest("table").find("thead th");
-              headers.each((index, header) => {
-                if (index > 0) {
-                  // Skip first column which is metric name
-                  const year = $(header).text().trim();
-                  if (year) {
-                    financialData.push({ year });
+              const headers = $(row).closest("table").find("thead th, thead td");
+              if (headers.length > 1) {
+                headers.each((index, header) => {
+                  if (index > 0) {
+                    // Skip first column which is metric name
+                    const year = $(header).text().trim();
+                    if (year && /^\d{4}$/.test(year)) { // Only accept 4-digit years
+                      financialData.push({ year });
+                    }
                   }
+                });
+              }
+            }
+
+            // If still no financial data structure, create one based on cell count
+            if (financialData.length === 0 && cells.length > 1) {
+              for (let i = 1; i < cells.length; i++) {
+                const cellYear = $(cells[i]).text().trim();
+                if (/^\d{4}$/.test(cellYear)) {
+                  financialData.push({ year: cellYear });
+                } else {
+                  // If no year in cell, create generic year entries
+                  const currentYear = new Date().getFullYear();
+                  financialData.push({ year: (currentYear - (cells.length - 1 - i)).toString() });
                 }
-              });
+              }
             }
 
             // Extract financial metrics for each year
-            for (
-              let i = 1;
-              i < cells.length && i - 1 < financialData.length;
-              i++
-            ) {
+            for (let i = 1; i < cells.length && i - 1 < financialData.length; i++) {
               const value = $(cells[i])
                 .text()
                 .trim()
@@ -731,21 +750,25 @@ export class CompanyService {
                 .replace(/,/g, "");
               const numValue = parseFloat(value);
 
-              if (!isNaN(numValue)) {
-                if (metric.includes("sales") || metric.includes("revenue")) {
+              if (!isNaN(numValue) && financialData[i - 1]) {
+                if (metric.includes("sales") || metric.includes("revenue") || metric.includes("turnover")) {
                   financialData[i - 1].sales = numValue;
+                  // Store latest sales value for company summary
+                  if (i === 1) companyData.sales = numValue;
                 } else if (metric.includes("gross profit") && !metric.includes("margin")) {
                   financialData[i - 1].grossProfit = numValue;
-                } else if (metric.includes("profit after taxation") || metric.includes("net income")) {
+                } else if (metric.includes("profit after taxation") || metric.includes("net income") || metric.includes("profit after tax")) {
                   financialData[i - 1].profitAfterTax = numValue;
                 } else if (metric === "eps" || metric.includes("earnings per share")) {
                   financialData[i - 1].eps = numValue;
+                  // Store latest EPS value for company summary
+                  if (i === 1) companyData.eps = numValue;
                 }
               }
             }
           }
-        },
-      );
+        });
+      });
 
       if (financialData.length > 0) {
         companyData.financialData = financialData;
