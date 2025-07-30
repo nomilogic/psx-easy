@@ -352,6 +352,27 @@ export default function StockDetail() {
                       <p className="font-semibold">₨{companyData.bookValue.toFixed(2)}</p>
                     </div>
                   )}
+
+                  {companyData.sales && (
+                    <div className="p-2.5 bg-slate-50 rounded-lg">
+                      <p className="text-xs text-slate-500">Sales (Latest)</p>
+                      <p className="font-semibold">₨{formatNumber(companyData.sales)}</p>
+                    </div>
+                  )}
+
+                  {companyData.grossProfitMargin && (
+                    <div className="p-2.5 bg-slate-50 rounded-lg">
+                      <p className="text-xs text-slate-500">Gross Profit Margin</p>
+                      <p className="font-semibold">{companyData.grossProfitMargin.toFixed(2)}%</p>
+                    </div>
+                  )}
+
+                  {companyData.eps && (
+                    <div className="p-2.5 bg-slate-50 rounded-lg">
+                      <p className="text-xs text-slate-500">Latest EPS</p>
+                      <p className="font-semibold">₨{companyData.eps.toFixed(2)}</p>
+                    </div>
+                  )}
                 </div>
 
                 {(companyData.high52Week || companyData.low52Week) && (
@@ -454,6 +475,7 @@ export default function StockDetail() {
                   <tr className="border-b border-green-200">
                     <th className="text-left py-1.5 px-2 font-medium text-green-900">Year</th>
                     <th className="text-right py-1.5 px-2 font-medium text-green-900">Sales</th>
+                    <th className="text-right py-1.5 px-2 font-medium text-green-900">Gross Profit</th>
                     <th className="text-right py-1.5 px-2 font-medium text-green-900">Profit After Tax</th>
                     <th className="text-right py-1.5 px-2 font-medium text-green-900">EPS</th>
                   </tr>
@@ -464,6 +486,9 @@ export default function StockDetail() {
                       <td className="py-1.5 px-2 font-medium text-slate-900">{financial.year}</td>
                       <td className="py-1.5 px-2 text-right text-slate-700">
                         {financial.sales ? `₨${formatNumber(financial.sales)}` : 'N/A'}
+                      </td>
+                      <td className="py-1.5 px-2 text-right text-slate-700">
+                        {financial.grossProfit ? `₨${formatNumber(financial.grossProfit)}` : 'N/A'}
                       </td>
                       <td className="py-1.5 px-2 text-right text-slate-700">
                         {financial.profitAfterTax ? `₨${formatNumber(financial.profitAfterTax)}` : 'N/A'}

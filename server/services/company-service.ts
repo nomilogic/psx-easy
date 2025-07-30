@@ -732,11 +732,13 @@ export class CompanyService {
               const numValue = parseFloat(value);
 
               if (!isNaN(numValue)) {
-                if (metric.includes("sales")) {
+                if (metric.includes("sales") || metric.includes("revenue")) {
                   financialData[i - 1].sales = numValue;
-                } else if (metric.includes("profit after taxation")) {
+                } else if (metric.includes("gross profit") && !metric.includes("margin")) {
+                  financialData[i - 1].grossProfit = numValue;
+                } else if (metric.includes("profit after taxation") || metric.includes("net income")) {
                   financialData[i - 1].profitAfterTax = numValue;
-                } else if (metric === "eps") {
+                } else if (metric === "eps" || metric.includes("earnings per share")) {
                   financialData[i - 1].eps = numValue;
                 }
               }
