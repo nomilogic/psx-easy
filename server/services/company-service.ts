@@ -409,8 +409,92 @@ export class CompanyService {
         }
       });
 
-      // Extract equity profile data
-      $(".companyEquity .stats_item").each((_, item) => {
+      // Extract comprehensive equity profile data
+      const equityProfile: Array<{
+        year: string;
+        marketCap?: number;
+        sharesOutstanding?: number;
+        freeFloat?: number;
+        bookValue?: number;
+        priceToBook?: number;
+        dividendPerShare?: number;
+        dividendYield?: number;
+        earningsPerShare?: number;
+        priceEarningsRatio?: number;
+        faceValue?: number;
+        lotSize?: number;
+      }> = [];
+
+      // Extract from equity profile tables
+      $("#equity .tabs__panel table tbody tr, .companyEquity table tbody tr").each(
+        (_, row) => {
+          const cells = $(row).find("td");
+          if (cells.length >= 2) {
+            const metric = $(cells[0]).text().trim().toLowerCase();
+
+            // Extract years from header if not done
+            if (equityProfile.length === 0) {
+              const headers = $(row).closest("table").find("thead th");
+              headers.each((index, header) => {
+                if (index > 0) {
+                  // Skip first column which is metric name
+                  const year = $(header).text().trim();
+                  if (year) {
+                    equityProfile.push({ year });
+                  }
+                }
+              });
+            }
+
+            // Extract equity metrics for each year
+            for (
+              let i = 1;
+              i < cells.length && i - 1 < equityProfile.length;
+              i++
+            ) {
+              const value = $(cells[i])
+                .text()
+                .trim()
+                .replace(/[(),]/g, "")
+                .replace(/,/g, "");
+              const numValue = parseFloat(value);
+
+              if (!isNaN(numValue)) {
+                if (metric.includes("market cap")) {
+                  equityProfile[i - 1].marketCap = numValue;
+                } else if (metric.includes("shares outstanding")) {
+                  equityProfile[i - 1].sharesOutstanding = numValue;
+                } else if (metric.includes("free float")) {
+                  equityProfile[i - 1].freeFloat = numValue;
+                } else if (metric.includes("book value")) {
+                  equityProfile[i - 1].bookValue = numValue;
+                } else if (metric.includes("price to book") || metric.includes("p/b")) {
+                  equityProfile[i - 1].priceToBook = numValue;
+                } else if (metric.includes("dividend per share")) {
+                  equityProfile[i - 1].dividendPerShare = numValue;
+                } else if (metric.includes("dividend yield")) {
+                  equityProfile[i - 1].dividendYield = numValue;
+                } else if (metric.includes("earnings per share") || metric.includes("eps")) {
+                  equityProfile[i - 1].earningsPerShare = numValue;
+                } else if (metric.includes("price earnings") || metric.includes("p/e")) {
+                  equityProfile[i - 1].priceEarningsRatio = numValue;
+                } else if (metric.includes("face value")) {
+                  equityProfile[i - 1].faceValue = numValue;
+                } else if (metric.includes("lot size")) {
+                  equityProfile[i - 1].lotSize = numValue;
+                }
+              }
+            }
+          }
+        },
+      );
+
+      if (equityProfile.length > 0) {
+        companyData.equityProfile = equityProfile;
+      }
+
+      // Extract current equity profile data from stats items
+      $(".companyEquity .stats_item, .equity__stats .stats_item").each((_, item) => {
         const label = $(item).find(".stats_label").text().trim().toLowerCase();
         const value = $(item)
           .find(".stats_value")
@@ -424,6 +508,18 @@ export class CompanyService {
         } else if (label.includes("shares") && !label.includes("free float")) {
           const shares = parseFloat(value);
           if (!isNaN(shares)) companyData.sharesOutstanding = shares;
+        } else if (label.includes("free float")) {
+          const freeFloat = parseFloat(value);
+          if (!isNaN(freeFloat)) companyData.freeFloat = freeFloat;
+        } else if (label.includes("book value")) {
+          const bookValue = parseFloat(value);
+          if (!isNaN(bookValue)) companyData.bookValue = bookValue;
+        } else if (label.includes("face value")) {
+          const faceValue = parseFloat(value);
+          if (!isNaN(faceValue)) companyData.faceValue = faceValue;
+        } else if (label.includes("lot size")) {
+          const lotSize = parseInt(value, 10);
+          if (!isNaN(lotSize)) companyData.lotSize = lotSize;
         }
       });
 
