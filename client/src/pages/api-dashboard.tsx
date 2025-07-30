@@ -66,10 +66,10 @@ function ApiDashboard() {
               </Link>
               <div className="flex items-center space-x-2">
                 <Server className="w-5 h-5" />
-                <span className="font-bold text-lg">PSX API Dashboard</span>
+                <span className="font-bold text-lg">PAISX API Dashboard</span>
               </div>
             </div>
-            <div className="text-sm font-medium">Pakistan Stock Exchange API</div>
+            <div className="text-sm font-medium">Pakistan AI Stock Exchange API</div>
           </div>
         </div>
       </div>
@@ -78,10 +78,10 @@ function ApiDashboard() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Pakistan Stock Exchange API Dashboard
+            PAISX API Dashboard
           </h1>
           <p className="text-gray-600 text-lg">
-            Real-time market data, comprehensive stock information, and powerful APIs for developers and traders.
+            Pakistan AI Stock Exchange - Real-time market data, AI-powered insights, and comprehensive APIs for developers and traders.
           </p>
         </div>
 
