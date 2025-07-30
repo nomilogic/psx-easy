@@ -100,7 +100,10 @@ export class DatabaseStorage implements IStorage {
         return psxData;
       }
     } catch (error) {
-      console.error("PSX service failed, falling back to database data:", error);
+      console.error(
+        "PSX service failed, falling back to database data:",
+        error,
+      );
     }
 
     // Try database first
@@ -114,16 +117,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   private async getMarketDataFromDatabase(): Promise<StockData[]> {
-    const stocks = await db.select().from(stocksTable).orderBy(desc(stocksTable.volume));
+    const stocks = await db
+      .select()
+      .from(stocksTable)
+      .orderBy(desc(stocksTable.volume));
     return stocks;
   }
 
   private async getMarketDataFromSupabase(): Promise<StockData[]> {
     try {
       const { data, error } = await supabase
-        .from('stocks')
-        .select('*')
-        .order('volume', { ascending: false });
+        .from("stocks")
+        .select("*")
+        .order("volume", { ascending: false });
 
       if (error) {
         console.error("Supabase query error:", error);
@@ -167,23 +173,26 @@ export class DatabaseStorage implements IStorage {
         for (let i = 0; i < insertData.length; i += batchSize) {
           const batch = insertData.slice(i, i + batchSize);
           for (const stock of batch) {
-            await tx.insert(stocksTable).values(stock).onConflictDoUpdate({
-              target: stocksTable.symbol,
-              set: {
-                name: stock.name,
-                sector: stock.sector,
-                ldcp: stock.ldcp,
-                open: stock.open,
-                high: stock.high,
-                low: stock.low,
-                current: stock.current,
-                change: stock.change,
-                changePercent: stock.changePercent,
-                volume: stock.volume,
-                isPositive: stock.isPositive,
-                updatedAt: new Date(),
-              },
-            });
+            await tx
+              .insert(stocksTable)
+              .values(stock)
+              .onConflictDoUpdate({
+                target: stocksTable.symbol,
+                set: {
+                  name: stock.name,
+                  sector: stock.sector,
+                  ldcp: stock.ldcp,
+                  open: stock.open,
+                  high: stock.high,
+                  low: stock.low,
+                  current: stock.current,
+                  change: stock.change,
+                  changePercent: stock.changePercent,
+                  volume: stock.volume,
+                  isPositive: stock.isPositive,
+                  updatedAt: new Date(),
+                },
+              });
           }
         }
       });
@@ -203,12 +212,15 @@ export class DatabaseStorage implements IStorage {
 
       return summaries[0] || null;
     } catch (error) {
-      console.error("Database failed for market summary, trying Supabase:", error);
+      console.error(
+        "Database failed for market summary, trying Supabase:",
+        error,
+      );
       try {
         const { data, error: supabaseError } = await supabase
-          .from('market_summaries')
-          .select('*')
-          .order('created_at', { ascending: false })
+          .from("market_summaries")
+          .select("*")
+          .order("created_at", { ascending: false })
           .limit(1);
 
         if (supabaseError) {
@@ -218,7 +230,10 @@ export class DatabaseStorage implements IStorage {
 
         return data?.[0] || null;
       } catch (supabaseErr) {
-        console.error("Supabase fallback failed for market summary:", supabaseErr);
+        console.error(
+          "Supabase fallback failed for market summary:",
+          supabaseErr,
+        );
         return null;
       }
     }
@@ -281,7 +296,9 @@ export class DatabaseStorage implements IStorage {
     data: any,
   ): Promise<void> {
     // Delete existing time series for this symbol and interval
-    await db.delete(stockTimeSeriesTable).where(eq(stockTimeSeriesTable.symbol, symbol));
+    await db
+      .delete(stockTimeSeriesTable)
+      .where(eq(stockTimeSeriesTable.symbol, symbol));
 
     const insertData: LegacyInsertStockTimeSeries = {
       symbol,
@@ -338,12 +355,16 @@ export class DatabaseStorage implements IStorage {
       .from(companiesTable)
       .where(eq(companiesTable.symbol, upperSymbol));
 
-    console.log(`Database query result for ${upperSymbol}: ${result.length} records found`);
+    console.log(
+      `Database query result for ${upperSymbol}: ${result.length} records found`,
+    );
 
     if (result.length === 0) return null;
 
     const company = result[0];
-    console.log(`Found company in database: ${company.name} (${company.symbol})`);
+    console.log(
+      `Found company in database: ${company.name} (${company.symbol})`,
+    );
 
     return {
       symbol: company.symbol,
@@ -369,16 +390,27 @@ export class DatabaseStorage implements IStorage {
       registrar: company.registrar || undefined,
       auditor: company.auditor || undefined,
       fiscalYearEnd: company.fiscalYearEnd || undefined,
-      keyPeople: company.keyPeople as Array<{name: string, role: string}> || undefined,
+      keyPeople:
+        (company.keyPeople as Array<{ name: string; role: string }>) ||
+        undefined,
       businessDescription: company.businessDescription || undefined,
       // Include announcements data
-      announcements: company.announcements as { [category: string]: Array<{ date: string; title: string; documentUrl?: string }> } || undefined,
+      announcements:
+        (company.announcements as {
+          [category: string]: Array<{
+            date: string;
+            title: string;
+            documentUrl?: string;
+          }>;
+        }) || undefined,
     };
   }
 
   async setCompany(companyData: CompanyData): Promise<void> {
     try {
-      console.log(`Attempting to save/update company data for ${companyData.symbol} in database`);
+      console.log(
+        `Attempting to save/update company data for ${companyData.symbol} in database`,
+      );
 
       const insertData: LegacyInsertCompany = {
         symbol: companyData.symbol.toUpperCase(),
@@ -395,17 +427,17 @@ export class DatabaseStorage implements IStorage {
         pbRatio: companyData.pbRatio || null,
         dividendYield: companyData.dividendYield || null,
         epsRatio: companyData.epsRatio || null,
-        bookValue: company.bookValue || null,
-        high52Week: company.high52Week || null,
-        low52Week: company.low52Week || null,
-        faceValue: company.faceValue || null,
-        lotSize: company.lotSize || null,
-        isinCode: company.isinCode || null,
-        registrar: company.registrar || null,
-        auditor: company.auditor || null,
-        fiscalYearEnd: company.fiscalYearEnd || null,
+        bookValue: companyData.bookValue || null,
+        high52Week: companyData.high52Week || null,
+        low52Week: companyData.low52Week || null,
+        faceValue: companyData.faceValue || null,
+        lotSize: companyData.lotSize || null,
+        isinCode: companyData.isinCode || null,
+        registrar: companyData.registrar || null,
+        auditor: companyData.auditor || null,
+        fiscalYearEnd: companyData.fiscalYearEnd || null,
         keyPeople: companyData.keyPeople || null,
-        businessDescription: company.businessDescription || null,
+        businessDescription: companyData.businessDescription || null,
         // Include announcements
         announcements: (companyData as any).announcements || null,
       };
@@ -421,11 +453,20 @@ export class DatabaseStorage implements IStorage {
             lastUpdated: new Date(),
           },
         })
-        .returning({ symbol: companiesTable.symbol, lastUpdated: companiesTable.lastUpdated });
+        .returning({
+          symbol: companiesTable.symbol,
+          lastUpdated: companiesTable.lastUpdated,
+        });
 
-      console.log(`Successfully saved/updated company data for ${companyData.symbol}:`, result);
+      console.log(
+        `Successfully saved/updated company data for ${companyData.symbol}:`,
+        result,
+      );
     } catch (error) {
-      console.error(`Error updating company data for ${companyData.symbol}:`, error);
+      console.error(
+        `Error updating company data for ${companyData.symbol}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -456,7 +497,9 @@ export class DatabaseStorage implements IStorage {
       registrar: company.registrar || undefined,
       auditor: company.auditor || undefined,
       fiscalYearEnd: company.fiscalYearEnd || undefined,
-      keyPeople: company.keyPeople as Array<{name: string, role: string}> || undefined,
+      keyPeople:
+        (company.keyPeople as Array<{ name: string; role: string }>) ||
+        undefined,
       businessDescription: company.businessDescription || undefined,
     }));
   }
