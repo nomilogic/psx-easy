@@ -12,7 +12,7 @@ import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, LineChart, Line, Ba
 import NewsSection from "@/components/news-section";
 
 export default function Homepage() {
-  const { stocks, marketSummary, isConnected } = useWebSocket();
+  const { marketData: stocks, marketSummary, isConnected } = useWebSocket();
 
   const { data: performersData } = useQuery({
     queryKey: ['/api/performers'],

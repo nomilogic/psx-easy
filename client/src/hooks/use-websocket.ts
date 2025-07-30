@@ -11,9 +11,6 @@ interface WebSocketState {
 }
 
 export function useWebSocket(): WebSocketState {
-  const [stocks, setStocks] = useState<StockData[]>([]);
-  const [marketSummary, setMarketSummary] = useState<MarketSummary | null>(null);
-  const [wsConnected, setWsConnected] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [marketData, setMarketData] = useState<StockData[] | null>(null);
   const [marketSummary, setMarketSummary] = useState<MarketSummary | null>(null);
@@ -127,5 +124,12 @@ export function useWebSocket(): WebSocketState {
     }
   }, [isConnected]);
 
-  return { stocks, marketSummary, isConnected };
+  return { 
+    isConnected, 
+    marketData, 
+    marketSummary, 
+    connectedClients, 
+    connect, 
+    disconnect 
+  };
 }
