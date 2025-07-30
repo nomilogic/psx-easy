@@ -394,6 +394,13 @@ export class DatabaseStorage implements IStorage {
         (company.keyPeople as Array<{ name: string; role: string }>) ||
         undefined,
       businessDescription: company.businessDescription || undefined,
+      freeFloat: company.freeFloat || undefined,
+      payoutRatio: company.payoutRatio || undefined,
+      retentionRatio: company.retentionRatio || undefined,
+      financialData: company.financialData as any || undefined,
+      ratiosData: company.ratiosData as any || undefined,
+      equityProfile: company.equityProfile as any || undefined,
+      payoutsData: company.payoutsData as any || undefined,
       // Include announcements data
       announcements:
         (company.announcements as {
@@ -438,15 +445,15 @@ export class DatabaseStorage implements IStorage {
         fiscalYearEnd: companyData.fiscalYearEnd || null,
         keyPeople: companyData.keyPeople || null,
         businessDescription: companyData.businessDescription || null,
-        freeFloat: (companyData as any).freeFloat || null,
-        payoutRatio: (companyData as any).payoutRatio || null,
-        retentionRatio: (companyData as any).retentionRatio || null,
-        financialData: (companyData as any).financialData || null,
-        ratiosData: (companyData as any).ratiosData || null,
-        equityProfile: (companyData as any).equityProfile || null,
-        payoutsData: (companyData as any).payoutsData || null,
+        freeFloat: companyData.freeFloat || null,
+        payoutRatio: companyData.payoutRatio || null,
+        retentionRatio: companyData.retentionRatio || null,
+        financialData: companyData.financialData || null,
+        ratiosData: companyData.ratiosData || null,
+        equityProfile: companyData.equityProfile || null,
+        payoutsData: companyData.payoutsData || null,
         // Include announcements
-        announcements: (companyData as any).announcements || null,
+        announcements: companyData.announcements || null,
       };
 
       // Use upsert logic - insert or update if exists
