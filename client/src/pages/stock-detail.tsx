@@ -22,8 +22,9 @@ import {
   Users,
   Briefcase,
   Download,
+  Hash,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import type { StockData, CompanyData } from "@shared/schema";
 
@@ -33,6 +34,27 @@ export default function StockDetail() {
   const [activeAnnouncementTab, setActiveAnnouncementTab] = useState<string>("");
   const [announcementPage, setAnnouncementPage] = useState<{ [key: string]: number }>({});
   const [payoutsPage, setPayoutsPage] = useState(1);
+  const [scrollY, setScrollY] = useState(0);
+
+  // Parallax effect
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Smooth scroll to section
+  const scrollToSection = (sectionId: string) => {
+    setActiveTab(sectionId);
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ 
+        behavior: "smooth", 
+        block: "start",
+        inline: "nearest" 
+      });
+    }
+  };
 
   const ITEMS_PER_PAGE = 10;
 
@@ -256,352 +278,426 @@ export default function StockDetail() {
   const sampleAnnouncements = companyData?.announcements || generateSampleAnnouncements();
 
   const tabs = [
-    { id: "profile", label: "Company Profile", icon: Building2 },
-    { id: "equity", label: "Equity Profile", icon: PieChart },
-    { id: "announcements", label: "Announcements", icon: FileText },
-    { id: "financials", label: "Financials", icon: BarChart3 },
-    { id: "ratios", label: "Ratios", icon: Target },
-    { id: "payouts", label: "Payouts", icon: DollarSign }
+    { id: "profile", label: "Company Profile", icon: Building2, color: "from-blue-500 to-blue-600" },
+    { id: "equity", label: "Equity Profile", icon: PieChart, color: "from-purple-500 to-purple-600" },
+    { id: "announcements", label: "Announcements", icon: FileText, color: "from-orange-500 to-orange-600" },
+    { id: "financials", label: "Financials", icon: BarChart3, color: "from-green-500 to-green-600" },
+    { id: "ratios", label: "Ratios", icon: Target, color: "from-red-500 to-red-600" },
+    { id: "payouts", label: "Payouts", icon: DollarSign, color: "from-indigo-500 to-indigo-600" }
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Green Header Bar */}
-      <div className="bg-green-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
-            <div className="flex items-center space-x-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+      {/* Enhanced Header with Parallax */}
+      <div 
+        className="bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 text-white shadow-xl relative overflow-hidden"
+        style={{
+          transform: `translateY(${scrollY * 0.5}px)`,
+        }}
+      >
+        {/* Header Background Pattern */}
+        <div className="absolute inset-0 bg-black bg-opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                             radial-gradient(circle at 75% 75%, rgba(255,255,255,0.05) 0%, transparent 50%)`
+          }}></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-8">
               <Link
                 href="/"
-                className="flex items-center px-3 py-1 text-white hover:text-green-100 transition-colors rounded-lg hover:bg-green-700"
+                className="flex items-center px-4 py-2 text-white hover:text-green-100 transition-all duration-300 rounded-lg hover:bg-white hover:bg-opacity-10 backdrop-blur-sm"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                PSX
+                <ArrowLeft className="w-5 h-5 mr-2" />
+                <span className="font-semibold">PSX Dashboard</span>
               </Link>
-              {/* Navigation Menu */}
-              <nav className="hidden md:flex space-x-6 text-sm">
-                <a href="#" className="hover:text-green-100">TELE</a>
-                <a href="#" className="hover:text-green-100">QUOTE</a>
-                <a href="#" className="hover:text-green-100">PROFILE</a>
-                <a href="#" className="hover:text-green-100">EQUITY</a>
-                <a href="#" className="hover:text-green-100">ANNOUNCEMENTS</a>
-                <a href="#" className="hover:text-green-100">FINANCIALS</a>
-                <a href="#" className="hover:text-green-100">RATIOS</a>
-                <a href="#" className="hover:text-green-100">PAYOUTS</a>
-                <a href="#" className="hover:text-green-100">REPORTS</a>
+              
+              {/* Enhanced Navigation Menu */}
+              <nav className="hidden lg:flex space-x-1">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => scrollToSection(tab.id)}
+                    className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white hover:text-green-100 transition-all duration-300 rounded-lg hover:bg-white hover:bg-opacity-10 backdrop-blur-sm"
+                  >
+                    <Hash className="w-3 h-3" />
+                    <span>{tab.label.toUpperCase()}</span>
+                  </button>
+                ))}
               </nav>
             </div>
-            <div className="text-sm">
-              <span className="text-green-100">PSX</span>
+            <div className="flex items-center space-x-4">
+              <span className="text-emerald-100 font-medium">Pakistan Stock Exchange</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Stock Header Section */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
-            <div>
-              <div className="flex items-center space-x-3 mb-2">
-                <h1 className="text-2xl font-bold text-gray-900">{stockData.symbol}</h1>
-                <span className="text-lg text-gray-600">{stockData.name}</span>
+      {/* Enhanced Stock Header Section */}
+      <div className="bg-white shadow-lg border-b border-gray-200 relative overflow-hidden">
+        {/* Background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-50 via-white to-purple-50 opacity-50"></div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-4 mb-3">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                  {stockData.symbol}
+                </h1>
+                <div className="h-8 w-px bg-gray-300"></div>
+                <span className="text-xl text-gray-600 font-medium">{stockData.name}</span>
               </div>
-              <p className="text-gray-500">{stockData.sector}</p>
+              <div className="flex items-center space-x-3">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                  {stockData.sector}
+                </span>
+                <span className="text-sm text-gray-500">Pakistan Stock Exchange</span>
+              </div>
             </div>
             
-            <div className="mt-4 lg:mt-0 text-right">
-              <div className="text-4xl font-bold text-gray-900 mb-1">
+            <div className="mt-6 lg:mt-0 text-right">
+              <div className="text-5xl font-bold text-gray-900 mb-2 font-mono">
                 {formatPrice(stockData.current)}
               </div>
-              <div className={`flex items-center justify-end space-x-2 ${
-                stockData.isPositive ? "text-green-600" : "text-red-600"
+              <div className={`flex items-center justify-end space-x-3 ${
+                stockData.isPositive ? "text-emerald-600" : "text-red-600"
               }`}>
-                {stockData.isPositive ? (
-                  <TrendingUp className="w-5 h-5" />
-                ) : (
-                  <TrendingDown className="w-5 h-5" />
-                )}
-                <span className="text-lg font-semibold">
+                <div className={`p-2 rounded-full ${
+                  stockData.isPositive ? "bg-emerald-100" : "bg-red-100"
+                }`}>
+                  {stockData.isPositive ? (
+                    <TrendingUp className="w-6 h-6" />
+                  ) : (
+                    <TrendingDown className="w-6 h-6" />
+                  )}
+                </div>
+                <span className="text-xl font-semibold font-mono">
                   {formatChange(stockData.change, stockData.changePercent)}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Price Summary Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-center">
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">BID</p>
-              <p className="text-lg font-semibold">{formatPrice(stockData.current - 0.5)}</p>
-            </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">ASK</p>
-              <p className="text-lg font-semibold">{formatPrice(stockData.current + 0.5)}</p>
-            </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">OPEN</p>
-              <p className="text-lg font-semibold">{formatPrice(stockData.open)}</p>
-            </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">HIGH</p>
-              <p className="text-lg font-semibold text-green-600">{formatPrice(stockData.high)}</p>
-            </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">LOW</p>
-              <p className="text-lg font-semibold text-red-600">{formatPrice(stockData.low)}</p>
-            </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">VOLUME</p>
-              <p className="text-lg font-semibold">{formatVolume(stockData.volume)}</p>
-            </div>
+          {/* Enhanced Price Summary Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+            {[
+              { label: "BID", value: formatPrice(stockData.current - 0.5), color: "from-blue-500 to-blue-600" },
+              { label: "ASK", value: formatPrice(stockData.current + 0.5), color: "from-purple-500 to-purple-600" },
+              { label: "OPEN", value: formatPrice(stockData.open), color: "from-gray-500 to-gray-600" },
+              { label: "HIGH", value: formatPrice(stockData.high), color: "from-emerald-500 to-emerald-600" },
+              { label: "LOW", value: formatPrice(stockData.low), color: "from-red-500 to-red-600" },
+              { label: "VOLUME", value: formatVolume(stockData.volume), color: "from-orange-500 to-orange-600" },
+            ].map((item, index) => (
+              <div key={index} className="relative group">
+                <div className={`absolute inset-0 bg-gradient-to-r ${item.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-xl`}></div>
+                <div className="relative bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300 text-center">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{item.label}</p>
+                  <p className={`text-lg font-bold bg-gradient-to-r ${item.color} bg-clip-text text-transparent`}>
+                    {item.value}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Tabs Navigation */}
-      <div className="bg-white border-b border-gray-200">
+      {/* Enhanced Sticky Tabs Navigation */}
+      <div className="sticky top-0 z-40 bg-white shadow-lg border-b border-gray-200 backdrop-blur-sm bg-opacity-95">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8 overflow-x-auto">
+          <nav className="flex space-x-2 overflow-x-auto py-2">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                onClick={() => scrollToSection(tab.id)}
+                className={`flex items-center space-x-3 py-3 px-6 rounded-xl font-medium text-sm whitespace-nowrap transition-all duration-300 group relative overflow-hidden ${
                   activeTab === tab.id
-                    ? "border-green-600 text-green-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? `bg-gradient-to-r ${tab.color} text-white shadow-lg transform scale-105`
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 }`}
               >
-                <tab.icon className="w-4 h-4" />
-                <span>{tab.label}</span>
+                {activeTab === tab.id && (
+                  <div className="absolute inset-0 bg-white bg-opacity-20 animate-pulse"></div>
+                )}
+                <tab.icon className={`w-5 h-5 transition-transform duration-300 ${
+                  activeTab === tab.id ? "scale-110" : "group-hover:scale-105"
+                }`} />
+                <span className="font-semibold">{tab.label}</span>
               </button>
             ))}
           </nav>
         </div>
       </div>
 
-      {/* Tab Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Company Profile Tab */}
-        {activeTab === "profile" && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
-              <Building2 className="w-5 h-5 mr-2" />
-              Company Profile
-            </h2>
+      {/* Enhanced Tab Content with Smooth Sections */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16">
+        {/* Company Profile Section */}
+        <section id="profile" className="scroll-mt-24">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+            {/* Section Header */}
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6">
+              <h2 className="text-2xl font-bold flex items-center">
+                <Building2 className="w-6 h-6 mr-3" />
+                Company Profile
+              </h2>
+              <p className="text-blue-100 mt-2">Comprehensive company information and business details</p>
+            </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Company Info */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Company Information</h3>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Company Description</h4>
-                    <p className="text-gray-600 text-sm leading-relaxed">
+            <div className="p-8">
+            
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Company Description */}
+                <div className="lg:col-span-2 space-y-6">
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                      <Building2 className="w-5 h-5 mr-2 text-blue-600" />
+                      About the Company
+                    </h3>
+                    <p className="text-gray-700 leading-relaxed">
                       {companyData?.description || 
                        `${stockData.name} is a leading company in the ${stockData.sector} sector, providing innovative solutions and services to customers across Pakistan. The company has established itself as a key player in the market with strong fundamentals and growth prospects.`}
                     </p>
                   </div>
-                  
-                  {companyData?.website && (
-                    <div className="flex items-center space-x-2">
-                      <Globe className="w-4 h-4 text-gray-400" />
-                      <a href={companyData.website} target="_blank" rel="noopener noreferrer" 
-                         className="text-green-600 hover:underline">
-                        {companyData.website}
-                      </a>
-                    </div>
-                  )}
-                  
-                  {companyData?.phone && (
-                    <div className="flex items-center space-x-2">
-                      <Phone className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-600">{companyData.phone}</span>
-                    </div>
-                  )}
-                  
-                  {companyData?.address && (
-                    <div className="flex items-start space-x-2">
-                      <MapPin className="w-4 h-4 text-gray-400 mt-0.5" />
-                      <span className="text-gray-600 text-sm">{companyData.address}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
 
-              {/* Key People */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Key People</h3>
-                <div className="space-y-3">
-                  {companyData?.ceo && (
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <User className="w-4 h-4 text-gray-400" />
-                        <div>
-                          <p className="font-medium text-gray-900">{companyData.ceo}</p>
-                          <p className="text-sm text-gray-500">Chief Executive Officer</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {companyData?.keyPeople?.map((person, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <User className="w-4 h-4 text-gray-400" />
-                        <div>
-                          <p className="font-medium text-gray-900">{person.name}</p>
-                          <p className="text-sm text-gray-500">{person.role}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )) || (
-                    // Sample key people if none provided
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  {/* Contact Information */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {companyData?.website && (
+                      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-center space-x-3">
-                          <User className="w-4 h-4 text-gray-400" />
+                          <div className="p-2 bg-blue-100 rounded-lg">
+                            <Globe className="w-5 h-5 text-blue-600" />
+                          </div>
                           <div>
-                            <p className="font-medium text-gray-900">Management Team</p>
-                            <p className="text-sm text-gray-500">Executive Leadership</p>
+                            <p className="text-sm text-gray-500">Website</p>
+                            <a href={companyData.website} target="_blank" rel="noopener noreferrer" 
+                               className="text-blue-600 hover:text-blue-700 font-medium">
+                              {companyData.website}
+                            </a>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                    
+                    {companyData?.phone && (
+                      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-2 bg-green-100 rounded-lg">
+                            <Phone className="w-5 h-5 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Phone</p>
+                            <p className="text-gray-900 font-medium">{companyData.phone}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {companyData?.address && (
+                      <div className="md:col-span-2 bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-start space-x-3">
+                          <div className="p-2 bg-red-100 rounded-lg">
+                            <MapPin className="w-5 h-5 text-red-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Address</p>
+                            <p className="text-gray-900 font-medium">{companyData.address}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Company Details */}
-                <div className="mt-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Company Details</h3>
-                  <div className="grid grid-cols-1 gap-3">
-                    <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Sector</span>
-                      <span className="font-medium">{stockData.sector}</span>
+                {/* Key People & Company Details */}
+                <div className="space-y-6">
+                  {/* Key People */}
+                  <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+                    <div className="p-6 border-b border-gray-200">
+                      <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                        <Users className="w-5 h-5 mr-2 text-purple-600" />
+                        Key People
+                      </h3>
                     </div>
-                    {companyData?.registrar && (
-                      <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
-                        <span className="text-gray-600">Registrar</span>
-                        <span className="font-medium">{companyData.registrar}</span>
+                    <div className="p-6 space-y-4">
+                      {companyData?.ceo && (
+                        <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg">
+                          <div className="p-2 bg-purple-100 rounded-full">
+                            <User className="w-4 h-4 text-purple-600" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900">{companyData.ceo}</p>
+                            <p className="text-sm text-purple-600">Chief Executive Officer</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {companyData?.keyPeople?.map((person, index) => (
+                        <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                          <div className="p-2 bg-gray-100 rounded-full">
+                            <User className="w-4 h-4 text-gray-600" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900">{person.name}</p>
+                            <p className="text-sm text-gray-600">{person.role}</p>
+                          </div>
+                        </div>
+                      )) || (
+                        <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                          <div className="p-2 bg-gray-100 rounded-full">
+                            <Briefcase className="w-4 h-4 text-gray-600" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900">Management Team</p>
+                            <p className="text-sm text-gray-600">Executive Leadership</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Company Details */}
+                  <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+                    <div className="p-6 border-b border-gray-200">
+                      <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                        <FileText className="w-5 h-5 mr-2 text-orange-600" />
+                        Company Details
+                      </h3>
+                    </div>
+                    <div className="p-6 space-y-3">
+                      <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
+                        <span className="text-gray-700 font-medium">Sector</span>
+                        <span className="font-bold text-orange-600">{stockData.sector}</span>
                       </div>
-                    )}
-                    {companyData?.auditor && (
-                      <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
-                        <span className="text-gray-600">Auditor</span>
-                        <span className="font-medium">{companyData.auditor}</span>
-                      </div>
-                    )}
-                    {companyData?.fiscalYearEnd && (
-                      <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
-                        <span className="text-gray-600">Fiscal Year End</span>
-                        <span className="font-medium">{companyData.fiscalYearEnd}</span>
-                      </div>
-                    )}
+                      {companyData?.registrar && (
+                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                          <span className="text-gray-700 font-medium">Registrar</span>
+                          <span className="font-semibold text-gray-900">{companyData.registrar}</span>
+                        </div>
+                      )}
+                      {companyData?.auditor && (
+                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                          <span className="text-gray-700 font-medium">Auditor</span>
+                          <span className="font-semibold text-gray-900">{companyData.auditor}</span>
+                        </div>
+                      )}
+                      {companyData?.fiscalYearEnd && (
+                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                          <span className="text-gray-700 font-medium">Fiscal Year End</span>
+                          <span className="font-semibold text-gray-900">{companyData.fiscalYearEnd}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        )}
+        </section>
 
-        {/* Equity Profile Tab */}
-        {activeTab === "equity" && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
-              <PieChart className="w-5 h-5 mr-2" />
-              Equity Profile
-            </h2>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Market Cap</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {companyData?.marketCap ? formatMarketCap(companyData.marketCap) : "Rs. 2,441,292.50"}
-                </p>
-              </div>
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Shares Outstanding</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {companyData?.sharesOutstanding ? formatNumber(companyData.sharesOutstanding) : "194,435,600"}
-                </p>
-              </div>
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Free Float</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {companyData?.freeFloat ? formatPercentage(companyData.freeFloat) : "25.99%"}
-                </p>
-              </div>
-              <div className="text-center p-4 bg-orange-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">P/E Ratio</p>
-                <p className="text-2xl font-bold text-orange-600">
-                  {companyData?.peRatio ? formatRatio(companyData.peRatio) : "16.27%"}
-                </p>
-              </div>
+        {/* Equity Profile Section */}
+        <section id="equity" className="scroll-mt-24">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6">
+              <h2 className="text-2xl font-bold flex items-center">
+                <PieChart className="w-6 h-6 mr-3" />
+                Equity Profile
+              </h2>
+              <p className="text-purple-100 mt-2">Market capitalization and equity structure analysis</p>
             </div>
+            
+            <div className="p-8">
+            
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                {[
+                  { 
+                    label: "Market Cap", 
+                    value: companyData?.marketCap ? formatMarketCap(companyData.marketCap) : "Rs. 2,441,292.50",
+                    color: "from-emerald-500 to-emerald-600",
+                    bg: "bg-emerald-50"
+                  },
+                  { 
+                    label: "Shares Outstanding", 
+                    value: companyData?.sharesOutstanding ? formatNumber(companyData.sharesOutstanding) : "194,435,600",
+                    color: "from-blue-500 to-blue-600",
+                    bg: "bg-blue-50"
+                  },
+                  { 
+                    label: "Free Float", 
+                    value: companyData?.freeFloat ? formatPercentage(companyData.freeFloat) : "25.99%",
+                    color: "from-purple-500 to-purple-600",
+                    bg: "bg-purple-50"
+                  },
+                  { 
+                    label: "P/E Ratio", 
+                    value: companyData?.peRatio ? formatRatio(companyData.peRatio) : "16.27",
+                    color: "from-orange-500 to-orange-600",
+                    bg: "bg-orange-50"
+                  }
+                ].map((metric, index) => (
+                  <div key={index} className="relative group">
+                    <div className={`absolute inset-0 bg-gradient-to-r ${metric.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-2xl`}></div>
+                    <div className={`relative ${metric.bg} p-6 rounded-2xl border-2 border-white shadow-lg hover:shadow-xl transition-all duration-300 text-center group-hover:transform group-hover:scale-105`}>
+                      <p className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">{metric.label}</p>
+                      <p className={`text-3xl font-bold bg-gradient-to-r ${metric.color} bg-clip-text text-transparent`}>
+                        {metric.value}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-            {/* Additional Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">Book Value</p>
-                <p className="text-lg font-semibold">
-                  {companyData?.bookValue ? formatPrice(companyData.bookValue) : "Rs. 45.23"}
-                </p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">Face Value</p>
-                <p className="text-lg font-semibold">
-                  {companyData?.faceValue ? formatPrice(companyData.faceValue) : "Rs. 10.00"}
-                </p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">Lot Size</p>
-                <p className="text-lg font-semibold">
-                  {companyData?.lotSize ? companyData.lotSize.toLocaleString() : "500"}
-                </p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">EPS</p>
-                <p className="text-lg font-semibold">
-                  {companyData?.epsRatio ? formatPrice(companyData.epsRatio) : "Rs. 7.85"}
-                </p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">Dividend Yield</p>
-                <p className="text-lg font-semibold">
-                  {companyData?.dividendYield ? formatPercentage(companyData.dividendYield) : "4.50%"}
-                </p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">52W High/Low</p>
-                <p className="text-lg font-semibold">
-                  {formatPrice(stockData.high)} / {formatPrice(stockData.low)}
-                </p>
+              {/* Additional Metrics Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[
+                  { label: "Book Value", value: companyData?.bookValue ? formatPrice(companyData.bookValue) : "Rs. 45.23", icon: "📊" },
+                  { label: "Face Value", value: companyData?.faceValue ? formatPrice(companyData.faceValue) : "Rs. 10.00", icon: "💰" },
+                  { label: "Lot Size", value: companyData?.lotSize ? companyData.lotSize.toLocaleString() : "500", icon: "📦" },
+                  { label: "EPS", value: companyData?.epsRatio ? formatPrice(companyData.epsRatio) : "Rs. 7.85", icon: "💎" },
+                  { label: "Dividend Yield", value: companyData?.dividendYield ? formatPercentage(companyData.dividendYield) : "4.50%", icon: "🎯" },
+                  { label: "52W Range", value: `${formatPrice(stockData.high)} / ${formatPrice(stockData.low)}`, icon: "📈" }
+                ].map((metric, index) => (
+                  <div key={index} className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 group">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm font-semibold text-gray-600 uppercase tracking-wider">{metric.label}</p>
+                      <span className="text-lg">{metric.icon}</span>
+                    </div>
+                    <p className="text-xl font-bold text-gray-900 group-hover:text-purple-600 transition-colors">
+                      {metric.value}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-        )}
+        </section>
 
-        {/* Announcements Tab */}
-        {activeTab === "announcements" && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
-              <FileText className="w-5 h-5 mr-2" />
-              Announcements
-            </h2>
+        {/* Announcements Section */}
+        <section id="announcements" className="scroll-mt-24">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6">
+              <h2 className="text-2xl font-bold flex items-center">
+                <FileText className="w-6 h-6 mr-3" />
+                Announcements
+              </h2>
+              <p className="text-orange-100 mt-2">Latest company announcements and regulatory filings</p>
+            </div>
+            
+            <div className="p-8">
 
-            {/* Announcement Categories */}
-            <div className="mb-6">
-              <div className="border-b border-gray-200">
-                <nav className="flex space-x-8">
+              {/* Enhanced Announcement Categories */}
+              <div className="mb-8">
+                <nav className="flex flex-wrap gap-2">
                   {Object.keys(sampleAnnouncements).map((category) => (
                     <button
                       key={category}
                       onClick={() => setActiveAnnouncementTab(category)}
-                      className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${
                         activeAnnouncementTab === category
-                          ? "border-green-600 text-green-600"
-                          : "border-transparent text-gray-500 hover:text-gray-700"
+                          ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg transform scale-105"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-orange-600"
                       }`}
                     >
                       {category}
@@ -609,194 +705,234 @@ export default function StockDetail() {
                   ))}
                 </nav>
               </div>
-            </div>
 
-            {/* Announcements List */}
-            {activeAnnouncementTab && sampleAnnouncements[activeAnnouncementTab] && (
-              <div className="space-y-4">
-                {sampleAnnouncements[activeAnnouncementTab].map((announcement, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <span className="text-sm text-gray-500">{announcement.date}</span>
-                        <span className="text-sm font-medium text-gray-900">{announcement.title}</span>
+              {/* Enhanced Announcements List */}
+              {activeAnnouncementTab && sampleAnnouncements[activeAnnouncementTab] && (
+                <div className="space-y-4">
+                  {sampleAnnouncements[activeAnnouncementTab].map((announcement, index) => (
+                    <div key={index} className="bg-gradient-to-r from-white to-orange-50 border border-orange-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300 group">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-4 mb-3">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800">
+                              {announcement.date}
+                            </span>
+                            <span className="text-lg font-bold text-gray-900 group-hover:text-orange-600 transition-colors">
+                              {announcement.title}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <FileText className="w-4 h-4 text-gray-400" />
+                            <p className="text-sm text-gray-600 font-medium">{announcement.document}</p>
+                          </div>
+                        </div>
+                        <button className="flex items-center space-x-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors shadow-sm hover:shadow-md">
+                          <Download className="w-4 h-4" />
+                          <span className="text-sm font-semibold">Download</span>
+                        </button>
                       </div>
-                      <p className="text-sm text-gray-600">{announcement.document}</p>
                     </div>
-                    <button className="flex items-center space-x-1 text-green-600 hover:text-green-700">
-                      <Download className="w-4 h-4" />
-                      <span className="text-sm">Download</span>
-                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* Financials Section */}
+        <section id="financials" className="scroll-mt-24">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6">
+              <h2 className="text-2xl font-bold flex items-center">
+                <BarChart3 className="w-6 h-6 mr-3" />
+                Financials
+              </h2>
+              <p className="text-green-100 mt-2">Annual and quarterly financial performance data</p>
+            </div>
+            
+            <div className="p-8">
+
+              {/* Annual Financials */}
+              <div className="mb-10">
+                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                  <Calendar className="w-5 h-5 mr-2 text-green-600" />
+                  Annual Financials
+                </h3>
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl overflow-hidden border border-green-200">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-gradient-to-r from-green-500 to-green-600 text-white">
+                          <th className="px-6 py-4 text-left font-bold">Year</th>
+                          <th className="px-6 py-4 text-right font-bold">Sales</th>
+                          <th className="px-6 py-4 text-right font-bold">Profit after Taxation</th>
+                          <th className="px-6 py-4 text-right font-bold">EPS</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sampleFinancials.annual?.map((item, index) => (
+                          <tr key={index} className="hover:bg-green-100 transition-colors border-b border-green-200">
+                            <td className="px-6 py-4 font-bold text-gray-900">{item.label}</td>
+                            <td className="px-6 py-4 text-right font-semibold text-gray-700">
+                              {item.sales ? `Rs. ${formatNumber(item.sales)}` : "-"}
+                            </td>
+                            <td className={`px-6 py-4 text-right font-semibold ${
+                              (item.profitAfterTax ?? 0) < 0 ? "text-red-600" : "text-gray-700"
+                            }`}>
+                              {item.profitAfterTax ? `Rs. ${formatNumber(item.profitAfterTax)}` : "-"}
+                            </td>
+                            <td className="px-6 py-4 text-right font-semibold text-gray-700">
+                              {item.eps ? `Rs. ${item.eps.toFixed(2)}` : "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                ))}
+                </div>
               </div>
-            )}
+
+              {/* Quarterly Financials */}
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                  <Activity className="w-5 h-5 mr-2 text-blue-600" />
+                  Quarterly Financials
+                </h3>
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl overflow-hidden border border-blue-200">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                          <th className="px-6 py-4 text-left font-bold">Quarter</th>
+                          <th className="px-6 py-4 text-right font-bold">Sales</th>
+                          <th className="px-6 py-4 text-right font-bold">Profit after Taxation</th>
+                          <th className="px-6 py-4 text-right font-bold">EPS</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sampleFinancials.quarterly?.map((item, index) => (
+                          <tr key={index} className="hover:bg-blue-100 transition-colors border-b border-blue-200">
+                            <td className="px-6 py-4 font-bold text-gray-900">{item.label}</td>
+                            <td className="px-6 py-4 text-right font-semibold text-gray-700">
+                              {item.sales ? `Rs. ${formatNumber(item.sales)}` : "-"}
+                            </td>
+                            <td className={`px-6 py-4 text-right font-semibold ${
+                              (item.profitAfterTax ?? 0) < 0 ? "text-red-600" : "text-gray-700"
+                            }`}>
+                              {item.profitAfterTax ? `Rs. ${formatNumber(item.profitAfterTax)}` : "-"}
+                            </td>
+                            <td className="px-6 py-4 text-right font-semibold text-gray-700">
+                              {item.eps ? `Rs. ${item.eps.toFixed(2)}` : "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+        </section>
 
-        {/* Financials Tab */}
-        {activeTab === "financials" && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
-              <BarChart3 className="w-5 h-5 mr-2" />
-              Financials
-            </h2>
-
-            {/* Annual Financials */}
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Annual Financials</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse border border-gray-300">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="border border-gray-300 px-4 py-2 text-left font-medium text-gray-900">Year</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right font-medium text-gray-900">Sales</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right font-medium text-gray-900">Profit after Taxation</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right font-medium text-gray-900">EPS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sampleFinancials.annual?.map((item, index) => (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 px-4 py-2 font-medium">{item.label}</td>
-                        <td className="border border-gray-300 px-4 py-2 text-right">
-                          {item.sales ? `Rs. ${formatNumber(item.sales)}` : "-"}
-                        </td>
-                        <td className={`border border-gray-300 px-4 py-2 text-right ${
-                          (item.profitAfterTax ?? 0) < 0 ? "text-red-600" : ""
-                        }`}>
-                          {item.profitAfterTax ? `Rs. ${formatNumber(item.profitAfterTax)}` : "-"}
-                        </td>
-                        <td className="border border-gray-300 px-4 py-2 text-right">
-                          {item.eps ? `Rs. ${item.eps.toFixed(2)}` : "-"}
-                        </td>
+        {/* Ratios Section */}
+        <section id="ratios" className="scroll-mt-24">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6">
+              <h2 className="text-2xl font-bold flex items-center">
+                <Target className="w-6 h-6 mr-3" />
+                Financial Ratios
+              </h2>
+              <p className="text-red-100 mt-2">Key financial ratios and performance metrics</p>
+            </div>
+            
+            <div className="p-8">
+              <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-xl overflow-hidden border border-red-200">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-gradient-to-r from-red-500 to-red-600 text-white">
+                        <th className="px-6 py-4 text-left font-bold">Year</th>
+                        <th className="px-6 py-4 text-right font-bold">Gross Profit Margin (%)</th>
+                        <th className="px-6 py-4 text-right font-bold">Net Profit Margin (%)</th>
+                        <th className="px-6 py-4 text-right font-bold">EPS Growth (%)</th>
+                        <th className="px-6 py-4 text-right font-bold">PEG Ratio</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {sampleRatios.map((item, index) => (
+                        <tr key={index} className="hover:bg-red-100 transition-colors border-b border-red-200">
+                          <td className="px-6 py-4 font-bold text-gray-900">{item.year}</td>
+                          <td className="px-6 py-4 text-right font-semibold text-gray-700">
+                            {item.grossProfitMargin?.toFixed(1) || "-"}%
+                          </td>
+                          <td className="px-6 py-4 text-right font-semibold text-gray-700">
+                            {item.netProfitMargin?.toFixed(1) || "-"}%
+                          </td>
+                          <td className={`px-6 py-4 text-right font-semibold ${
+                            (item.epsGrowth ?? 0) < 0 ? "text-red-600" : "text-emerald-600"
+                          }`}>
+                            {item.epsGrowth?.toFixed(1) || "-"}%
+                          </td>
+                          <td className="px-6 py-4 text-right font-semibold text-gray-700">
+                            {item.peg?.toFixed(2) || "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
+          </div>
+        </section>
 
-            {/* Quarterly Financials */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quarterly Financials</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse border border-gray-300">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="border border-gray-300 px-4 py-2 text-left font-medium text-gray-900">Quarter</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right font-medium text-gray-900">Sales</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right font-medium text-gray-900">Profit after Taxation</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right font-medium text-gray-900">EPS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sampleFinancials.quarterly?.map((item, index) => (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 px-4 py-2 font-medium">{item.label}</td>
-                        <td className="border border-gray-300 px-4 py-2 text-right">
-                          {item.sales ? `Rs. ${formatNumber(item.sales)}` : "-"}
-                        </td>
-                        <td className={`border border-gray-300 px-4 py-2 text-right ${
-                          (item.profitAfterTax ?? 0) < 0 ? "text-red-600" : ""
-                        }`}>
-                          {item.profitAfterTax ? `Rs. ${formatNumber(item.profitAfterTax)}` : "-"}
-                        </td>
-                        <td className="border border-gray-300 px-4 py-2 text-right">
-                          {item.eps ? `Rs. ${item.eps.toFixed(2)}` : "-"}
-                        </td>
+        {/* Payouts Section */}
+        <section id="payouts" className="scroll-mt-24">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white p-6">
+              <h2 className="text-2xl font-bold flex items-center">
+                <DollarSign className="w-6 h-6 mr-3" />
+                Payouts & Dividends
+              </h2>
+              <p className="text-indigo-100 mt-2">Dividend history and shareholder payouts</p>
+            </div>
+            
+            <div className="p-8">
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl overflow-hidden border border-indigo-200">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white">
+                        <th className="px-6 py-4 text-left font-bold">Date</th>
+                        <th className="px-6 py-4 text-left font-bold">Financial Results</th>
+                        <th className="px-6 py-4 text-left font-bold">Details</th>
+                        <th className="px-6 py-4 text-left font-bold">Book Closure</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {getPaginatedData(samplePayouts, payoutsPage).map((item, index) => (
+                        <tr key={index} className="hover:bg-indigo-100 transition-colors border-b border-indigo-200">
+                          <td className="px-6 py-4 font-bold text-gray-900">{item.date}</td>
+                          <td className="px-6 py-4 text-gray-700">{item.financialResults}</td>
+                          <td className="px-6 py-4 font-bold text-indigo-600">{item.details}</td>
+                          <td className="px-6 py-4 text-gray-700">{item.bookClosure}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
+
+              <PaginationControls
+                currentPage={payoutsPage}
+                totalPages={getTotalPages(samplePayouts.length)}
+                onPageChange={setPayoutsPage}
+                className="mt-8"
+              />
             </div>
           </div>
-        )}
-
-        {/* Ratios Tab */}
-        {activeTab === "ratios" && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
-              <Target className="w-5 h-5 mr-2" />
-              Ratios
-            </h2>
-
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-300">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="border border-gray-300 px-4 py-2 text-left font-medium text-gray-900">Year</th>
-                    <th className="border border-gray-300 px-4 py-2 text-right font-medium text-gray-900">Gross Profit Margin (%)</th>
-                    <th className="border border-gray-300 px-4 py-2 text-right font-medium text-gray-900">Net Profit Margin (%)</th>
-                    <th className="border border-gray-300 px-4 py-2 text-right font-medium text-gray-900">EPS Growth (%)</th>
-                    <th className="border border-gray-300 px-4 py-2 text-right font-medium text-gray-900">PEG Ratio</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sampleRatios.map((item, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-4 py-2 font-medium">{item.year}</td>
-                      <td className="border border-gray-300 px-4 py-2 text-right">
-                        {item.grossProfitMargin?.toFixed(1) || "-"}
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2 text-right">
-                        {item.netProfitMargin?.toFixed(1) || "-"}
-                      </td>
-                      <td className={`border border-gray-300 px-4 py-2 text-right ${
-                        (item.epsGrowth ?? 0) < 0 ? "text-red-600" : "text-green-600"
-                      }`}>
-                        {item.epsGrowth?.toFixed(1) || "-"}
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2 text-right">
-                        {item.peg?.toFixed(2) || "-"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Payouts Tab */}
-        {activeTab === "payouts" && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
-              <DollarSign className="w-5 h-5 mr-2" />
-              Payouts
-            </h2>
-
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-300">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="border border-gray-300 px-4 py-2 text-left font-medium text-gray-900">Date</th>
-                    <th className="border border-gray-300 px-4 py-2 text-left font-medium text-gray-900">Financial Results</th>
-                    <th className="border border-gray-300 px-4 py-2 text-left font-medium text-gray-900">Details</th>
-                    <th className="border border-gray-300 px-4 py-2 text-left font-medium text-gray-900">Book Closure</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {getPaginatedData(samplePayouts, payoutsPage).map((item, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-4 py-2">{item.date}</td>
-                      <td className="border border-gray-300 px-4 py-2">{item.financialResults}</td>
-                      <td className="border border-gray-300 px-4 py-2 font-medium text-green-600">{item.details}</td>
-                      <td className="border border-gray-300 px-4 py-2">{item.bookClosure}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <PaginationControls
-              currentPage={payoutsPage}
-              totalPages={getTotalPages(samplePayouts.length)}
-              onPageChange={setPayoutsPage}
-            />
-          </div>
-        )}
+        </section>
       </div>
     </div>
   );
