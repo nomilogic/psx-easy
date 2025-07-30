@@ -91,12 +91,20 @@ export class DatabaseStorage implements IStorage {
 
   async getMarketData(): Promise<StockData[]> {
     try {
-      // First try to get from PSX service
-      const psxData = await PSXService.fetchMarketData();
+      // First try to get from PSX service with timeout
+      const psxData = await Promise.race([
+        PSXService.fetchMarketData(),
+        new Promise<null>((_, reject) => 
+          setTimeout(() => reject(new Error('PSX service timeout')), 10000)
+        )
+      ]);
+      
       if (psxData && psxData.length > 0) {
         console.log(`Got ${psxData.length} stocks from PSX service`);
-        // Store in database for caching
-        await this.setMarketData(psxData);
+        // Store in database for caching (non-blocking)
+        this.setMarketData(psxData).catch(err => 
+          console.warn("Background database update failed:", err)
+        );
         return psxData;
       }
     } catch (error) {
@@ -106,9 +114,14 @@ export class DatabaseStorage implements IStorage {
       );
     }
 
-    // Try database first
+    // Try database with timeout protection
     try {
-      return await this.getMarketDataFromDatabase();
+      return await Promise.race([
+        this.getMarketDataFromDatabase(),
+        new Promise<StockData[]>((_, reject) => 
+          setTimeout(() => reject(new Error('Database timeout')), 5000)
+        )
+      ]);
     } catch (dbError) {
       console.error("Database failed, trying Supabase direct query:", dbError);
       // Fallback to Supabase direct query
@@ -147,58 +160,87 @@ export class DatabaseStorage implements IStorage {
     if (data.length === 0) return;
 
     try {
-      // Use transaction to ensure atomicity
-      await db.transaction(async (tx) => {
-        // Delete existing data
-        await tx.delete(stocksTable);
+      // Use smaller batches and faster operations
+      const batchSize = 50;
+      
+      // First, try to delete old data (with timeout handling)
+      try {
+        await Promise.race([
+          db.delete(stocksTable),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Delete timeout')), 5000)
+          )
+        ]);
+      } catch (deleteError) {
+        console.warn("Delete operation failed or timed out, continuing with upsert:", deleteError);
+      }
 
-        // Insert new data using upsert to handle duplicates
-        const insertData: LegacyInsertStock[] = data.map((stock) => ({
-          symbol: stock.symbol,
-          name: stock.name,
-          sector: stock.sector,
-          ldcp: stock.ldcp,
-          open: stock.open,
-          high: stock.high,
-          low: stock.low,
-          current: stock.current,
-          change: stock.change,
-          changePercent: stock.changePercent,
-          volume: stock.volume,
-          isPositive: stock.isPositive,
-        }));
+      // Insert new data in smaller batches
+      const insertData: LegacyInsertStock[] = data.map((stock) => ({
+        symbol: stock.symbol,
+        name: stock.name,
+        sector: stock.sector,
+        ldcp: stock.ldcp,
+        open: stock.open,
+        high: stock.high,
+        low: stock.low,
+        current: stock.current,
+        change: stock.change,
+        changePercent: stock.changePercent,
+        volume: stock.volume,
+        isPositive: stock.isPositive,
+      }));
 
-        // Insert in batches using upsert to avoid constraint violations
-        const batchSize = 100;
-        for (let i = 0; i < insertData.length; i += batchSize) {
-          const batch = insertData.slice(i, i + batchSize);
-          for (const stock of batch) {
-            await tx
-              .insert(stocksTable)
-              .values(stock)
-              .onConflictDoUpdate({
-                target: stocksTable.symbol,
-                set: {
-                  name: stock.name,
-                  sector: stock.sector,
-                  ldcp: stock.ldcp,
-                  open: stock.open,
-                  high: stock.high,
-                  low: stock.low,
-                  current: stock.current,
-                  change: stock.change,
-                  changePercent: stock.changePercent,
-                  volume: stock.volume,
-                  isPositive: stock.isPositive,
-                  updatedAt: new Date(),
-                },
-              });
+      // Process in smaller batches with timeout protection
+      for (let i = 0; i < insertData.length; i += batchSize) {
+        const batch = insertData.slice(i, i + batchSize);
+        
+        try {
+          await Promise.race([
+            this.insertBatch(batch),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Batch timeout')), 8000)
+            )
+          ]);
+          
+          // Small delay between batches to prevent overwhelming the DB
+          if (i + batchSize < insertData.length) {
+            await new Promise(resolve => setTimeout(resolve, 100));
           }
+        } catch (batchError) {
+          console.warn(`Batch ${i}-${i + batchSize} failed:`, batchError);
+          // Continue with next batch instead of failing completely
         }
-      });
+      }
     } catch (error) {
       console.error("Error updating market data:", error);
-      throw error;
+      // Don't throw error to prevent cascading failures
+    }
+  }
+
+  private async insertBatch(batch: LegacyInsertStock[]): Promise<void> {
+    // Use a more efficient bulk insert approach
+    for (const stock of batch) {
+      await db
+        .insert(stocksTable)
+        .values(stock)
+        .onConflictDoUpdate({
+          target: stocksTable.symbol,
+          set: {
+            name: stock.name,
+            sector: stock.sector,
+            ldcp: stock.ldcp,
+            open: stock.open,
+            high: stock.high,
+            low: stock.low,
+            current: stock.current,
+            change: stock.change,
+            changePercent: stock.changePercent,
+            volume: stock.volume,
+            isPositive: stock.isPositive,
+            updatedAt: new Date(),
+          },
+        });
     }
   }
 

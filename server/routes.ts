@@ -389,21 +389,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Function to send initial data to a specific client
   async function sendInitialData(ws: WebSocket) {
     try {
-      const marketData = await storage.getMarketData();
-      const marketSummary = await storage.getMarketSummary();
+      // Add timeout protection for initial data loading
+      const [marketData, marketSummary] = await Promise.allSettled([
+        Promise.race([
+          storage.getMarketData(),
+          new Promise<StockData[]>((_, reject) => 
+            setTimeout(() => reject(new Error('Market data timeout')), 8000)
+          )
+        ]),
+        Promise.race([
+          storage.getMarketSummary(),
+          new Promise<MarketSummary | null>((_, reject) => 
+            setTimeout(() => reject(new Error('Market summary timeout')), 5000)
+          )
+        ])
+      ]);
 
-      // if (ws.readyState === WebSocket.OPEN) {
-      //   ws.send(
-      //     JSON.stringify({
-      //       type: "market_update",
-      //       timestamp: new Date().toISOString(),
-      //       data: {
-      //         stocks: marketData,
-      //         summary: marketSummary,
-      //       },
-      //     }),
-      //   );
-      // }
+      // Send available data even if some operations failed
+      if (ws.readyState === WebSocket.OPEN) {
+        const response = {
+          type: "market_update",
+          timestamp: new Date().toISOString(),
+          data: {
+            stocks: marketData.status === 'fulfilled' ? marketData.value : [],
+            summary: marketSummary.status === 'fulfilled' ? marketSummary.value : null,
+          },
+        };
+        
+        try {
+          ws.send(JSON.stringify(response));
+        } catch (sendError) {
+          console.error("Error sending WebSocket message:", sendError);
+        }
+      }
     } catch (error) {
       console.error("Error sending initial data:", error);
     }
