@@ -320,6 +320,28 @@ export interface CompanyData {
     }>;
   };
 
+  // Announcements
+  announcements?: {
+    [category: string]: Array<{
+      date: string;
+      title: string;
+      description?: string;
+      url?: string;
+      isImportant?: boolean;
+    }>;
+  };
+  
+  // Payouts (Dividends, Bonus, Rights)
+  payouts?: Array<{
+    date: string;
+    type: string; // "Dividend", "Bonus", "Right"
+    amount?: number;
+    percentage?: number;
+    description: string;
+    recordDate?: string;
+    paymentDate?: string;
+  }>;
+
   // Comprehensive Ratios Data
   ratiosData?: Array<{
     year: string;

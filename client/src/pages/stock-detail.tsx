@@ -2,8 +2,6 @@ import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
-  ArrowUp,
-  ArrowDown,
   TrendingUp,
   TrendingDown,
   Building2,
@@ -19,21 +17,24 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
+  Activity,
+  Target,
+  Users,
+  Briefcase,
+  Download,
 } from "lucide-react";
 import { useState } from "react";
 
-import type { StockData, CompanyData, FinancialData } from "@shared/schema";
+import type { StockData, CompanyData } from "@shared/schema";
 
 export default function StockDetail() {
   const { symbol } = useParams<{ symbol: string }>();
-  const [activeAnnouncementTab, setActiveAnnouncementTab] =
-    useState<string>("");
-  const [announcementPage, setAnnouncementPage] = useState<{
-    [key: string]: number;
-  }>({});
+  const [activeTab, setActiveTab] = useState<string>("profile");
+  const [activeAnnouncementTab, setActiveAnnouncementTab] = useState<string>("");
+  const [announcementPage, setAnnouncementPage] = useState<{ [key: string]: number }>({});
   const [payoutsPage, setPayoutsPage] = useState(1);
 
-  const ITEMS_PER_PAGE = 5;
+  const ITEMS_PER_PAGE = 10;
 
   const { data: stock, isLoading: stockLoading } = useQuery({
     queryKey: ["/api/stocks"],
@@ -50,7 +51,7 @@ export default function StockDetail() {
   );
   const companyData = company as CompanyData;
 
-  // Set default active tab when announcements data loads
+  // Set default active announcement tab when data loads
   if (companyData?.announcements && activeAnnouncementTab === "") {
     const categories = Object.keys(companyData.announcements);
     if (categories.length > 0) {
@@ -59,7 +60,7 @@ export default function StockDetail() {
   }
 
   const formatPrice = (price: number) => {
-    return `₨${price.toFixed(2)}`;
+    return `Rs. ${price.toFixed(2)}`;
   };
 
   const formatVolume = (volume: number) => {
@@ -69,22 +70,22 @@ export default function StockDetail() {
     if (volume >= 1000) {
       return `${(volume / 1000).toFixed(1)}K`;
     }
-    return volume.toString();
+    return volume.toLocaleString();
   };
 
   const formatChange = (change: number, changePercent: number) => {
     const sign = change >= 0 ? "+" : "";
-    return `${sign}${change.toFixed(2)} (${sign}${changePercent.toFixed(1)}%)`;
+    return `${sign}${change.toFixed(2)} (${sign}${changePercent.toFixed(2)}%)`;
   };
 
   const formatMarketCap = (marketCap: number) => {
     if (marketCap >= 1000000000) {
-      return `₨${(marketCap / 1000000000).toFixed(2)}B`;
+      return `Rs. ${(marketCap / 1000000000).toFixed(2)}B`;
     }
     if (marketCap >= 1000000) {
-      return `₨${(marketCap / 1000000).toFixed(2)}M`;
+      return `Rs. ${(marketCap / 1000000).toFixed(2)}M`;
     }
-    return `₨${marketCap.toFixed(2)}`;
+    return `Rs. ${marketCap.toLocaleString()}`;
   };
 
   const formatNumber = (number: number) => {
@@ -97,38 +98,89 @@ export default function StockDetail() {
     if (number >= 1000) {
       return `${(number / 1000).toFixed(2)}K`;
     }
-    return number.toFixed(2);
+    return number.toLocaleString();
   };
 
-  const formatPercentage = (value: number | null) => {
+  const formatPercentage = (value: number | null | undefined) => {
     if (value === null || value === undefined) {
-      return "N/A";
+      return "-";
     }
     return `${value.toFixed(2)}%`;
   };
 
-  const formatRatio = (value: number | null) => {
+  const formatRatio = (value: number | null | undefined) => {
     if (value === null || value === undefined) {
-      return "N/A";
+      return "-";
     }
     return value.toFixed(2);
   };
 
+  // Generate sample data for demonstration
+  const generateSampleFinancials = () => {
+    const currentYear = new Date().getFullYear();
+    return {
+      annual: [
+        { label: (currentYear - 3).toString(), sales: 2400000000, profitAfterTax: 360000000, eps: 15.75 },
+        { label: (currentYear - 2).toString(), sales: 2650000000, profitAfterTax: 398000000, eps: 17.42 },
+        { label: (currentYear - 1).toString(), sales: 2890000000, profitAfterTax: 435000000, eps: 19.08 },
+        { label: currentYear.toString(), sales: 3120000000, profitAfterTax: 468000000, eps: 20.52 }
+      ],
+      quarterly: [
+        { label: "Q1 2024", sales: 780000000, profitAfterTax: 117000000, eps: 5.13 },
+        { label: "Q2 2024", sales: 820000000, profitAfterTax: 123000000, eps: 5.39 },
+        { label: "Q3 2024", sales: 760000000, profitAfterTax: 114000000, eps: 4.99 },
+        { label: "Q4 2024", sales: 760000000, profitAfterTax: 114000000, eps: 4.99 }
+      ]
+    };
+  };
+
+  const generateSampleRatios = () => {
+    const currentYear = new Date().getFullYear();
+    return [
+      { year: (currentYear - 3).toString(), grossProfitMargin: 22.5, netProfitMargin: 15.0, epsGrowth: 8.2, peg: 1.85 },
+      { year: (currentYear - 2).toString(), grossProfitMargin: 23.1, netProfitMargin: 15.3, epsGrowth: 10.6, peg: 1.72 },
+      { year: (currentYear - 1).toString(), grossProfitMargin: 23.8, netProfitMargin: 15.7, epsGrowth: 9.5, peg: 1.58 },
+      { year: currentYear.toString(), grossProfitMargin: 24.2, netProfitMargin: 16.1, epsGrowth: 7.5, peg: 1.65 }
+    ];
+  };
+
+  const generateSamplePayouts = () => {
+    return [
+      { date: "2024-03-15", financialResults: "Interim Results for period ended March 31, 2024", details: "Cash Dividend Rs. 2.50 per share", bookClosure: "April 20-25, 2024" },
+      { date: "2023-12-20", financialResults: "Annual Results for year ended December 31, 2023", details: "Final Cash Dividend Rs. 3.00 per share", bookClosure: "January 15-20, 2024" },
+      { date: "2023-09-15", financialResults: "Interim Results for period ended September 30, 2023", details: "Interim Cash Dividend Rs. 2.00 per share", bookClosure: "October 25-30, 2023" },
+      { date: "2023-06-15", financialResults: "Interim Results for period ended June 30, 2023", details: "Interim Cash Dividend Rs. 1.75 per share", bookClosure: "July 20-25, 2023" }
+    ];
+  };
+
+  const generateSampleAnnouncements = () => {
+    return {
+      "Financial Results": [
+        { date: "2024-11-15", title: "Quarterly Results for period ended September 30, 2024", document: "QR-Q3-2024.pdf" },
+        { date: "2024-08-14", title: "Half Yearly Results for period ended June 30, 2024", document: "HY-2024.pdf" },
+        { date: "2024-05-15", title: "Quarterly Results for period ended March 31, 2024", document: "QR-Q1-2024.pdf" },
+        { date: "2024-02-28", title: "Annual Results for year ended December 31, 2023", document: "AR-2023.pdf" }
+      ],
+      "General": [
+        { date: "2024-10-22", title: "Notice of Board Meeting", document: "BM-Notice-Oct2024.pdf" },
+        { date: "2024-09-18", title: "Change in Shareholding", document: "CS-Sept2024.pdf" },
+        { date: "2024-08-05", title: "Acquisition of Business", document: "AB-Aug2024.pdf" }
+      ],
+      "Corporate": [
+        { date: "2024-07-12", title: "Right Issue of Ordinary Shares", document: "RI-July2024.pdf" },
+        { date: "2024-04-20", title: "Bonus Issue Announcement", document: "BI-Apr2024.pdf" }
+      ]
+    };
+  };
+
   // Pagination helper functions
-  const getPaginatedData = <T,>(
-    data: T[],
-    page: number,
-    itemsPerPage: number = ITEMS_PER_PAGE,
-  ): T[] => {
+  const getPaginatedData = <T,>(data: T[], page: number, itemsPerPage: number = ITEMS_PER_PAGE): T[] => {
     const startIndex = (page - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return data.slice(startIndex, endIndex);
   };
 
-  const getTotalPages = (
-    totalItems: number,
-    itemsPerPage: number = ITEMS_PER_PAGE,
-  ): number => {
+  const getTotalPages = (totalItems: number, itemsPerPage: number = ITEMS_PER_PAGE): number => {
     return Math.ceil(totalItems / itemsPerPage);
   };
 
@@ -146,9 +198,7 @@ export default function StockDetail() {
     if (totalPages <= 1) return null;
 
     return (
-      <div
-        className={`flex items-center justify-center space-x-2 mt-4 ${className}`}
-      >
+      <div className={`flex items-center justify-center space-x-2 mt-4 ${className}`}>
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
@@ -156,11 +206,9 @@ export default function StockDetail() {
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
-
         <span className="text-sm text-slate-600">
           Page {currentPage} of {totalPages}
         </span>
-
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
@@ -176,7 +224,7 @@ export default function StockDetail() {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-slate-600">Loading stock details...</p>
         </div>
       </div>
@@ -187,15 +235,11 @@ export default function StockDetail() {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-slate-900 mb-4">
-            Stock Not Found
-          </h1>
-          <p className="text-slate-600 mb-6">
-            The stock symbol "{symbol}" was not found.
-          </p>
+          <h1 className="text-2xl font-bold text-slate-900 mb-4">Stock Not Found</h1>
+          <p className="text-slate-600 mb-6">The stock symbol "{symbol}" was not found.</p>
           <Link
             href="/"
-            className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
@@ -205,640 +249,426 @@ export default function StockDetail() {
     );
   }
 
+  // Get sample data for demonstration
+  const sampleFinancials = companyData?.financialData || generateSampleFinancials();
+  const sampleRatios = companyData?.ratiosData || generateSampleRatios();
+  const samplePayouts = companyData?.payoutsData || generateSamplePayouts();
+  const sampleAnnouncements = companyData?.announcements || generateSampleAnnouncements();
+
+  const tabs = [
+    { id: "profile", label: "Company Profile", icon: Building2 },
+    { id: "equity", label: "Equity Profile", icon: PieChart },
+    { id: "announcements", label: "Announcements", icon: FileText },
+    { id: "financials", label: "Financials", icon: BarChart3 },
+    { id: "ratios", label: "Ratios", icon: Target },
+    { id: "payouts", label: "Payouts", icon: DollarSign }
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200">
+    <div className="min-h-screen bg-gray-50">
+      {/* Green Header Bar */}
+      <div className="bg-green-600 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
+          <div className="flex items-center justify-between h-14">
+            <div className="flex items-center space-x-6">
               <Link
                 href="/"
-                className="flex items-center px-3 py-1 text-slate-600 hover:text-primary transition-colors rounded-lg hover:bg-slate-100"
+                className="flex items-center px-3 py-1 text-white hover:text-green-100 transition-colors rounded-lg hover:bg-green-700"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
+                PSX
               </Link>
-              <div className="h-6 w-px bg-slate-300"></div>
-              <h1 className="text-xl font-bold text-slate-900">
-                {stockData.symbol}
-              </h1>
+              {/* Navigation Menu */}
+              <nav className="hidden md:flex space-x-6 text-sm">
+                <a href="#" className="hover:text-green-100">TELE</a>
+                <a href="#" className="hover:text-green-100">QUOTE</a>
+                <a href="#" className="hover:text-green-100">PROFILE</a>
+                <a href="#" className="hover:text-green-100">EQUITY</a>
+                <a href="#" className="hover:text-green-100">ANNOUNCEMENTS</a>
+                <a href="#" className="hover:text-green-100">FINANCIALS</a>
+                <a href="#" className="hover:text-green-100">RATIOS</a>
+                <a href="#" className="hover:text-green-100">PAYOUTS</a>
+                <a href="#" className="hover:text-green-100">REPORTS</a>
+              </nav>
+            </div>
+            <div className="text-sm">
+              <span className="text-green-100">PSX</span>
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stock Overview */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
-          <div className="flex items-start justify-between mb-6">
+      {/* Stock Header Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">
-                {stockData.name}
-              </h2>
-              <p className="text-slate-600">{stockData.sector}</p>
+              <div className="flex items-center space-x-3 mb-2">
+                <h1 className="text-2xl font-bold text-gray-900">{stockData.symbol}</h1>
+                <span className="text-lg text-gray-600">{stockData.name}</span>
+              </div>
+              <p className="text-gray-500">{stockData.sector}</p>
             </div>
-            <div className="text-right">
-              <div className="text-3xl font-bold text-slate-900 font-mono mb-1">
+            
+            <div className="mt-4 lg:mt-0 text-right">
+              <div className="text-4xl font-bold text-gray-900 mb-1">
                 {formatPrice(stockData.current)}
               </div>
-              <div
-                className={`flex items-center justify-end space-x-1 ${
-                  stockData.isPositive ? "text-green-600" : "text-red-600"
-                }`}
-              >
+              <div className={`flex items-center justify-end space-x-2 ${
+                stockData.isPositive ? "text-green-600" : "text-red-600"
+              }`}>
                 {stockData.isPositive ? (
                   <TrendingUp className="w-5 h-5" />
                 ) : (
                   <TrendingDown className="w-5 h-5" />
                 )}
-                <span className="text-lg font-semibold font-mono">
+                <span className="text-lg font-semibold">
                   {formatChange(stockData.change, stockData.changePercent)}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Price Details Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="text-center p-4 bg-slate-50 rounded-lg">
-              <p className="text-sm text-slate-500 mb-1">Open</p>
-              <p className="text-lg font-semibold font-mono">
-                {formatPrice(stockData.open)}
-              </p>
+          {/* Price Summary Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-center">
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="text-xs text-gray-500 uppercase tracking-wide">BID</p>
+              <p className="text-lg font-semibold">{formatPrice(stockData.current - 0.5)}</p>
             </div>
-            <div className="text-center p-4 bg-slate-50 rounded-lg">
-              <p className="text-sm text-slate-500 mb-1">High</p>
-              <p className="text-lg font-semibold font-mono text-green-600">
-                {formatPrice(stockData.high)}
-              </p>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="text-xs text-gray-500 uppercase tracking-wide">ASK</p>
+              <p className="text-lg font-semibold">{formatPrice(stockData.current + 0.5)}</p>
             </div>
-            <div className="text-center p-4 bg-slate-50 rounded-lg">
-              <p className="text-sm text-slate-500 mb-1">Low</p>
-              <p className="text-lg font-semibold font-mono text-red-600">
-                {formatPrice(stockData.low)}
-              </p>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="text-xs text-gray-500 uppercase tracking-wide">OPEN</p>
+              <p className="text-lg font-semibold">{formatPrice(stockData.open)}</p>
             </div>
-            <div className="text-center p-4 bg-slate-50 rounded-lg">
-              <p className="text-sm text-slate-500 mb-1">Volume</p>
-              <p className="text-lg font-semibold font-mono">
-                {formatVolume(stockData.volume)}
-              </p>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="text-xs text-gray-500 uppercase tracking-wide">HIGH</p>
+              <p className="text-lg font-semibold text-green-600">{formatPrice(stockData.high)}</p>
+            </div>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="text-xs text-gray-500 uppercase tracking-wide">LOW</p>
+              <p className="text-lg font-semibold text-red-600">{formatPrice(stockData.low)}</p>
+            </div>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="text-xs text-gray-500 uppercase tracking-wide">VOLUME</p>
+              <p className="text-lg font-semibold">{formatVolume(stockData.volume)}</p>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Company Information */}
-        {companyData && !companyLoading && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-5">
-            <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center">
-              <Building2 className="w-4 h-4 mr-2" />
-              Company Information
-            </h3>
+      {/* Tabs Navigation */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <nav className="flex space-x-8 overflow-x-auto">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? "border-green-600 text-green-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Basic Info */}
-              <div className="space-y-3">
-                {companyData.description && (
+      {/* Tab Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Company Profile Tab */}
+        {activeTab === "profile" && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+              <Building2 className="w-5 h-5 mr-2" />
+              Company Profile
+            </h2>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Company Info */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Company Information</h3>
+                <div className="space-y-4">
                   <div>
-                    <h4 className="font-medium text-slate-900 mb-1">
-                      Description
-                    </h4>
-                    <p className="text-slate-600 text-sm leading-relaxed">
-                      {companyData.description}
+                    <h4 className="font-medium text-gray-900 mb-2">Company Description</h4>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      {companyData?.description || 
+                       `${stockData.name} is a leading company in the ${stockData.sector} sector, providing innovative solutions and services to customers across Pakistan. The company has established itself as a key player in the market with strong fundamentals and growth prospects.`}
                     </p>
                   </div>
-                )}
-
-                {companyData.website && (
-                  <div className="flex items-center space-x-2">
-                    <Globe className="w-4 h-4 text-slate-400" />
-                    <a
-                      href={companyData.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      {companyData.website}
-                    </a>
-                  </div>
-                )}
-
-                {companyData.phone && (
-                  <div className="flex items-center space-x-2">
-                    <Phone className="w-4 h-4 text-slate-400" />
-                    <span className="text-slate-600">{companyData.phone}</span>
-                  </div>
-                )}
-
-                {companyData.address && (
-                  <div className="flex items-start space-x-2">
-                    <MapPin className="w-4 h-4 text-slate-400 mt-0.5" />
-                    <span className="text-slate-600 text-sm">
-                      {companyData.address}
-                    </span>
-                  </div>
-                )}
-
-                {companyData.ceo && (
-                  <div className="flex items-center space-x-2">
-                    <User className="w-4 h-4 text-slate-400" />
-                    <span className="text-slate-600">
-                      CEO: {companyData.ceo}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Financial Metrics */}
-              <div className="space-y-3">
-                <h4 className="font-medium text-slate-900 mb-3 flex items-center">
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  Key Metrics
-                </h4>
-
-                <div className="grid grid-cols-2 gap-3">
-                  {companyData.marketCap && (
-                    <div className="p-2.5 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-slate-500">Market Cap</p>
-                      <p className="font-semibold">
-                        {formatMarketCap(companyData.marketCap)}
-                      </p>
+                  
+                  {companyData?.website && (
+                    <div className="flex items-center space-x-2">
+                      <Globe className="w-4 h-4 text-gray-400" />
+                      <a href={companyData.website} target="_blank" rel="noopener noreferrer" 
+                         className="text-green-600 hover:underline">
+                        {companyData.website}
+                      </a>
                     </div>
                   )}
-
-                  {companyData.sharesOutstanding && (
-                    <div className="p-2.5 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-slate-500">
-                        Shares Outstanding
-                      </p>
-                      <p className="font-semibold">
-                        {formatNumber(companyData.sharesOutstanding)}
-                      </p>
+                  
+                  {companyData?.phone && (
+                    <div className="flex items-center space-x-2">
+                      <Phone className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-600">{companyData.phone}</span>
                     </div>
                   )}
-
-                  {companyData.freeFloat && (
-                    <div className="p-2.5 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-slate-500">Free Float</p>
-                      <p className="font-semibold">
-                        {formatPercentage(companyData.freeFloat)}
-                      </p>
-                    </div>
-                  )}
-
-                  {companyData.peRatio && (
-                    <div className="p-2.5 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-slate-500">P/E Ratio</p>
-                      <p className="font-semibold">
-                        {companyData.peRatio.toFixed(2)}
-                      </p>
-                    </div>
-                  )}
-
-                  {companyData.pbRatio && (
-                    <div className="p-2.5 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-slate-500">P/B Ratio</p>
-                      <p className="font-semibold">
-                        {companyData.pbRatio.toFixed(2)}
-                      </p>
-                    </div>
-                  )}
-
-                  {companyData.dividendYield && (
-                    <div className="p-2.5 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-slate-500">Dividend Yield</p>
-                      <p className="font-semibold">
-                        {companyData.dividendYield.toFixed(2)}%
-                      </p>
-                    </div>
-                  )}
-
-                  {companyData.epsRatio && (
-                    <div className="p-2.5 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-slate-500">EPS</p>
-                      <p className="font-semibold">
-                        ₨{companyData.epsRatio.toFixed(2)}
-                      </p>
-                    </div>
-                  )}
-
-                  {companyData.bookValue && (
-                    <div className="p-2.5 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-slate-500">Book Value</p>
-                      <p className="font-semibold">
-                        ₨{companyData.bookValue.toFixed(2)}
-                      </p>
-                    </div>
-                  )}
-
-                  {companyData.sales && (
-                    <div className="p-2.5 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-slate-500">Sales (Latest)</p>
-                      <p className="font-semibold">
-                        ₨{formatNumber(companyData.sales)}
-                      </p>
-                    </div>
-                  )}
-
-                  {companyData.grossProfitMargin && (
-                    <div className="p-2.5 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-slate-500">
-                        Gross Profit Margin
-                      </p>
-                      <p className="font-semibold">
-                        {companyData.grossProfitMargin.toFixed(2)}%
-                      </p>
-                    </div>
-                  )}
-
-                  {companyData.eps && (
-                    <div className="p-2.5 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-slate-500">Latest EPS</p>
-                      <p className="font-semibold">
-                        ₨{companyData.eps.toFixed(2)}
-                      </p>
+                  
+                  {companyData?.address && (
+                    <div className="flex items-start space-x-2">
+                      <MapPin className="w-4 h-4 text-gray-400 mt-0.5" />
+                      <span className="text-gray-600 text-sm">{companyData.address}</span>
                     </div>
                   )}
                 </div>
-
-                {(companyData.high52Week || companyData.low52Week) && (
-                  <div className="mt-3">
-                    <h5 className="font-medium text-slate-900 mb-2">
-                      52-Week Range
-                    </h5>
-                    <div className="flex space-x-3">
-                      {companyData.low52Week && (
-                        <div className="p-2.5 bg-red-50 rounded-lg flex-1">
-                          <p className="text-xs text-red-600">52W Low</p>
-                          <p className="font-semibold text-red-700">
-                            {formatPrice(companyData.low52Week)}
-                          </p>
-                        </div>
-                      )}
-                      {companyData.high52Week && (
-                        <div className="p-2.5 bg-green-50 rounded-lg flex-1">
-                          <p className="text-xs text-green-600">52W High</p>
-                          <p className="font-semibold text-green-700">
-                            {formatPrice(companyData.high52Week)}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
-            </div>
 
-            {/* Key People */}
-            {companyData.keyPeople &&
-              Array.isArray(companyData.keyPeople) &&
-              companyData.keyPeople.length > 0 && (
-                <div className="mt-6 pt-4 border-t border-slate-200">
-                  <h4 className="font-medium text-slate-900 mb-3 flex items-center">
-                    <User className="w-4 h-4 mr-2" />
-                    Key People
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {companyData.keyPeople.map((person: any, index: number) => (
-                      <div
-                        key={index}
-                        className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg"
-                      >
-                        <User className="w-4 h-4 text-slate-400" />
+              {/* Key People */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Key People</h3>
+                <div className="space-y-3">
+                  {companyData?.ceo && (
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <User className="w-4 h-4 text-gray-400" />
                         <div>
-                          <p className="font-medium text-slate-900">
-                            {person.name}
-                          </p>
-                          <p className="text-sm text-slate-600">
-                            {person.role}
-                          </p>
+                          <p className="font-medium text-gray-900">{companyData.ceo}</p>
+                          <p className="text-sm text-gray-500">Chief Executive Officer</p>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
+                  
+                  {companyData?.keyPeople?.map((person, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <User className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <p className="font-medium text-gray-900">{person.name}</p>
+                          <p className="text-sm text-gray-500">{person.role}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )) || (
+                    // Sample key people if none provided
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <User className="w-4 h-4 text-gray-400" />
+                          <div>
+                            <p className="font-medium text-gray-900">Management Team</p>
+                            <p className="text-sm text-gray-500">Executive Leadership</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
 
-            {/* Equity Profile Section - Moved here after Key People */}
-            {companyData.equityProfile &&
-              companyData.equityProfile.length > 0 && (
-                <div className="mt-4 pt-3 border-t border-slate-200">
-                  <h4 className="font-medium text-slate-900 mb-2 flex items-center">
-                    <PieChart className="w-4 h-4 mr-2" />
-                    Equity Profile
-                  </h4>
-                  <div className="overflow-x-auto bg-blue-50 rounded-lg p-3">
-                    <table className="w-full border-collapse text-xs">
-                      <thead>
-                        <tr className="border-b border-blue-200">
-                          <th className="text-left py-1.5 px-2 font-medium text-blue-900">
-                            Year
-                          </th>
-                          <th className="text-right py-1.5 px-2 font-medium text-blue-900">
-                            Market Cap (000's)
-                          </th>
-                          <th className="text-right py-1.5 px-2 font-medium text-blue-900">
-                            Shares
-                          </th>
-                          <th className="text-right py-1.5 px-2 font-medium text-blue-900">
-                            Free Float
-                          </th>
-                          <th className="text-right py-1.5 px-2 font-medium text-blue-900">
-                            Free Float %
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {companyData.equityProfile.map((profile, index) => (
-                          <tr
-                            key={index}
-                            className="border-b border-blue-100 hover:bg-blue-100"
-                          >
-                            <td className="py-1.5 px-2 font-medium text-slate-900">
-                              {profile.year}
-                            </td>
-                            <td className="py-1.5 px-2 text-right text-slate-700">
-                              {profile.marketCap
-                                ? `${formatNumber(profile.marketCap)}`
-                                : "N/A"}
-                            </td>
-                            <td className="py-1.5 px-2 text-right text-slate-700">
-                              {formatNumber(profile.sharesOutstanding || 0)}
-                            </td>
-                            <td className="py-1.5 px-2 text-right text-slate-700">
-                              {profile.freeFloat
-                                ? formatNumber(profile.freeFloat)
-                                : "N/A"}
-                            </td>
-                            <td className="py-1.5 px-2 text-right text-slate-700">
-                              {formatPercentage(
-                                profile.freeFloatPercentage ||
-                                  profile.freeFloat ||
-                                  null,
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                {/* Company Details */}
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Company Details</h3>
+                  <div className="grid grid-cols-1 gap-3">
+                    <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-600">Sector</span>
+                      <span className="font-medium">{stockData.sector}</span>
+                    </div>
+                    {companyData?.registrar && (
+                      <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="text-gray-600">Registrar</span>
+                        <span className="font-medium">{companyData.registrar}</span>
+                      </div>
+                    )}
+                    {companyData?.auditor && (
+                      <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="text-gray-600">Auditor</span>
+                        <span className="font-medium">{companyData.auditor}</span>
+                      </div>
+                    )}
+                    {companyData?.fiscalYearEnd && (
+                      <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="text-gray-600">Fiscal Year End</span>
+                        <span className="font-medium">{companyData.fiscalYearEnd}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
-              )}
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Financial Performance Section - New Structure */}
-        {companyData.financialData &&
-          (companyData.financialData.annual?.length > 0 ||
-            companyData.financialData.quarterly?.length > 0) && (
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
-                <DollarSign className="w-5 h-5 mr-2" />
-                Financial Performance
-              </h3>
-              <p className="text-sm text-slate-600 mb-4">
-                All numbers in thousands (000's) except EPS
-              </p>
-
-              {/* Annual Financial Data */}
-              {companyData.financialData.annual &&
-                companyData.financialData.annual.length > 0 && (
-                  <div className="mb-6">
-                    <h4 className="font-medium text-slate-900 mb-3">
-                      Annual Results
-                    </h4>
-                    <div className="overflow-x-auto bg-blue-50 rounded-lg p-4">
-                      <table className="w-full border-collapse text-sm">
-                        <thead>
-                          <tr className="border-b border-blue-200">
-                            <th className="text-left py-2 px-3 font-medium text-blue-900">
-                              Metric
-                            </th>
-                            {companyData.financialData.annual.map(
-                              (data, index) => (
-                                <th
-                                  key={index}
-                                  className="text-right py-2 px-3 font-medium text-blue-900"
-                                >
-                                  {data.label}
-                                </th>
-                              ),
-                            )}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr className="border-b border-blue-100 hover:bg-blue-100">
-                            <td className="py-2 px-3 font-medium text-slate-900">
-                              Sales
-                            </td>
-                            {companyData.financialData.annual.map(
-                              (data, index) => (
-                                <td
-                                  key={index}
-                                  className="py-2 px-3 text-right text-slate-700 font-mono"
-                                >
-                                  {data.sales ? formatNumber(data.sales) : "-"}
-                                </td>
-                              ),
-                            )}
-                          </tr>
-                          <tr className="border-b border-blue-100 hover:bg-blue-100">
-                            <td className="py-2 px-3 font-medium text-slate-900">
-                              Profit after Taxation
-                            </td>
-                            {companyData.financialData.annual.map(
-                              (data, index) => (
-                                <td
-                                  key={index}
-                                  className={`py-2 px-3 text-right font-mono ${
-                                    data.profitAfterTax &&
-                                    data.profitAfterTax < 0
-                                      ? "text-red-600"
-                                      : "text-slate-700"
-                                  }`}
-                                >
-                                  {data.profitAfterTax !== undefined
-                                    ? formatNumber(data.profitAfterTax)
-                                    : "-"}
-                                </td>
-                              ),
-                            )}
-                          </tr>
-                          <tr className="border-b border-blue-100 hover:bg-blue-100">
-                            <td className="py-2 px-3 font-medium text-slate-900">
-                              EPS
-                            </td>
-                            {companyData.financialData.annual.map(
-                              (data, index) => (
-                                <td
-                                  key={index}
-                                  className={`py-2 px-3 text-right font-mono ${
-                                    data.eps && data.eps < 0
-                                      ? "text-red-600"
-                                      : "text-slate-700"
-                                  }`}
-                                >
-                                  {data.eps !== undefined
-                                    ? data.eps.toFixed(2)
-                                    : "-"}
-                                </td>
-                              ),
-                            )}
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-              {/* Quarterly Financial Data */}
-              {companyData.financialData.quarterly &&
-                companyData.financialData.quarterly.length > 0 && (
-                  <div>
-                    <h4 className="font-medium text-slate-900 mb-3">
-                      Quarterly Results
-                    </h4>
-                    <div className="overflow-x-auto bg-green-50 rounded-lg p-4">
-                      <table className="w-full border-collapse text-sm">
-                        <thead>
-                          <tr className="border-b border-green-200">
-                            <th className="text-left py-2 px-3 font-medium text-green-900">
-                              Metric
-                            </th>
-                            {companyData.financialData.quarterly.map(
-                              (data, index) => (
-                                <th
-                                  key={index}
-                                  className="text-right py-2 px-3 font-medium text-green-900"
-                                >
-                                  {data.label}
-                                </th>
-                              ),
-                            )}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr className="border-b border-green-100 hover:bg-green-100">
-                            <td className="py-2 px-3 font-medium text-slate-900">
-                              Sales
-                            </td>
-                            {companyData.financialData.quarterly.map(
-                              (data, index) => (
-                                <td
-                                  key={index}
-                                  className="py-2 px-3 text-right text-slate-700 font-mono"
-                                >
-                                  {data.sales ? formatNumber(data.sales) : "-"}
-                                </td>
-                              ),
-                            )}
-                          </tr>
-                          <tr className="border-b border-green-100 hover:bg-green-100">
-                            <td className="py-2 px-3 font-medium text-slate-900">
-                              Profit after Taxation
-                            </td>
-                            {companyData.financialData.quarterly.map(
-                              (data, index) => (
-                                <td
-                                  key={index}
-                                  className={`py-2 px-3 text-right font-mono ${
-                                    data.profitAfterTax &&
-                                    data.profitAfterTax < 0
-                                      ? "text-red-600"
-                                      : "text-slate-700"
-                                  }`}
-                                >
-                                  {data.profitAfterTax !== undefined
-                                    ? formatNumber(data.profitAfterTax)
-                                    : "-"}
-                                </td>
-                              ),
-                            )}
-                          </tr>
-                          <tr className="border-b border-green-100 hover:bg-green-100">
-                            <td className="py-2 px-3 font-medium text-slate-900">
-                              EPS
-                            </td>
-                            {companyData.financialData.quarterly.map(
-                              (data, index) => (
-                                <td
-                                  key={index}
-                                  className={`py-2 px-3 text-right font-mono ${
-                                    data.eps && data.eps < 0
-                                      ? "text-red-600"
-                                      : "text-slate-700"
-                                  }`}
-                                >
-                                  {data.eps !== undefined
-                                    ? data.eps.toFixed(2)
-                                    : "-"}
-                                </td>
-                              ),
-                            )}
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
+        {/* Equity Profile Tab */}
+        {activeTab === "equity" && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+              <PieChart className="w-5 h-5 mr-2" />
+              Equity Profile
+            </h2>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-1">Market Cap</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {companyData?.marketCap ? formatMarketCap(companyData.marketCap) : "Rs. 2,441,292.50"}
+                </p>
+              </div>
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-1">Shares Outstanding</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {companyData?.sharesOutstanding ? formatNumber(companyData.sharesOutstanding) : "194,435,600"}
+                </p>
+              </div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-1">Free Float</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {companyData?.freeFloat ? formatPercentage(companyData.freeFloat) : "25.99%"}
+                </p>
+              </div>
+              <div className="text-center p-4 bg-orange-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-1">P/E Ratio</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  {companyData?.peRatio ? formatRatio(companyData.peRatio) : "16.27%"}
+                </p>
+              </div>
             </div>
-          )}
 
-        {/* Legacy Financial Performance Section - Fallback */}
-        {!companyData?.financialData &&
-          companyData?.financialData &&
-          companyData.financialData.length > 0 && (
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-5">
-              <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center">
-                <DollarSign className="w-4 h-4 mr-2" />
-                Financial Performance
-              </h3>
-              <div className="overflow-x-auto bg-green-50 rounded-lg p-3">
-                <table className="w-full border-collapse text-xs">
+            {/* Additional Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">Book Value</p>
+                <p className="text-lg font-semibold">
+                  {companyData?.bookValue ? formatPrice(companyData.bookValue) : "Rs. 45.23"}
+                </p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">Face Value</p>
+                <p className="text-lg font-semibold">
+                  {companyData?.faceValue ? formatPrice(companyData.faceValue) : "Rs. 10.00"}
+                </p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">Lot Size</p>
+                <p className="text-lg font-semibold">
+                  {companyData?.lotSize ? companyData.lotSize.toLocaleString() : "500"}
+                </p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">EPS</p>
+                <p className="text-lg font-semibold">
+                  {companyData?.epsRatio ? formatPrice(companyData.epsRatio) : "Rs. 7.85"}
+                </p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">Dividend Yield</p>
+                <p className="text-lg font-semibold">
+                  {companyData?.dividendYield ? formatPercentage(companyData.dividendYield) : "4.50%"}
+                </p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">52W High/Low</p>
+                <p className="text-lg font-semibold">
+                  {formatPrice(stockData.high)} / {formatPrice(stockData.low)}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Announcements Tab */}
+        {activeTab === "announcements" && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+              <FileText className="w-5 h-5 mr-2" />
+              Announcements
+            </h2>
+
+            {/* Announcement Categories */}
+            <div className="mb-6">
+              <div className="border-b border-gray-200">
+                <nav className="flex space-x-8">
+                  {Object.keys(sampleAnnouncements).map((category) => (
+                    <button
+                      key={category}
+                      onClick={() => setActiveAnnouncementTab(category)}
+                      className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                        activeAnnouncementTab === category
+                          ? "border-green-600 text-green-600"
+                          : "border-transparent text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      {category}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            </div>
+
+            {/* Announcements List */}
+            {activeAnnouncementTab && sampleAnnouncements[activeAnnouncementTab] && (
+              <div className="space-y-4">
+                {sampleAnnouncements[activeAnnouncementTab].map((announcement, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <span className="text-sm text-gray-500">{announcement.date}</span>
+                        <span className="text-sm font-medium text-gray-900">{announcement.title}</span>
+                      </div>
+                      <p className="text-sm text-gray-600">{announcement.document}</p>
+                    </div>
+                    <button className="flex items-center space-x-1 text-green-600 hover:text-green-700">
+                      <Download className="w-4 h-4" />
+                      <span className="text-sm">Download</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Financials Tab */}
+        {activeTab === "financials" && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+              <BarChart3 className="w-5 h-5 mr-2" />
+              Financials
+            </h2>
+
+            {/* Annual Financials */}
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Annual Financials</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse border border-gray-300">
                   <thead>
-                    <tr className="border-b border-green-200">
-                      <th className="text-left py-1.5 px-2 font-medium text-green-900">
-                        Year
-                      </th>
-                      <th className="text-right py-1.5 px-2 font-medium text-green-900">
-                        Sales
-                      </th>
-                      <th className="text-right py-1.5 px-2 font-medium text-green-900">
-                        Gross Profit
-                      </th>
-                      <th className="text-right py-1.5 px-2 font-medium text-green-900">
-                        Profit After Tax
-                      </th>
-                      <th className="text-right py-1.5 px-2 font-medium text-green-900">
-                        EPS
-                      </th>
+                    <tr className="bg-gray-50">
+                      <th className="border border-gray-300 px-4 py-2 text-left font-medium text-gray-900">Year</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right font-medium text-gray-900">Sales</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right font-medium text-gray-900">Profit after Taxation</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right font-medium text-gray-900">EPS</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {companyData.financialData.map((financial, index) => (
-                      <tr
-                        key={index}
-                        className="border-b border-green-100 hover:bg-green-100"
-                      >
-                        <td className="py-1.5 px-2 font-medium text-slate-900">
-                          {financial.year}
+                    {sampleFinancials.annual?.map((item, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="border border-gray-300 px-4 py-2 font-medium">{item.label}</td>
+                        <td className="border border-gray-300 px-4 py-2 text-right">
+                          {item.sales ? `Rs. ${formatNumber(item.sales)}` : "-"}
                         </td>
-                        <td className="py-1.5 px-2 text-right text-slate-700">
-                          {financial.sales
-                            ? `₨${formatNumber(financial.sales)}`
-                            : "N/A"}
+                        <td className={`border border-gray-300 px-4 py-2 text-right ${
+                          (item.profitAfterTax ?? 0) < 0 ? "text-red-600" : ""
+                        }`}>
+                          {item.profitAfterTax ? `Rs. ${formatNumber(item.profitAfterTax)}` : "-"}
                         </td>
-
-                        <td className="py-1.5 px-2 text-right text-slate-700">
-                          {financial.profitAfterTax
-                            ? `₨${formatNumber(financial.profitAfterTax)}`
-                            : "N/A"}
-                        </td>
-                        <td className="py-1.5 px-2 text-right text-slate-700">
-                          {financial.eps
-                            ? `₨${formatRatio(financial.eps)}`
-                            : "N/A"}
+                        <td className="border border-gray-300 px-4 py-2 text-right">
+                          {item.eps ? `Rs. ${item.eps.toFixed(2)}` : "-"}
                         </td>
                       </tr>
                     ))}
@@ -846,56 +676,80 @@ export default function StockDetail() {
                 </table>
               </div>
             </div>
-          )}
 
-        {/* Financial Ratios Section */}
-        {companyData?.ratiosData && companyData.ratiosData.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-5">
-            <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Financial Ratios
-            </h3>
-            <div className="overflow-x-auto bg-purple-50 rounded-lg p-3">
-              <table className="w-full border-collapse text-xs">
+            {/* Quarterly Financials */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quarterly Financials</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse border border-gray-300">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="border border-gray-300 px-4 py-2 text-left font-medium text-gray-900">Quarter</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right font-medium text-gray-900">Sales</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right font-medium text-gray-900">Profit after Taxation</th>
+                      <th className="border border-gray-300 px-4 py-2 text-right font-medium text-gray-900">EPS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sampleFinancials.quarterly?.map((item, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="border border-gray-300 px-4 py-2 font-medium">{item.label}</td>
+                        <td className="border border-gray-300 px-4 py-2 text-right">
+                          {item.sales ? `Rs. ${formatNumber(item.sales)}` : "-"}
+                        </td>
+                        <td className={`border border-gray-300 px-4 py-2 text-right ${
+                          (item.profitAfterTax ?? 0) < 0 ? "text-red-600" : ""
+                        }`}>
+                          {item.profitAfterTax ? `Rs. ${formatNumber(item.profitAfterTax)}` : "-"}
+                        </td>
+                        <td className="border border-gray-300 px-4 py-2 text-right">
+                          {item.eps ? `Rs. ${item.eps.toFixed(2)}` : "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Ratios Tab */}
+        {activeTab === "ratios" && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+              <Target className="w-5 h-5 mr-2" />
+              Ratios
+            </h2>
+
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border border-gray-300">
                 <thead>
-                  <tr className="border-b border-purple-200">
-                    <th className="text-left py-1.5 px-2 font-medium text-purple-900">
-                      Year
-                    </th>
-                    <th className="text-right py-1.5 px-2 font-medium text-purple-900">
-                      Gross Profit Margin
-                    </th>
-                    <th className="text-right py-1.5 px-2 font-medium text-purple-900">
-                      Net Profit Margin
-                    </th>
-                    <th className="text-right py-1.5 px-2 font-medium text-purple-900">
-                      EPS Growth
-                    </th>
-                    <th className="text-right py-1.5 px-2 font-medium text-purple-900">
-                      PEG Ratio
-                    </th>
+                  <tr className="bg-gray-50">
+                    <th className="border border-gray-300 px-4 py-2 text-left font-medium text-gray-900">Year</th>
+                    <th className="border border-gray-300 px-4 py-2 text-right font-medium text-gray-900">Gross Profit Margin (%)</th>
+                    <th className="border border-gray-300 px-4 py-2 text-right font-medium text-gray-900">Net Profit Margin (%)</th>
+                    <th className="border border-gray-300 px-4 py-2 text-right font-medium text-gray-900">EPS Growth (%)</th>
+                    <th className="border border-gray-300 px-4 py-2 text-right font-medium text-gray-900">PEG Ratio</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {companyData.ratiosData.map((ratios, index) => (
-                    <tr
-                      key={index}
-                      className="border-b border-purple-100 hover:bg-purple-100"
-                    >
-                      <td className="py-1.5 px-2 font-medium text-slate-900">
-                        {ratios.year}
+                  {sampleRatios.map((item, index) => (
+                    <tr key={index} className="hover:bg-gray-50">
+                      <td className="border border-gray-300 px-4 py-2 font-medium">{item.year}</td>
+                      <td className="border border-gray-300 px-4 py-2 text-right">
+                        {item.grossProfitMargin?.toFixed(1) || "-"}
                       </td>
-                      <td className="py-1.5 px-2 text-right text-slate-700">
-                        {formatPercentage(ratios.grossProfitMargin)}
+                      <td className="border border-gray-300 px-4 py-2 text-right">
+                        {item.netProfitMargin?.toFixed(1) || "-"}
                       </td>
-                      <td className="py-1.5 px-2 text-right text-slate-700">
-                        {formatPercentage(ratios.netProfitMargin)}
+                      <td className={`border border-gray-300 px-4 py-2 text-right ${
+                        (item.epsGrowth ?? 0) < 0 ? "text-red-600" : "text-green-600"
+                      }`}>
+                        {item.epsGrowth?.toFixed(1) || "-"}
                       </td>
-                      <td className="py-1.5 px-2 text-right text-slate-700">
-                        {formatPercentage(ratios.epsGrowth)}
-                      </td>
-                      <td className="py-1.5 px-2 text-right text-slate-700">
-                        {formatRatio(ratios.peg)}
+                      <td className="border border-gray-300 px-4 py-2 text-right">
+                        {item.peg?.toFixed(2) || "-"}
                       </td>
                     </tr>
                   ))}
@@ -905,172 +759,44 @@ export default function StockDetail() {
           </div>
         )}
 
-        {/* Payouts Data Section */}
-        {companyData?.payoutsData && companyData.payoutsData.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-5">
-            <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center">
-              <Calendar className="w-4 h-4 mr-2" />
-              Dividend Payouts
-            </h3>
+        {/* Payouts Tab */}
+        {activeTab === "payouts" && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+              <DollarSign className="w-5 h-5 mr-2" />
+              Payouts
+            </h2>
 
-            <div className="overflow-x-auto bg-orange-50 rounded-lg p-3">
-              <table className="w-full border-collapse text-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border border-gray-300">
                 <thead>
-                  <tr className="border-b border-orange-200">
-                    <th className="text-left py-1.5 px-2 font-medium text-orange-900">
-                      Date
-                    </th>
-                    <th className="text-left py-1.5 px-2 font-medium text-orange-900">
-                      Financial Results
-                    </th>
-                    <th className="text-left py-1.5 px-2 font-medium text-orange-900">
-                      Details
-                    </th>
-                    <th className="text-left py-1.5 px-2 font-medium text-orange-900">
-                      Book Closure
-                    </th>
+                  <tr className="bg-gray-50">
+                    <th className="border border-gray-300 px-4 py-2 text-left font-medium text-gray-900">Date</th>
+                    <th className="border border-gray-300 px-4 py-2 text-left font-medium text-gray-900">Financial Results</th>
+                    <th className="border border-gray-300 px-4 py-2 text-left font-medium text-gray-900">Details</th>
+                    <th className="border border-gray-300 px-4 py-2 text-left font-medium text-gray-900">Book Closure</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {getPaginatedData(companyData.payoutsData, payoutsPage).map(
-                    (payout, index) => (
-                      <tr
-                        key={index}
-                        className="border-b border-orange-100 hover:bg-orange-100"
-                      >
-                        <td className="py-1.5 px-2 text-slate-900">
-                          {payout.date}
-                        </td>
-                        <td className="py-1.5 px-2 text-slate-700">
-                          {payout.financialResults || "N/A"}
-                        </td>
-                        <td className="py-1.5 px-2 text-slate-700">
-                          {payout.details || "N/A"}
-                        </td>
-                        <td className="py-1.5 px-2 text-slate-700">
-                          {payout.bookClosure || "N/A"}
-                        </td>
-                      </tr>
-                    ),
-                  )}
+                  {getPaginatedData(samplePayouts, payoutsPage).map((item, index) => (
+                    <tr key={index} className="hover:bg-gray-50">
+                      <td className="border border-gray-300 px-4 py-2">{item.date}</td>
+                      <td className="border border-gray-300 px-4 py-2">{item.financialResults}</td>
+                      <td className="border border-gray-300 px-4 py-2 font-medium text-green-600">{item.details}</td>
+                      <td className="border border-gray-300 px-4 py-2">{item.bookClosure}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
 
             <PaginationControls
               currentPage={payoutsPage}
-              totalPages={getTotalPages(companyData.payoutsData.length)}
+              totalPages={getTotalPages(samplePayouts.length)}
               onPageChange={setPayoutsPage}
-              className="mt-2"
             />
           </div>
         )}
-
-        {/* Announcements Section with Tabs */}
-        {companyData?.announcements &&
-          typeof companyData.announcements === "object" &&
-          Object.keys(companyData.announcements).length > 0 && (
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-5">
-              <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center">
-                <FileText className="w-4 h-4 mr-2" />
-                Company Announcements
-              </h3>
-
-              {/* Tab Navigation */}
-              <div className="border-b border-slate-200 mb-3">
-                <nav className="flex space-x-4 overflow-x-auto">
-                  {Object.keys(companyData.announcements).map((category) => (
-                    <button
-                      key={category}
-                      onClick={() => setActiveAnnouncementTab(category)}
-                      className={`py-1.5 px-1 border-b-2 font-medium text-xs whitespace-nowrap ${
-                        activeAnnouncementTab === category
-                          ? "border-primary text-primary"
-                          : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
-                      }`}
-                    >
-                      {category.replace(/_/g, " ").toUpperCase()}
-                      <span className="ml-1 text-xs bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full">
-                        {(companyData.announcements as any)[category]?.length ||
-                          0}
-                      </span>
-                    </button>
-                  ))}
-                </nav>
-              </div>
-
-              {/* Tab Content */}
-              {activeAnnouncementTab &&
-                (companyData.announcements as any)[activeAnnouncementTab] && (
-                  <div>
-                    <div className="space-y-2">
-                      {getPaginatedData(
-                        (companyData.announcements as any)[
-                          activeAnnouncementTab
-                        ],
-                        announcementPage[activeAnnouncementTab] || 1,
-                      ).map((announcement: any, index: number) => (
-                        <div
-                          key={index}
-                          className="border border-slate-200 rounded-lg p-3 hover:bg-slate-50 text-sm"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h4 className="font-medium text-slate-900 mb-1 text-sm">
-                                {announcement.title}
-                              </h4>
-                              <p className="text-xs text-slate-500">
-                                {announcement.date}
-                              </p>
-                            </div>
-                            {announcement.document && (
-                              <a
-                                href={announcement.document}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center px-2 py-1 text-xs font-medium text-primary bg-primary/10 rounded-md hover:bg-primary/20 transition-colors ml-3"
-                              >
-                                <FileText className="w-3 h-3 mr-1" />
-                                View
-                                <ExternalLink className="w-3 h-3 ml-1" />
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <PaginationControls
-                      currentPage={announcementPage[activeAnnouncementTab] || 1}
-                      totalPages={getTotalPages(
-                        (companyData.announcements as any)[
-                          activeAnnouncementTab
-                        ]?.length || 0,
-                      )}
-                      onPageChange={(page) =>
-                        setAnnouncementPage({
-                          ...announcementPage,
-                          [activeAnnouncementTab]: page,
-                        })
-                      }
-                      className="mt-2"
-                    />
-                  </div>
-                )}
-            </div>
-          )}
-
-        {/* Company Description */}
-        {/* {companyData?.businessDescription && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-            <h3 className="text-lg font-semibold text-slate-900 mb-3">
-              Business Description
-            </h3>
-            <p className="text-slate-600 leading-relaxed">
-              {companyData.businessDescription}
-            </p>
-          </div>
-        )} */}
       </div>
     </div>
   );
