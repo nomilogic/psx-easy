@@ -4,7 +4,7 @@ import { Switch, Route } from "wouter";
 import Homepage from "@/pages/homepage";
 import ApiDashboard from "@/pages/api-dashboard";
 import StockDetail from "@/pages/stock-detail";
-import AIAnalysis from "@/pages/ai-analysis";
+import AIAnalysisNew from "@/pages/ai-analysis-new";
 import NotFound from "@/pages/not-found";
 import { useWebSocket } from "@/hooks/use-websocket";
 
@@ -25,7 +25,7 @@ function App() {
         <Switch>
           <Route path="/" component={Homepage} />
           <Route path="/api" component={ApiDashboard} />
-          <Route path="/ai-analysis" component={AIAnalysis} />
+          <Route path="/ai-analysis" component={AIAnalysisNew} />
           <Route path="/stock/:symbol" component={StockDetail} />
           <Route component={NotFound} />
         </Switch>

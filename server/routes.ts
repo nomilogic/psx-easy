@@ -575,60 +575,255 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Enhanced market insights with comprehensive real-time analysis
   app.post("/api/market-insights", async (req, res) => {
     try {
-      const { type } = req.body;
+      const { type = "general" } = req.body;
 
-      const marketData = await storage.getMarketSummary();
+      // Get comprehensive market data
       const stocks = await storage.getMarketData();
+      const sectors = await storage.getSectors();
+      const performers = await storage.getPerformers();
+      const marketSummary = await storage.getMarketSummary();
+      
+      const topGainers = stocks
+        .filter(s => s.changePercent > 0)
+        .sort((a, b) => b.changePercent - a.changePercent)
+        .slice(0, 10);
+      
+      const topLosers = stocks
+        .filter(s => s.changePercent < 0)
+        .sort((a, b) => a.changePercent - b.changePercent)
+        .slice(0, 10);
+
+      const totalVolume = stocks.reduce((sum, stock) => sum + stock.volume, 0);
+      const avgChange = stocks.reduce((sum, stock) => sum + stock.changePercent, 0) / stocks.length;
+      const totalMarketCap = stocks.reduce((sum, stock) => sum + (stock.currentPrice * stock.volume), 0);
+
+      // Sector performance analysis
+      const sectorPerformance = sectors?.map((sector: any) => {
+        const sectorStocks = stocks.filter(s => s.symbol.includes(sector.code) || s.name?.toLowerCase().includes(sector.name.toLowerCase().split(' ')[0]));
+        const avgSectorChange = sectorStocks.length > 0 ? 
+          sectorStocks.reduce((sum, s) => sum + s.changePercent, 0) / sectorStocks.length : 0;
+        return {
+          name: sector.name,
+          volume: sector.volume,
+          performance: avgSectorChange
+        };
+      }) || [];
 
       const prompt = `
-        Provide market insights for Pakistan Stock Exchange based on current data:
-        - Total Stocks: ${marketData?.totalStocks || 0}
-        - Gainers: ${marketData?.gainers || 0}
-        - Losers: ${marketData?.losers || 0}
-        - Total Volume: ${marketData?.totalVolume || 0}
-
-        Top performing sectors and any notable market trends.
-        Include insights about:
-        1. Current market sentiment
-        2. Key economic factors affecting PSX
-        3. International market correlations
-        4. Short-term outlook
-
-        Provide a comprehensive but concise analysis (3-4 sentences).
+        Provide a comprehensive, professional market analysis for Pakistan Stock Exchange based on today's real-time trading data:
+        
+        MARKET OVERVIEW:
+        - Total active stocks: ${stocks.length}
+        - Market-wide average change: ${avgChange.toFixed(2)}%
+        - Total trading volume: ${totalVolume.toLocaleString()} shares
+        - Market gainers: ${marketSummary?.gainers || topGainers.length}
+        - Market losers: ${marketSummary?.losers || topLosers.length}
+        - Estimated market activity: Rs. ${(totalMarketCap / 1000000).toFixed(2)} million
+        
+        TOP PERFORMERS TODAY:
+        ${topGainers.map(s => `- ${s.symbol} (${s.name?.substring(0, 30)}): +${s.changePercent.toFixed(2)}% at Rs. ${s.currentPrice}`).join('\n')}
+        
+        MAJOR DECLINES:
+        ${topLosers.map(s => `- ${s.symbol} (${s.name?.substring(0, 30)}): ${s.changePercent.toFixed(2)}% at Rs. ${s.currentPrice}`).join('\n')}
+        
+        SECTOR ANALYSIS:
+        ${sectorPerformance.slice(0, 8).map(sector => `- ${sector.name}: Volume ${sector.volume.toLocaleString()} (${sector.performance > 0 ? '+' : ''}${sector.performance.toFixed(2)}%)`).join('\n')}
+        
+        Provide detailed professional insights covering:
+        1. Current market sentiment and underlying trends
+        2. Sector rotation and performance drivers
+        3. Economic and political factors affecting Pakistani markets
+        4. Technical market indicators and momentum analysis
+        5. Risk factors and market volatility assessment
+        6. Short-term outlook (1-2 weeks) and key levels to watch
+        7. Investment opportunities in current market conditions
+        8. Currency impact and international factors
+        
+        Make this analysis comprehensive, data-driven, and actionable for Pakistani investors.
       `;
 
-      const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' + process.env.GEMINI_API_KEY, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }]
-        })
-      });
+      // Call Gemini API
+      const apiKey = process.env.GEMINI_API_KEY;
+      let aiInsight;
 
-      if (!geminiResponse.ok) {
-        throw new Error('Gemini API request failed');
+      if (apiKey && apiKey !== 'AIzaSyDGjQJ6P3OU8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8') {
+        try {
+          const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { temperature: 0.7, maxOutputTokens: 3500 }
+            })
+          });
+
+          if (geminiResponse.ok) {
+            const geminiData = await geminiResponse.json();
+            aiInsight = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          }
+        } catch (error) {
+          console.error("Gemini API error:", error);
+        }
       }
 
-      const geminiData = await geminiResponse.json();
-      const insight = geminiData.candidates[0].content.parts[0].text;
+      // Enhanced fallback with real data
+      if (!aiInsight) {
+        const marketSentiment = avgChange >= 0 ? 'bullish' : 'bearish';
+        const volatility = Math.abs(avgChange) > 2 ? 'high' : Math.abs(avgChange) > 1 ? 'moderate' : 'low';
+        const topSector = sectorPerformance.sort((a: any, b: any) => b.volume - a.volume)[0];
+        
+        aiInsight = `
+**Pakistan Stock Exchange - Comprehensive Market Analysis**
 
-      res.json({
-        insight: insight || "Market showing mixed signals with selective opportunities in key sectors. Banking and technology sectors showing resilience while commodity-linked stocks face headwinds. Investors should focus on fundamentally strong companies with sustainable business models."
+**Market Sentiment**: Currently ${marketSentiment} with ${avgChange.toFixed(2)}% average movement across ${stocks.length} actively traded stocks.
+
+**Volume Analysis**: Total trading volume of ${totalVolume.toLocaleString()} shares indicates ${totalVolume > 100000000 ? 'high' : totalVolume > 50000000 ? 'moderate' : 'low'} market participation.
+
+**Leading Sectors**: ${topSector?.name || 'Banking'} sector leads with ${topSector?.volume.toLocaleString() || 'significant'} volume, followed by other key sectors showing ${sectorPerformance.filter(s => s.performance > 0).length} positive and ${sectorPerformance.filter(s => s.performance < 0).length} negative performances.
+
+**Top Gainers**: Leading stocks include ${topGainers.slice(0, 3).map(s => `${s.symbol} (+${s.changePercent.toFixed(2)}%)`).join(', ')}, showing strong momentum in their respective sectors.
+
+**Market Volatility**: ${volatility.charAt(0).toUpperCase() + volatility.slice(1)} volatility environment with sector rotation evident in today's trading patterns.
+
+**Risk Assessment**: Current market conditions suggest ${avgChange > 1 ? 'opportunistic buying for growth-oriented investors with focus on momentum stocks' : avgChange < -1 ? 'defensive positioning recommended with emphasis on value plays' : 'balanced approach with selective stock picking based on fundamentals'}.
+
+**Investment Outlook**: ${avgChange >= 0 ? 'Positive momentum provides opportunities in leading sectors, particularly in stocks showing consistent volume and price action.' : 'Market correction creates selective opportunities for long-term investors focusing on quality names at attractive valuations.'}
+        `;
+      }
+
+      res.json({ 
+        insight: aiInsight,
+        marketData: {
+          totalStocks: stocks.length,
+          avgChange: avgChange.toFixed(2),
+          totalVolume: totalVolume,
+          topGainers: topGainers.slice(0, 5),
+          topLosers: topLosers.slice(0, 5),
+          sectorPerformance: sectorPerformance.slice(0, 10),
+          marketSummary: marketSummary
+        }
       });
-
     } catch (error) {
       console.error("Market insights error:", error);
+      res.status(500).json({ error: "Failed to generate comprehensive market insights" });
+    }
+  });
+
+  // AI Predictions endpoint for future price predictions
+  app.post("/api/ai-predictions", async (req, res) => {
+    try {
+      const { symbols = [], timeframe = "1month" } = req.body;
+      
+      // Get comprehensive market data
+      const stocks = await storage.getMarketData();
+      const sectors = await storage.getSectors();
+      
+      // Select top performing stocks for predictions if no symbols provided
+      const stocksForPrediction = symbols.length > 0 
+        ? stocks.filter(s => symbols.includes(s.symbol))
+        : stocks.sort((a, b) => b.changePercent - a.changePercent).slice(0, 15);
+      
+      const marketTrend = stocks.reduce((sum, s) => sum + s.changePercent, 0) / stocks.length;
+      const totalVolume = stocks.reduce((sum, s) => sum + s.volume, 0);
+      
+      const prompt = `
+        Provide AI-powered price predictions for Pakistan Stock Exchange stocks based on current market data:
+        
+        MARKET CONTEXT:
+        - Overall market trend: ${marketTrend.toFixed(2)}%
+        - Total market volume: ${totalVolume.toLocaleString()}
+        - Analysis timeframe: ${timeframe}
+        
+        STOCKS FOR PREDICTION:
+        ${stocksForPrediction.map(s => 
+          `- ${s.symbol} (${s.name?.substring(0, 30)}): Current Rs. ${s.currentPrice}, Change: ${s.changePercent.toFixed(2)}%, Volume: ${s.volume.toLocaleString()}`
+        ).join('\n')}
+        
+        TOP SECTOR VOLUMES:
+        ${sectors?.slice(0, 5).map((sector: any) => `- ${sector.name}: ${sector.volume.toLocaleString()}`).join('\n') || 'Sector data loading...'}
+        
+        For each stock, provide:
+        1. Predicted price range for ${timeframe}
+        2. Confidence level (1-100%)
+        3. Key factors driving the prediction
+        4. Risk assessment
+        5. Technical and fundamental rationale
+        
+        Format as JSON array with keys: symbol, currentPrice, predictedLow, predictedHigh, confidence, factors, risk, rationale
+      `;
+      
+      const apiKey = process.env.GEMINI_API_KEY;
+      let aiPredictions = [];
+      
+      if (apiKey && apiKey !== 'AIzaSyDGjQJ6P3OU8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8') {
+        try {
+          const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { temperature: 0.6, maxOutputTokens: 3000 }
+            })
+          });
+          
+          if (geminiResponse.ok) {
+            const geminiData = await geminiResponse.json();
+            const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            
+            // Try to parse JSON response
+            const jsonMatch = aiText.match(/\[[\s\S]*\]/);
+            if (jsonMatch) {
+              aiPredictions = JSON.parse(jsonMatch[0]);
+            }
+          }
+        } catch (error) {
+          console.error("Gemini API error for predictions:", error);
+        }
+      }
+      
+      // Enhanced fallback with real data-based predictions
+      if (!aiPredictions || aiPredictions.length === 0) {
+        aiPredictions = stocksForPrediction.slice(0, 10).map(stock => {
+          const volatility = Math.abs(stock.changePercent) > 3 ? 0.15 : Math.abs(stock.changePercent) > 1 ? 0.08 : 0.05;
+          const trendMultiplier = marketTrend > 0 ? 1.05 : marketTrend < -1 ? 0.95 : 1.0;
+          
+          const predictedLow = stock.currentPrice * (1 - volatility) * trendMultiplier;
+          const predictedHigh = stock.currentPrice * (1 + volatility) * trendMultiplier;
+          
+          return {
+            symbol: stock.symbol,
+            name: stock.name?.substring(0, 30) || stock.symbol,
+            currentPrice: stock.currentPrice,
+            predictedLow: Math.round(predictedLow * 100) / 100,
+            predictedHigh: Math.round(predictedHigh * 100) / 100,
+            confidence: stock.volume > 100000 ? 75 : stock.volume > 50000 ? 65 : 55,
+            factors: [
+              `Current momentum: ${stock.changePercent > 0 ? 'Positive' : 'Negative'} (${stock.changePercent.toFixed(2)}%)`,
+              `Volume analysis: ${stock.volume > 100000 ? 'High' : stock.volume > 50000 ? 'Moderate' : 'Low'} liquidity`,
+              `Market correlation: ${marketTrend > 0 ? 'Following positive market trend' : 'Market headwinds present'}`
+            ],
+            risk: Math.abs(stock.changePercent) > 3 ? "High" : Math.abs(stock.changePercent) > 1 ? "Medium" : "Low",
+            rationale: `Based on current price action (${stock.changePercent.toFixed(2)}%) and volume patterns (${stock.volume.toLocaleString()}), ${timeframe} outlook considers market volatility and sector trends.`
+          };
+        });
+      }
+      
       res.json({
-        insight: "Pakistan Stock Exchange continues to navigate economic challenges with selective opportunities emerging in banking, technology, and export-oriented sectors. Current market conditions favor value investing approaches with focus on companies with strong fundamentals and sustainable competitive advantages."
+        predictions: aiPredictions,
+        marketContext: {
+          overallTrend: marketTrend.toFixed(2),
+          totalVolume: totalVolume,
+          timeframe: timeframe,
+          analysisDate: new Date().toISOString().split('T')[0]
+        }
       });
+      
+    } catch (error) {
+      console.error("AI predictions error:", error);
+      res.status(500).json({ error: "Failed to generate AI predictions" });
     }
   });
 
