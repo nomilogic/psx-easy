@@ -39,9 +39,9 @@ import {
   Search,
   Filter,
   Layers,
-  Trending,
   Eye,
-  CheckCircle
+  CheckCircle,
+  Lightbulb
 } from "lucide-react";
 import { Link } from "wouter";
 

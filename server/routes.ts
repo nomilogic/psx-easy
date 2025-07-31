@@ -413,6 +413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       });
 
+      let aiText = "";
       if (geminiResponse.ok) {
         const geminiData = await geminiResponse.json();
         aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
