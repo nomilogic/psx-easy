@@ -354,7 +354,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Analysis endpoints
   app.post("/api/ai-analysis", async (req, res) => {
     try {
-      const { symbol, query } = req.body;
+      const { symbol, query, format = "text" } = req.body;
 
       if (!symbol) {
         return res.status(400).json({ error: "Symbol is required" });
@@ -368,7 +368,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Stock not found" });
       }
 
-      // Prepare AI prompt
+      // Prepare AI prompt with HTML formatting option
+      const htmlFormatInstruction = format === "html" ? `
+        Format your analysis using HTML tags for better presentation:
+        - Use <h3> for section headers
+        - Use <p> for paragraphs
+        - Use <strong> for emphasis
+        - Use <ul> and <li> for bullet points
+        - Use <span class="highlight"> for important numbers
+        - Use <div class="recommendation-box"> for final recommendation
+      ` : '';
+
       const prompt = `
         Analyze the stock ${symbol} (${stock.name}) with the following data:
         - Current Price: Rs. ${stock.current}
@@ -380,15 +390,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         ${query ? `Focus on: ${query}` : ''}
 
-        Please provide:
-        1. A comprehensive analysis (2-3 sentences)
-        2. Investment recommendation (Buy/Hold/Sell with reasoning)
-        3. Risk level (Low/Medium/High)
-        4. Target price prediction
-        5. Confidence level (1-100%)
+        Please provide a comprehensive analysis including:
+        1. Technical Analysis (support/resistance levels, momentum indicators)
+        2. Fundamental Analysis (sector outlook, company position)
+        3. Market Context (overall market trends, sector performance)
+        4. Investment recommendation with specific reasoning
+        5. Risk assessment and mitigation strategies
+        6. Target price prediction with timeline
+        7. Confidence level based on data quality and market conditions
 
-        Consider Pakistan Stock Exchange context and current market conditions.
-        Response should be in JSON format with keys: analysis, recommendation, riskLevel, targetPrice, confidence
+        ${htmlFormatInstruction}
+
+        Consider Pakistan Stock Exchange context, currency factors, and current economic conditions.
+        ${format === "html" ? "Response should be in JSON format with keys: analysis (HTML formatted), recommendation, riskLevel, targetPrice, confidence" : "Response should be in JSON format with keys: analysis, recommendation, riskLevel, targetPrice, confidence"}
       `;
 
       // Call Gemini API with proper error handling
@@ -678,7 +692,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Enhanced market insights with comprehensive real-time analysis
   app.post("/api/market-insights", async (req, res) => {
     try {
-      const { type = "general" } = req.body;
+      const { type = "general", format = "text" } = req.body;
 
       // Get comprehensive market data
       const stocks = await storage.getMarketData();
@@ -712,8 +726,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       }) || [];
 
+      const htmlFormatInstruction = format === "html" ? `
+        Format your analysis using HTML for better presentation:
+        - Use <h2> for main sections
+        - Use <h3> for subsections
+        - Use <p> for paragraphs
+        - Use <strong> for emphasis on key points
+        - Use <ul> and <li> for lists
+        - Use <span class="price"> for price mentions
+        - Use <span class="percentage"> for percentage changes
+        - Use <div class="alert alert-info"> for important alerts
+        - Use <div class="recommendation"> for specific recommendations
+      ` : '';
+
       const prompt = `
         Provide a comprehensive, professional market analysis for Pakistan Stock Exchange based on today's real-time trading data:
+        ${htmlFormatInstruction}
         
         MARKET OVERVIEW:
         - Total active stocks: ${stocks.length}
