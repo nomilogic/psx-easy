@@ -132,29 +132,26 @@ export class PSXService {
 
     for (const proxy of CORS_PROXIES) {
       try {
-        const proxyUrl = proxy.includes('allorigins.win') 
-          ? `${proxy}${encodeURIComponent(url)}`
-          : `${proxy}${encodeURIComponent(url)}`;
-          
-        const response = await fetch(proxyUrl, {
+        const response = await fetch(`${proxy}${encodeURIComponent(url)}`, {
           headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            Accept: "application/json,text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            Accept:
+              "application/json,text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
           },
-          timeout: 10000,
         });
 
-        if (!response || !response.ok) {
-          throw new Error(`HTTP ${response?.status || 'unknown'}: ${response?.statusText || 'Network error'}`);
+        // console.log(response);
+
+        if (!response) {
+          throw new Error("No response from server");
         }
 
-        let data;
-        if (proxy.includes('allorigins.win')) {
-          const jsonResponse = await response.json();
-          data = isJson ? JSON.parse(jsonResponse.contents) : jsonResponse.contents;
-        } else {
-          data = isJson ? await response.json() : await response.text();
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
+
+        const data = isJson ? await response.json() : await response.text();
 
         if (!data) {
           throw new Error("No data in response");
@@ -166,24 +163,15 @@ export class PSXService {
         continue;
       }
     }
-    
-    // If all proxies fail, return mock data for development
-    console.warn("All proxy attempts failed, using fallback data");
-    if (url.includes('market-watch')) {
-      return this.getMockData() as T;
-    }
     throw new Error("All proxy attempts failed");
   }
+
+  // If all proxies fail, return mock data for development
 
   private static symbolsCache: { [symbolId: string]: Symbol } | null = null;
   private static symbolsCacheTimestamp: number | null = null;
 
-  static async fetchSymbols(): Promise<Symbol[]> {
-    await this.fetchSymbolsInternal();
-    return Object.values(this.symbolsCache || {});
-  }
-
-  private static async fetchSymbolsInternal(): Promise<void> {
+  private static async fetchSymbols(): Promise<void> {
     const now = new Date().getTime();
     if (
       this.symbolsCache &&
