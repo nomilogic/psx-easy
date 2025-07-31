@@ -96,6 +96,7 @@ interface TopSectorsData {
   sectors: SectorData[];
   totalVolume: number;
 }
+
 interface Symbol {
   symbol: string;
   name: string;
@@ -177,7 +178,12 @@ export class PSXService {
   private static symbolsCache: { [symbolId: string]: Symbol } | null = null;
   private static symbolsCacheTimestamp: number | null = null;
 
-  private static async fetchSymbols(): Promise<void> {
+  static async fetchSymbols(): Promise<Symbol[]> {
+    await this.fetchSymbolsInternal();
+    return Object.values(this.symbolsCache || {});
+  }
+
+  private static async fetchSymbolsInternal(): Promise<void> {
     const now = new Date().getTime();
     if (
       this.symbolsCache &&

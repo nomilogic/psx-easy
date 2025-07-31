@@ -351,7 +351,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI Analysis endpoints
+  // AI Analysis endpoints with enhanced real-time data
   app.post("/api/ai-analysis", async (req, res) => {
     try {
       const { symbol, query, format = "text" } = req.body;
@@ -360,15 +360,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Symbol is required" });
       }
 
-      // Get stock data
-      const stocks = await storage.getMarketData();
-      const stock = stocks.find(s => s.symbol === symbol);
+      // Get comprehensive stock data from multiple sources
+      const [stocks, company, sectors, indexData] = await Promise.allSettled([
+        storage.getMarketData(),
+        storage.getCompany(symbol.toUpperCase()),
+        storage.getSectors(),
+        PSXService.fetchStockTimeSeries(symbol.toUpperCase(), "1day")
+      ]);
+
+      const stocksData = stocks.status === 'fulfilled' ? stocks.value : [];
+      const stock = stocksData.find(s => s.symbol === symbol.toUpperCase());
 
       if (!stock) {
         return res.status(404).json({ error: "Stock not found" });
       }
 
-      // Prepare AI prompt with HTML formatting option
+      const companyData = company.status === 'fulfilled' ? company.value : null;
+      const sectorsData = sectors.status === 'fulfilled' ? sectors.value : [];
+      const chartData = indexData.status === 'fulfilled' ? indexData.value : null;
+
+      // Enhanced AI prompt with comprehensive real-time data
       const htmlFormatInstruction = format === "html" ? `
         Format your analysis using HTML tags for better presentation:
         - Use <h3> for section headers
@@ -379,30 +390,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
         - Use <div class="recommendation-box"> for final recommendation
       ` : '';
 
+      // Build comprehensive market context
+      const marketContext = stocksData.length > 0 ? {
+        totalStocks: stocksData.length,
+        avgChange: (stocksData.reduce((sum, s) => sum + s.changePercent, 0) / stocksData.length).toFixed(2),
+        totalVolume: stocksData.reduce((sum, s) => sum + s.volume, 0),
+        gainers: stocksData.filter(s => s.changePercent > 0).length,
+        losers: stocksData.filter(s => s.changePercent < 0).length
+      } : null;
+
+      const sectorContext = sectorsData.length > 0 ? 
+        sectorsData.find(s => stock.sector.toLowerCase().includes(s.name.toLowerCase().split(' ')[0])) : null;
+
+      const chartContext = chartData ? {
+        recentTrend: chartData.chartData.length > 10 ? 
+          (chartData.chartData[chartData.chartData.length - 1].price > chartData.chartData[chartData.chartData.length - 10].price ? 'upward' : 'downward') : 'sideways',
+        volumeTrend: chartData.chartData.length > 5 ? 
+          (chartData.chartData.slice(-5).reduce((sum, p) => sum + p.volume, 0) / 5) : stock.volume
+      } : null;
+
       const prompt = `
-        Analyze the stock ${symbol} (${stock.name}) with the following data:
+        Provide a comprehensive AI-powered analysis for ${symbol} (${stock.name}) using real-time Pakistan Stock Exchange data:
+        
+        CURRENT STOCK DATA:
         - Current Price: Rs. ${stock.current}
-        - Change: ${stock.change} (${stock.changePercent}%)
-        - Volume: ${stock.volume}
+        - Daily Change: ${stock.change} (${stock.changePercent}%)
+        - Volume: ${stock.volume.toLocaleString()} shares
         - Sector: ${stock.sector}
-        - High: Rs. ${stock.high}
-        - Low: Rs. ${stock.low}
+        - Day High: Rs. ${stock.high}
+        - Day Low: Rs. ${stock.low}
+        - Price Range: Rs. ${stock.low} - Rs. ${stock.high}
+        
+        COMPANY FUNDAMENTALS:
+        ${companyData ? `
+        - Market Cap: ${companyData.marketCap ? 'Rs. ' + companyData.marketCap.toLocaleString() : 'N/A'}
+        - P/E Ratio: ${companyData.peRatio || 'N/A'}
+        - Book Value: ${companyData.bookValue ? 'Rs. ' + companyData.bookValue : 'N/A'}
+        - Dividend Yield: ${companyData.dividendYield ? companyData.dividendYield + '%' : 'N/A'}
+        - Business: ${companyData.description?.substring(0, 200) || 'Business profile available'}
+        ` : 'Company fundamentals: Limited data available'}
+        
+        MARKET CONTEXT:
+        ${marketContext ? `
+        - Market Status: ${marketContext.avgChange}% average change across ${marketContext.totalStocks} stocks
+        - Market Sentiment: ${marketContext.gainers} gainers vs ${marketContext.losers} losers
+        - Total Market Volume: ${marketContext.totalVolume.toLocaleString()} shares
+        ` : 'Market context: Analyzing individual stock performance'}
+        
+        SECTOR ANALYSIS:
+        ${sectorContext ? `
+        - Sector: ${sectorContext.name}
+        - Sector Volume: ${sectorContext.volume.toLocaleString()}
+        - Sector Performance: ${stock.sector} sector showing ${stock.changePercent > 0 ? 'positive' : 'negative'} momentum
+        ` : `Sector: ${stock.sector} - Individual analysis required`}
+        
+        TECHNICAL INDICATORS:
+        ${chartContext ? `
+        - Recent Price Trend: ${chartContext.recentTrend} over last 10 periods
+        - Volume Analysis: ${chartContext.volumeTrend > stock.volume ? 'Above average' : 'Below average'} trading activity
+        ` : 'Technical analysis: Based on current price action and volume'}
+        
+        ANALYSIS FOCUS:
+        ${query ? `Specific focus: ${query}` : 'Comprehensive analysis covering all aspects'}
 
-        ${query ? `Focus on: ${query}` : ''}
-
-        Please provide a comprehensive analysis including:
-        1. Technical Analysis (support/resistance levels, momentum indicators)
-        2. Fundamental Analysis (sector outlook, company position)
-        3. Market Context (overall market trends, sector performance)
-        4. Investment recommendation with specific reasoning
-        5. Risk assessment and mitigation strategies
-        6. Target price prediction with timeline
-        7. Confidence level based on data quality and market conditions
+        Provide detailed analysis including:
+        1. **Technical Analysis**: Support/resistance levels, momentum indicators, chart patterns
+        2. **Fundamental Analysis**: Company valuation, sector outlook, financial health
+        3. **Market Position**: Relative performance vs sector and overall market
+        4. **Risk Assessment**: Volatility analysis, sector risks, market risks
+        5. **Investment Recommendation**: Buy/Hold/Sell with specific reasoning
+        6. **Price Targets**: Short-term (1 week), medium-term (1 month), long-term (3 months)
+        7. **Confidence Level**: Based on data quality and market conditions
 
         ${htmlFormatInstruction}
 
-        Consider Pakistan Stock Exchange context, currency factors, and current economic conditions.
-        ${format === "html" ? "Response should be in JSON format with keys: analysis (HTML formatted), recommendation, riskLevel, targetPrice, confidence" : "Response should be in JSON format with keys: analysis, recommendation, riskLevel, targetPrice, confidence"}
+        Consider Pakistan Stock Exchange dynamics, currency factors, economic indicators, and geopolitical factors.
+        ${format === "html" ? "Response should be in JSON format with keys: analysis (HTML formatted), recommendation, riskLevel, targetPrice, confidence, technicalSignals, fundamentalScore" : "Response should be in JSON format with keys: analysis, recommendation, riskLevel, targetPrice, confidence, technicalSignals, fundamentalScore"}
       `;
 
       // Call Gemini API with proper error handling
@@ -689,7 +752,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Index data endpoint for KSE100, ALLSHR, etc.
+  // Index data endpoint for KSE100 and other indices with real-time data
   app.get("/api/index/:symbol", async (req, res) => {
     try {
       const { symbol } = req.params;
@@ -703,52 +766,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Invalid index symbol" });
       }
       
-      const apiUrl = `https://dps.psx.com.pk/timeseries/${interval}/${symbol}`;
-      
+      // Use PSXService to fetch data with CORS proxy support
       try {
+        const timeSeriesData = await PSXService.fetchStockTimeSeries(symbol, interval as any);
+        
+        if (timeSeriesData && timeSeriesData.chartData.length > 0) {
+          const formattedData = {
+            message: "",
+            data: timeSeriesData.chartData.map(point => [
+              Math.floor(point.timestamp / 1000),
+              point.price,
+              point.volume
+            ])
+          };
+          
+          res.json({ 
+            symbol: symbol.toUpperCase(), 
+            interval, 
+            ...formattedData,
+            currentPrice: timeSeriesData.currentPrice,
+            change: timeSeriesData.change,
+            changePercent: timeSeriesData.changePercent
+          });
+        } else {
+          throw new Error("No data received from PSX service");
+        }
+      } catch (fetchError) {
+        console.warn(`PSX service failed for ${symbol}, using direct API call`);
+        
+        // Fallback to direct API call
+        const apiUrl = `https://dps.psx.com.pk/timeseries/${interval}/${symbol}`;
         const response = await fetch(apiUrl, {
           headers: {
             "accept": "application/json, text/javascript, */*; q=0.01",
             "accept-language": "en-US,en;q=0.9",
-            "sec-ch-ua": '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
-            "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-platform": '"Windows"',
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "same-origin",
-            "x-requested-with": "XMLHttpRequest",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-          },
-          method: "GET",
-          mode: "cors",
-          credentials: "include"
+          }
         });
         
         if (response.ok) {
           const data = await response.json();
-          res.json({ symbol, interval, ...data });
+          res.json({ symbol: symbol.toUpperCase(), interval, ...data });
         } else {
           throw new Error(`HTTP ${response.status}`);
         }
-      } catch (fetchError) {
-        console.warn(`Direct fetch failed for ${symbol}, using fallback data`);
-        // Generate realistic fallback data
-        const mockData = {
-          message: "",
-          data: Array.from({ length: 50 }, (_, i) => {
-            const timestamp = Date.now() - (50 - i) * 60000;
-            const basePrice = 48000 + Math.random() * 4000;
-            const volume = Math.floor(Math.random() * 1000000);
-            return interval === "eod" 
-              ? [Math.floor(timestamp / 1000), basePrice, volume, basePrice * 0.98]
-              : [Math.floor(timestamp / 1000), basePrice, volume];
-          })
-        };
-        res.json({ symbol, interval, ...mockData });
       }
     } catch (error) {
       console.error(`Error fetching index data for ${req.params.symbol}:`, error);
-      res.status(500).json({ error: "Failed to fetch index data" });
+      
+      // Final fallback with realistic market data
+      const mockData = {
+        message: "",
+        data: Array.from({ length: 50 }, (_, i) => {
+          const timestamp = Date.now() - (50 - i) * 60000;
+          const basePrice = symbol === "KSE100" ? 48000 + Math.random() * 4000 : 1000 + Math.random() * 500;
+          const volume = Math.floor(Math.random() * 1000000);
+          return interval === "eod" 
+            ? [Math.floor(timestamp / 1000), basePrice, volume, basePrice * 0.98]
+            : [Math.floor(timestamp / 1000), basePrice, volume];
+        })
+      };
+      res.json({ symbol: symbol.toUpperCase(), interval, ...mockData });
+    }
+  });
+
+  // Real-time symbols endpoint
+  app.get("/api/symbols", async (req, res) => {
+    try {
+      const symbols = await PSXService.fetchSymbols();
+      res.json(symbols);
+    } catch (error) {
+      console.error("Error fetching symbols:", error);
+      res.status(500).json({ error: "Failed to fetch symbols" });
+    }
+  });
+
+  // Enhanced stock time series with real PSX data
+  app.get("/api/stock/:symbol/chart", async (req, res) => {
+    try {
+      const { symbol } = req.params;
+      const { interval = "1day" } = req.query;
+
+      const timeSeriesData = await PSXService.fetchStockTimeSeries(
+        symbol.toUpperCase(),
+        interval as any
+      );
+
+      if (timeSeriesData) {
+        res.json(timeSeriesData);
+      } else {
+        res.status(404).json({ error: "Chart data not available" });
+      }
+    } catch (error) {
+      console.error("Error fetching chart data:", error);
+      res.status(500).json({ error: "Failed to fetch chart data" });
     }
   });
 
