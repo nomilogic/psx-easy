@@ -28,6 +28,7 @@ import { useState, useEffect } from "react";
 
 import type { StockData, CompanyData } from "@shared/schema";
 import LiveStockTicker from "@/components/live-stock-ticker";
+import { useWebSocket } from "@/hooks/use-websocket";
 
 export default function StockDetail() {
   const { symbol } = useParams<{ symbol: string }>();
@@ -39,6 +40,9 @@ export default function StockDetail() {
   }>({});
   const [payoutsPage, setPayoutsPage] = useState(1);
   const [scrollY, setScrollY] = useState(0);
+
+  // Get WebSocket data
+  const { marketData: wsStocks, isConnected } = useWebSocket();
 
   // Parallax effect
   useEffect(() => {
@@ -62,19 +66,35 @@ export default function StockDetail() {
 
   const ITEMS_PER_PAGE = 10;
 
-  const { data: stock, isLoading: stockLoading } = useQuery({
-    queryKey: ["/api/stock", symbol],
+  // Fetch all stocks data
+  const { data: allStocks, isLoading: stockLoading } = useQuery({
+    queryKey: ["/api/stocks"],
+    queryFn: async () => {
+      const response = await fetch("/api/stocks");
+      if (!response.ok) {
+        throw new Error("Failed to fetch stocks");
+      }
+      return response.json();
+    },
     enabled: !!symbol,
   });
 
+  // Fetch company data
   const { data: company, isLoading: companyLoading } = useQuery({
     queryKey: ["/api/company", symbol],
+    queryFn: async () => {
+      const response = await fetch(`/api/company/${symbol}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch company data");
+      }
+      return response.json();
+    },
     enabled: !!symbol,
   });
 
-  const stockData = (stock as StockData[])?.find(
-    (s: StockData) => s.symbol === symbol?.toUpperCase(),
-  );
+  // Use WebSocket data if available, otherwise use API data
+  const stocksData = wsStocks && wsStocks.length > 0 ? wsStocks : (allStocks as StockData[]) || [];
+  const stockData = stocksData.find((s: StockData) => s.symbol === symbol?.toUpperCase());
   const companyData = company as CompanyData;
 
   // Set default active announcement tab when data loads
@@ -558,7 +578,7 @@ export default function StockDetail() {
       </div>
 
       {/* Live Stock Ticker */}
-      <LiveStockTicker stocks={wsStocks || []} />
+      <LiveStockTicker stocks={stocksData || []} />
 
       {/* Compact Tab Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
