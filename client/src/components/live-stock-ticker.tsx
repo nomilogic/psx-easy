@@ -115,9 +115,9 @@ export default function LiveStockTicker({ stocks: initialStocks }: LiveStockTick
   }, [searchTerm, pageSize]);
 
   useEffect(() => {
-    if (lastMessage) {
+    if (lastMessage && lastMessage.type === 'stock_update' && lastMessage.data) {
       try {
-        const data = JSON.parse(lastMessage);
+        const data = lastMessage.data;
         if (data.type === 'stocks' && Array.isArray(data.data)) {
           setStocks(data.data);
         }

@@ -129,7 +129,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  private async getMarketDataFromDatabase(): Promise<StockData[]> {
+  async getMarketDataFromDatabase(): Promise<StockData[]> {
     const stocks = await db
       .select()
       .from(stocksTable)

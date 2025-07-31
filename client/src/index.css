@@ -71,6 +71,16 @@
 }
 
 @layer utilities {
+  /* Ticker Animation */
+  .animate-ticker {
+    animation: ticker 60s linear infinite;
+  }
+  
+  @keyframes ticker {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+  }
+  
   .text-primary {
     color: var(--primary);
   }

@@ -45,6 +45,8 @@ import {
 import { Link } from "wouter";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { ResponsiveContainer, PieChart as RechartsPieChart, Cell, BarChart, Bar, XAxis, YAxis, LineChart as RechartsLineChart, Line, AreaChart, Area } from 'recharts';
+import HeaderTicker from "@/components/header-ticker";
+import { useWebSocket } from "@/hooks/use-websocket";
 
 interface Stock {
   symbol: string;
@@ -257,6 +259,9 @@ function AIAnalysisPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20">
+      {/* Header Ticker */}
+      <HeaderTicker stocks={liveStocks || []} />
+      
       <div className="container mx-auto px-4 py-6">
         {/* Compact Header */}
         <div className="mb-6">

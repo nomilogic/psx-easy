@@ -6,6 +6,7 @@ interface WebSocketState {
   marketData: StockData[] | null;
   marketSummary: MarketSummary | null;
   connectedClients: number;
+  lastMessage: WebSocketMessage | null;
   connect: () => void;
   disconnect: () => void;
 }
@@ -15,6 +16,7 @@ export function useWebSocket(): WebSocketState {
   const [marketData, setMarketData] = useState<StockData[] | null>(null);
   const [marketSummary, setMarketSummary] = useState<MarketSummary | null>(null);
   const [connectedClients, setConnectedClients] = useState(0);
+  const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -43,6 +45,7 @@ export function useWebSocket(): WebSocketState {
       wsRef.current.onmessage = (event) => {
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
+          setLastMessage(message);
 
           switch (message.type) {
             case 'market_update':
@@ -150,6 +153,7 @@ export function useWebSocket(): WebSocketState {
     marketData, 
     marketSummary, 
     connectedClients, 
+    lastMessage,
     connect, 
     disconnect 
   };

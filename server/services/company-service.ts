@@ -1,6 +1,7 @@
 import fetch from "node-fetch";
 import * as cheerio from "cheerio";
-import type { CompanyData } from "@shared/schema";
+import type { CompanyData, StockData } from "@shared/schema";
+import { DatabaseStorage, storage } from "server/storage";
 
 const CORS_PROXIES = [
   "https://corsproxy.io/?",
@@ -1068,10 +1069,11 @@ export class CompanyService {
       // First get all symbols from the PSX symbols endpoint
       const symbolsUrl = `${this.BASE_URL}/symbols`;
       const symbolsResponse = await this.fetchWithRetry(symbolsUrl);
-      const symbols = JSON.parse(symbolsResponse) as Array<{
-        symbol: string;
-        name: string;
-      }>;
+      // const symbols = JSON.parse(symbolsResponse) as Array<{
+      //   symbol: string;
+      //   name: string;
+      // }>;
+      const symbols: StockData[] = await storage.getMarketDataFromDatabase();
 
       console.log(`Found ${symbols.length} companies to fetch data for`);
 
@@ -1087,13 +1089,15 @@ export class CompanyService {
         try {
           const companyData = await this.fetchCompanyData(symbol);
           if (companyData) {
+            // Store company data in the database
+            await storage.setCompany(companyData);
             companies.push(companyData);
             console.log(`Successfully fetched data for ${symbol}`);
           }
 
           // Add delay to avoid overwhelming the server
           if (i < symbols.length - 1) {
-            await new Promise((resolve) => setTimeout(resolve, 2000)); // 2 second delay
+            await new Promise((resolve) => setTimeout(resolve, 100)); // 2 second delay
           }
         } catch (error) {
           console.error(`Failed to fetch data for ${symbol}:`, error);
