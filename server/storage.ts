@@ -89,6 +89,20 @@ export class DatabaseStorage implements IStorage {
     connectedClients: 0,
   };
 
+  // Helper methods for data sanitization
+  private sanitizeNumber(value: any, defaultValue: number = 0): number {
+    if (value === null || value === undefined || value === '' || value === 'NaN' || isNaN(Number(value))) {
+      return defaultValue;
+    }
+    const num = Number(value);
+    return isFinite(num) ? num : defaultValue;
+  }
+
+  private sanitizeInteger(value: any, defaultValue: number = 0): number {
+    const sanitized = this.sanitizeNumber(value, defaultValue);
+    return Math.floor(sanitized);
+  }
+
   async getMarketData(): Promise<StockData[]> {
     try {
       // First try to get from PSX service with timeout
@@ -166,21 +180,21 @@ export class DatabaseStorage implements IStorage {
       // Skip delete operation to avoid locks, use upsert instead
       console.log(`Starting to upsert ${data.length} stocks in batches of ${batchSize}`);
 
-      // Insert new data in smaller batches
+      // Insert new data in smaller batches with data validation
       const insertData: LegacyInsertStock[] = data.map((stock) => ({
-        symbol: stock.symbol,
-        name: stock.name,
-        sector: stock.sector,
-        ldcp: stock.ldcp,
-        open: stock.open,
-        high: stock.high,
-        low: stock.low,
-        current: stock.current,
-        change: stock.change,
-        changePercent: stock.changePercent,
-        volume: stock.volume,
-        isPositive: stock.isPositive,
-      }));
+        symbol: stock.symbol || '',
+        name: stock.name || '',
+        sector: stock.sector || '',
+        ldcp: this.sanitizeNumber(stock.ldcp, 0),
+        open: this.sanitizeNumber(stock.open, 0),
+        high: this.sanitizeNumber(stock.high, 0),
+        low: this.sanitizeNumber(stock.low, 0),
+        current: this.sanitizeNumber(stock.current, 0),
+        change: this.sanitizeNumber(stock.change, 0),
+        changePercent: this.sanitizeNumber(stock.changePercent, 0),
+        volume: this.sanitizeInteger(stock.volume, 0),
+        isPositive: stock.isPositive ?? false,
+      })).filter(stock => stock.symbol && stock.name); // Filter out invalid records
 
       // Process in smaller batches with shorter timeout and better error handling
       let successCount = 0;
@@ -243,24 +257,46 @@ export class DatabaseStorage implements IStorage {
     // Fallback method for failed batches - insert one by one
     for (const stock of batch) {
       try {
+        // Additional validation for individual inserts
+        const sanitizedStock = {
+          symbol: stock.symbol || '',
+          name: stock.name || '',
+          sector: stock.sector || '',
+          ldcp: this.sanitizeNumber(stock.ldcp, 0),
+          open: this.sanitizeNumber(stock.open, 0),
+          high: this.sanitizeNumber(stock.high, 0),
+          low: this.sanitizeNumber(stock.low, 0),
+          current: this.sanitizeNumber(stock.current, 0),
+          change: this.sanitizeNumber(stock.change, 0),
+          changePercent: this.sanitizeNumber(stock.changePercent, 0),
+          volume: this.sanitizeInteger(stock.volume, 0),
+          isPositive: stock.isPositive ?? false,
+        };
+
+        // Skip stocks with missing essential data
+        if (!sanitizedStock.symbol || !sanitizedStock.name) {
+          console.warn(`Skipping stock with missing essential data: ${JSON.stringify(stock)}`);
+          continue;
+        }
+
         await Promise.race([
           db
             .insert(stocksTable)
-            .values(stock)
+            .values(sanitizedStock)
             .onConflictDoUpdate({
               target: stocksTable.symbol,
               set: {
-                name: stock.name,
-                sector: stock.sector,
-                ldcp: stock.ldcp,
-                open: stock.open,
-                high: stock.high,
-                low: stock.low,
-                current: stock.current,
-                change: stock.change,
-                changePercent: stock.changePercent,
-                volume: stock.volume,
-                isPositive: stock.isPositive,
+                name: sanitizedStock.name,
+                sector: sanitizedStock.sector,
+                ldcp: sanitizedStock.ldcp,
+                open: sanitizedStock.open,
+                high: sanitizedStock.high,
+                low: sanitizedStock.low,
+                current: sanitizedStock.current,
+                change: sanitizedStock.change,
+                changePercent: sanitizedStock.changePercent,
+                volume: sanitizedStock.volume,
+                isPositive: sanitizedStock.isPositive,
                 updatedAt: new Date(),
               },
             }),
