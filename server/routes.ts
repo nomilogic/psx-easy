@@ -272,10 +272,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         stocks: stocks.length,
-        marketSummary: marketSummary ? 'exists' : 'null',
+        marketSummary: marketSummary ? "exists" : "null",
         sectors: sectors.length,
         companies: companies.length,
-        lastFetchTime: new Date().toISOString()
+        lastFetchTime: new Date().toISOString(),
       });
     } catch (error) {
       console.error("Error checking database:", error);
@@ -292,7 +292,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // First try to fetch fresh data to see what's being parsed
       const freshData = await CompanyService.fetchCompanyData(symbol);
       if (freshData) {
-        console.log(`Fresh company data structure for ${symbol}:`, JSON.stringify(freshData, null, 2));
+        console.log(
+          `Fresh company data structure for ${symbol}:`,
+          JSON.stringify(freshData, null, 2),
+        );
       }
 
       // Also get cached data from database
@@ -305,25 +308,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         freshDataKeys: freshData ? Object.keys(freshData) : [],
         cachedDataKeys: cachedData ? Object.keys(cachedData) : [],
         equityProfilePresent: {
-          fresh: !!(freshData?.equityProfile),
-          cached: !!(cachedData?.equityProfile)
+          fresh: !!freshData?.equityProfile,
+          cached: !!cachedData?.equityProfile,
         },
         equityProfileDetails: {
           fresh: freshData?.equityProfile || null,
-          cached: cachedData?.equityProfile || null
+          cached: cachedData?.equityProfile || null,
         },
         financialDataPresent: {
-          fresh: !!(freshData?.financialData),
-          cached: !!(cachedData?.financialData)
+          fresh: !!freshData?.financialData,
+          cached: !!cachedData?.financialData,
         },
         ratiosDataPresent: {
-          fresh: !!(freshData?.ratiosData),
-          cached: !!(cachedData?.ratiosData)
+          fresh: !!freshData?.ratiosData,
+          cached: !!cachedData?.ratiosData,
         },
         freeFloatPresent: {
           fresh: freshData?.freeFloat !== undefined,
-          cached: cachedData?.freeFloat !== undefined
-        }
+          cached: cachedData?.freeFloat !== undefined,
+        },
       });
     } catch (error) {
       console.error(`Error in debug endpoint for ${req.params.symbol}:`, error);
@@ -343,10 +346,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         freeFloat: freshData?.freeFloat || null,
         marketCap: freshData?.marketCap || null,
         sharesOutstanding: freshData?.sharesOutstanding || null,
-        hasEquityProfile: !!(freshData?.equityProfile && freshData.equityProfile.length > 0)
+        hasEquityProfile: !!(
+          freshData?.equityProfile && freshData.equityProfile.length > 0
+        ),
       });
     } catch (error) {
-      console.error(`Error in equity debug endpoint for ${req.params.symbol}:`, error);
+      console.error(
+        `Error in equity debug endpoint for ${req.params.symbol}:`,
+        error,
+      );
       res.status(500).json({ error: "Failed to fetch equity profile data" });
     }
   });
@@ -365,22 +373,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storage.getMarketData(),
         storage.getCompany(symbol.toUpperCase()),
         storage.getSectors(),
-        PSXService.fetchStockTimeSeries(symbol.toUpperCase(), "1day")
+        PSXService.fetchStockTimeSeries(symbol.toUpperCase(), "1day"),
       ]);
 
-      const stocksData = stocks.status === 'fulfilled' ? stocks.value : [];
-      const stock = stocksData.find(s => s.symbol === symbol.toUpperCase());
+      const stocksData = stocks.status === "fulfilled" ? stocks.value : [];
+      const stock = stocksData.find((s) => s.symbol === symbol.toUpperCase());
 
       if (!stock) {
         return res.status(404).json({ error: "Stock not found" });
       }
 
-      const companyData = company.status === 'fulfilled' ? company.value : null;
-      const sectorsData = sectors.status === 'fulfilled' ? sectors.value : [];
-      const chartData = indexData.status === 'fulfilled' ? indexData.value : null;
+      const companyData = company.status === "fulfilled" ? company.value : null;
+      const sectorsData = sectors.status === "fulfilled" ? sectors.value : [];
+      const chartData =
+        indexData.status === "fulfilled" ? indexData.value : null;
 
       // Enhanced AI prompt with comprehensive real-time data
-      const htmlFormatInstruction = format === "html" ? `
+      const htmlFormatInstruction =
+        format === "html"
+          ? `
         Format your analysis using HTML tags for better presentation:
         - Use <h3> for section headers
         - Use <p> for paragraphs
@@ -388,26 +399,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         - Use <ul> and <li> for bullet points
         - Use <span class="highlight"> for important numbers
         - Use <div class="recommendation-box"> for final recommendation
-      ` : '';
+      `
+          : "";
 
       // Build comprehensive market context
-      const marketContext = stocksData.length > 0 ? {
-        totalStocks: stocksData.length,
-        avgChange: (stocksData.reduce((sum, s) => sum + s.changePercent, 0) / stocksData.length).toFixed(2),
-        totalVolume: stocksData.reduce((sum, s) => sum + s.volume, 0),
-        gainers: stocksData.filter(s => s.changePercent > 0).length,
-        losers: stocksData.filter(s => s.changePercent < 0).length
-      } : null;
+      const marketContext =
+        stocksData.length > 0
+          ? {
+              totalStocks: stocksData.length,
+              avgChange: (
+                stocksData.reduce((sum, s) => sum + s.changePercent, 0) /
+                stocksData.length
+              ).toFixed(2),
+              totalVolume: stocksData.reduce((sum, s) => sum + s.volume, 0),
+              gainers: stocksData.filter((s) => s.changePercent > 0).length,
+              losers: stocksData.filter((s) => s.changePercent < 0).length,
+            }
+          : null;
 
-      const sectorContext = sectorsData.length > 0 ? 
-        sectorsData.find(s => stock.sector.toLowerCase().includes(s.name.toLowerCase().split(' ')[0])) : null;
+      const sectorContext =
+        sectorsData.length > 0
+          ? sectorsData.find((s) =>
+              stock.sector
+                .toLowerCase()
+                .includes(s.name.toLowerCase().split(" ")[0]),
+            )
+          : null;
 
-      const chartContext = chartData ? {
-        recentTrend: chartData.chartData.length > 10 ? 
-          (chartData.chartData[chartData.chartData.length - 1].price > chartData.chartData[chartData.chartData.length - 10].price ? 'upward' : 'downward') : 'sideways',
-        volumeTrend: chartData.chartData.length > 5 ? 
-          (chartData.chartData.slice(-5).reduce((sum, p) => sum + p.volume, 0) / 5) : stock.volume
-      } : null;
+      const chartContext = chartData
+        ? {
+            recentTrend:
+              chartData.chartData.length > 10
+                ? chartData.chartData[chartData.chartData.length - 1].price >
+                  chartData.chartData[chartData.chartData.length - 10].price
+                  ? "upward"
+                  : "downward"
+                : "sideways",
+            volumeTrend:
+              chartData.chartData.length > 5
+                ? chartData.chartData
+                    .slice(-5)
+                    .reduce((sum, p) => sum + p.volume, 0) / 5
+                : stock.volume,
+          }
+        : null;
 
       const prompt = `
         Provide a comprehensive AI-powered analysis for ${symbol} (${stock.name}) using real-time Pakistan Stock Exchange data:
@@ -422,36 +457,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         - Price Range: Rs. ${stock.low} - Rs. ${stock.high}
         
         COMPANY FUNDAMENTALS:
-        ${companyData ? `
-        - Market Cap: ${companyData.marketCap ? 'Rs. ' + companyData.marketCap.toLocaleString() : 'N/A'}
-        - P/E Ratio: ${companyData.peRatio || 'N/A'}
-        - Book Value: ${companyData.bookValue ? 'Rs. ' + companyData.bookValue : 'N/A'}
-        - Dividend Yield: ${companyData.dividendYield ? companyData.dividendYield + '%' : 'N/A'}
-        - Business: ${companyData.description?.substring(0, 200) || 'Business profile available'}
-        ` : 'Company fundamentals: Limited data available'}
+        ${
+          companyData
+            ? `
+        - Market Cap: ${companyData.marketCap ? "Rs. " + companyData.marketCap.toLocaleString() : "N/A"}
+        - P/E Ratio: ${companyData.peRatio || "N/A"}
+        - Book Value: ${companyData.bookValue ? "Rs. " + companyData.bookValue : "N/A"}
+        - Dividend Yield: ${companyData.dividendYield ? companyData.dividendYield + "%" : "N/A"}
+        - Business: ${companyData.description?.substring(0, 200) || "Business profile available"}
+        `
+            : "Company fundamentals: Limited data available"
+        }
         
         MARKET CONTEXT:
-        ${marketContext ? `
+        ${
+          marketContext
+            ? `
         - Market Status: ${marketContext.avgChange}% average change across ${marketContext.totalStocks} stocks
         - Market Sentiment: ${marketContext.gainers} gainers vs ${marketContext.losers} losers
         - Total Market Volume: ${marketContext.totalVolume.toLocaleString()} shares
-        ` : 'Market context: Analyzing individual stock performance'}
+        `
+            : "Market context: Analyzing individual stock performance"
+        }
         
         SECTOR ANALYSIS:
-        ${sectorContext ? `
+        ${
+          sectorContext
+            ? `
         - Sector: ${sectorContext.name}
         - Sector Volume: ${sectorContext.volume.toLocaleString()}
-        - Sector Performance: ${stock.sector} sector showing ${stock.changePercent > 0 ? 'positive' : 'negative'} momentum
-        ` : `Sector: ${stock.sector} - Individual analysis required`}
+        - Sector Performance: ${stock.sector} sector showing ${stock.changePercent > 0 ? "positive" : "negative"} momentum
+        `
+            : `Sector: ${stock.sector} - Individual analysis required`
+        }
         
         TECHNICAL INDICATORS:
-        ${chartContext ? `
+        ${
+          chartContext
+            ? `
         - Recent Price Trend: ${chartContext.recentTrend} over last 10 periods
-        - Volume Analysis: ${chartContext.volumeTrend > stock.volume ? 'Above average' : 'Below average'} trading activity
-        ` : 'Technical analysis: Based on current price action and volume'}
+        - Volume Analysis: ${chartContext.volumeTrend > stock.volume ? "Above average" : "Below average"} trading activity
+        `
+            : "Technical analysis: Based on current price action and volume"
+        }
         
         ANALYSIS FOCUS:
-        ${query ? `Specific focus: ${query}` : 'Comprehensive analysis covering all aspects'}
+        ${query ? `Specific focus: ${query}` : "Comprehensive analysis covering all aspects"}
 
         Provide detailed analysis including:
         1. **Technical Analysis**: Support/resistance levels, momentum indicators, chart patterns
@@ -469,33 +520,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       `;
 
       // Call Gemini API with proper error handling
-      const apiKey = process.env.GEMINI_API_KEY || 'AIzaSyDGjQJ6P3OU8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8'; // Use your actual API key
-      const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const apiKey =
+        process.env.GEMINI_API_KEY || "AIzaSyDGjQJ6P3OU8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8"; // Use your actual API key
+      const geminiResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: prompt,
+                  },
+                ],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.7,
+              topP: 0.8,
+              topK: 40,
+              maxOutputTokens: 1024,
+            },
+          }),
         },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            topP: 0.8,
-            topK: 40,
-            maxOutputTokens: 1024,
-          }
-        })
-      });
+      );
 
       let aiText = "";
       if (geminiResponse.ok) {
         const geminiData = await geminiResponse.json();
         aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
       } else {
-        console.error("Gemini API error:", geminiResponse.status, await geminiResponse.text());
+        console.error(
+          "Gemini API error:",
+          geminiResponse.status,
+          await geminiResponse.text(),
+        );
       }
 
       // Parse AI response with enhanced analysis
@@ -508,56 +571,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
             analysis = JSON.parse(jsonMatch[0]);
           } else {
             // Create structured analysis from text response
-            const sentiment = stock.changePercent > 2 ? "Bullish" : stock.changePercent < -2 ? "Bearish" : "Neutral";
-            const riskLevel = Math.abs(stock.changePercent) > 5 ? "High" : Math.abs(stock.changePercent) > 2 ? "Medium" : "Low";
+            const sentiment =
+              stock.changePercent > 2
+                ? "Bullish"
+                : stock.changePercent < -2
+                  ? "Bearish"
+                  : "Neutral";
+            const riskLevel =
+              Math.abs(stock.changePercent) > 5
+                ? "High"
+                : Math.abs(stock.changePercent) > 2
+                  ? "Medium"
+                  : "Low";
 
             analysis = {
-              analysis: aiText.length > 300 ? aiText.substring(0, 300) + "..." : aiText,
-              recommendation: sentiment === "Bullish" ? `Buy - ${stock.symbol} shows strong upward momentum` : 
-                           sentiment === "Bearish" ? `Sell - ${stock.symbol} facing downward pressure` : 
-                           `Hold - ${stock.symbol} in consolidation phase`,
+              analysis:
+                aiText.length > 300 ? aiText.substring(0, 300) + "..." : aiText,
+              recommendation:
+                sentiment === "Bullish"
+                  ? `Buy - ${stock.symbol} shows strong upward momentum`
+                  : sentiment === "Bearish"
+                    ? `Sell - ${stock.symbol} facing downward pressure`
+                    : `Hold - ${stock.symbol} in consolidation phase`,
               riskLevel: riskLevel,
-              targetPrice: stock.current * (1 + (stock.changePercent / 100) * 1.5),
-              confidence: Math.min(95, Math.max(60, 85 - Math.abs(stock.changePercent) * 2))
+              targetPrice:
+                stock.current * (1 + (stock.changePercent / 100) * 1.5),
+              confidence: Math.min(
+                95,
+                Math.max(60, 85 - Math.abs(stock.changePercent) * 2),
+              ),
             };
           }
         } else {
           // Enhanced fallback analysis based on real stock data
-          const volumeAnalysis = stock.volume > 1000000 ? "high volume indicates strong interest" : "moderate volume suggests steady trading";
-          const priceAnalysis = stock.changePercent > 0 ? "positive momentum" : "corrective pressure";
-          const sectorContext = stock.sector.includes("BANK") ? "banking sector fundamentals remain strong" : 
-                               stock.sector.includes("TECH") ? "technology sector showing innovation potential" : 
-                               "sector showing mixed signals";
+          const volumeAnalysis =
+            stock.volume > 1000000
+              ? "high volume indicates strong interest"
+              : "moderate volume suggests steady trading";
+          const priceAnalysis =
+            stock.changePercent > 0
+              ? "positive momentum"
+              : "corrective pressure";
+          const sectorContext = stock.sector.includes("BANK")
+            ? "banking sector fundamentals remain strong"
+            : stock.sector.includes("TECH")
+              ? "technology sector showing innovation potential"
+              : "sector showing mixed signals";
 
           analysis = {
-            analysis: `${stock.symbol} demonstrates ${priceAnalysis} with ${volumeAnalysis}. The ${sectorContext}. Current price of Rs. ${stock.current} reflects market sentiment and trading activity. Technical indicators suggest ${stock.changePercent > 1 ? 'bullish' : stock.changePercent < -1 ? 'bearish' : 'neutral'} outlook in the near term.`,
-            recommendation: stock.changePercent > 2 ? "Buy - Strong upward momentum detected" : 
-                           stock.changePercent < -2 ? "Sell - Downward pressure observed" : 
-                           "Hold - Consolidation phase, monitor closely",
-            riskLevel: Math.abs(stock.changePercent) > 5 ? "High" : Math.abs(stock.changePercent) > 2 ? "Medium" : "Low",
-            targetPrice: Number((stock.current * (1 + Math.max(0.02, Math.min(0.15, Math.abs(stock.changePercent) / 100)))).toFixed(2)),
-            confidence: Math.min(95, Math.max(75, 90 - Math.abs(stock.changePercent) * 1.5))
+            analysis: `${stock.symbol} demonstrates ${priceAnalysis} with ${volumeAnalysis}. The ${sectorContext}. Current price of Rs. ${stock.current} reflects market sentiment and trading activity. Technical indicators suggest ${stock.changePercent > 1 ? "bullish" : stock.changePercent < -1 ? "bearish" : "neutral"} outlook in the near term.`,
+            recommendation:
+              stock.changePercent > 2
+                ? "Buy - Strong upward momentum detected"
+                : stock.changePercent < -2
+                  ? "Sell - Downward pressure observed"
+                  : "Hold - Consolidation phase, monitor closely",
+            riskLevel:
+              Math.abs(stock.changePercent) > 5
+                ? "High"
+                : Math.abs(stock.changePercent) > 2
+                  ? "Medium"
+                  : "Low",
+            targetPrice: Number(
+              (
+                stock.current *
+                (1 +
+                  Math.max(
+                    0.02,
+                    Math.min(0.15, Math.abs(stock.changePercent) / 100),
+                  ))
+              ).toFixed(2),
+            ),
+            confidence: Math.min(
+              95,
+              Math.max(75, 90 - Math.abs(stock.changePercent) * 1.5),
+            ),
           };
         }
       } catch (parseError) {
         console.error("Analysis parsing error:", parseError);
         // Robust fallback with real-time data integration
         analysis = {
-          analysis: `Advanced technical analysis for ${stock.name} (${stock.symbol}) indicates current price momentum of ${stock.changePercent.toFixed(2)}% with trading volume of ${stock.volume.toLocaleString()} shares. Market capitalization and sector dynamics suggest ${stock.changePercent > 0 ? 'positive' : 'negative'} sentiment among institutional investors.`,
-          recommendation: stock.changePercent > 1 ? "Buy - Technical indicators favor upward movement" : 
-                         stock.changePercent < -1 ? "Sell - Technical weakness suggests caution" : 
-                         "Hold - Wait for clearer directional signals",
+          analysis: `Advanced technical analysis for ${stock.name} (${stock.symbol}) indicates current price momentum of ${stock.changePercent.toFixed(2)}% with trading volume of ${stock.volume.toLocaleString()} shares. Market capitalization and sector dynamics suggest ${stock.changePercent > 0 ? "positive" : "negative"} sentiment among institutional investors.`,
+          recommendation:
+            stock.changePercent > 1
+              ? "Buy - Technical indicators favor upward movement"
+              : stock.changePercent < -1
+                ? "Sell - Technical weakness suggests caution"
+                : "Hold - Wait for clearer directional signals",
           riskLevel: "Medium",
           targetPrice: Number((stock.current * 1.05).toFixed(2)),
-          confidence: 80
+          confidence: 80,
         };
       }
 
       res.json({
         symbol,
-        ...analysis
+        ...analysis,
       });
-
     } catch (error) {
       console.error("AI analysis error:", error);
       res.status(500).json({ error: "Failed to generate AI analysis" });
@@ -567,12 +678,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Portfolio Recommendations endpoint
   app.post("/api/ai-portfolio", async (req, res) => {
     try {
-      const { riskLevel = "medium", investmentAmount = 100000, timeHorizon = "1 year" } = req.body;
+      const {
+        riskLevel = "medium",
+        investmentAmount = 100000,
+        timeHorizon = "1 year",
+      } = req.body;
 
       // Get current market data
       const stocks = await storage.getMarketData();
       const topPerformers = stocks
-        .filter(s => s.changePercent > 0)
+        .filter((s) => s.changePercent > 0)
         .sort((a, b) => b.changePercent - a.changePercent)
         .slice(0, 10);
 
@@ -583,7 +698,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         - Time Horizon: ${timeHorizon}
         
         Top performing stocks today:
-        ${topPerformers.map(s => `- ${s.symbol}: ${s.name} (+${s.changePercent.toFixed(2)}%)`).join('\n')}
+        ${topPerformers.map((s) => `- ${s.symbol}: ${s.name} (+${s.changePercent.toFixed(2)}%)`).join("\n")}
         
         Provide:
         1. Portfolio allocation across sectors (Banking, Technology, Textiles, Oil & Gas, etc.)
@@ -598,21 +713,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const apiKey = process.env.GEMINI_API_KEY;
       let portfolioAnalysis;
 
-      if (apiKey && apiKey !== 'AIzaSyDGjQJ6P3OU8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8') {
+      if (apiKey && apiKey !== "AIzaSyDGjQJ6P3OU8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8") {
         try {
-          const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
-            })
-          });
+          const geminiResponse = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
+              }),
+            },
+          );
 
           if (geminiResponse.ok) {
             const geminiData = await geminiResponse.json();
-            const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-            
+            const aiText =
+              geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
             // Try to parse JSON response
             const jsonMatch = aiText.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
@@ -626,29 +745,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Fallback analysis if AI fails
       if (!portfolioAnalysis) {
-        const sectorAllocation = riskLevel === "high" 
-          ? { "Technology": 30, "Banking": 25, "Oil & Gas": 20, "Textiles": 15, "Others": 10 }
-          : riskLevel === "low"
-          ? { "Banking": 40, "Utilities": 25, "Consumer Goods": 20, "Government Bonds": 15 }
-          : { "Banking": 30, "Technology": 20, "Oil & Gas": 20, "Textiles": 15, "Cement": 15 };
+        const sectorAllocation =
+          riskLevel === "high"
+            ? {
+                Technology: 30,
+                Banking: 25,
+                "Oil & Gas": 20,
+                Textiles: 15,
+                Others: 10,
+              }
+            : riskLevel === "low"
+              ? {
+                  Banking: 40,
+                  Utilities: 25,
+                  "Consumer Goods": 20,
+                  "Government Bonds": 15,
+                }
+              : {
+                  Banking: 30,
+                  Technology: 20,
+                  "Oil & Gas": 20,
+                  Textiles: 15,
+                  Cement: 15,
+                };
 
         portfolioAnalysis = {
           allocation: sectorAllocation,
-          recommendations: topPerformers.slice(0, 5).map(stock => ({
+          recommendations: topPerformers.slice(0, 5).map((stock) => ({
             symbol: stock.symbol,
             name: stock.name,
             allocation: Math.round(20 + Math.random() * 10),
-            rationale: `Strong performer with ${stock.changePercent.toFixed(2)}% gain today. Good ${riskLevel}-risk investment for ${timeHorizon} timeframe.`
+            rationale: `Strong performer with ${stock.changePercent.toFixed(2)}% gain today. Good ${riskLevel}-risk investment for ${timeHorizon} timeframe.`,
           })),
           riskAssessment: `${riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1)} risk portfolio with diversification across ${Object.keys(sectorAllocation).length} sectors. Expected volatility appropriate for ${timeHorizon} investment horizon.`,
-          expectedReturn: riskLevel === "high" ? "15-25%" : riskLevel === "low" ? "8-12%" : "10-18%"
+          expectedReturn:
+            riskLevel === "high"
+              ? "15-25%"
+              : riskLevel === "low"
+                ? "8-12%"
+                : "10-18%",
         };
       }
 
       res.json(portfolioAnalysis);
     } catch (error) {
       console.error("Portfolio analysis error:", error);
-      res.status(500).json({ error: "Failed to generate portfolio recommendations" });
+      res
+        .status(500)
+        .json({ error: "Failed to generate portfolio recommendations" });
     }
   });
 
@@ -656,46 +800,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/news", async (req, res) => {
     try {
       const { category = "business", country = "pk" } = req.query;
-      
+
       // Try multiple news sources for comprehensive coverage
       const newsPromises = [
         // NewsAPI for international business news
-        fetch(`https://newsapi.org/v2/top-headlines?country=${country}&category=${category}&pageSize=10&apiKey=${process.env.NEWS_API_KEY || 'demo'}`),
+        fetch(
+          `https://newsapi.org/v2/top-headlines?country=${country}&category=${category}&pageSize=10&apiKey=${process.env.NEWS_API_KEY || "demo"}`,
+        ),
         // Alpha Vantage news for financial markets
-        fetch(`https://www.alphavantage.co/query?function=NEWS_SENTIMENT&topics=financial_markets,economy&apikey=${process.env.ALPHA_VANTAGE_KEY || 'demo'}`),
+        fetch(
+          `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&topics=financial_markets,economy&apikey=${process.env.ALPHA_VANTAGE_KEY || "demo"}`,
+        ),
         // Financial news from RSS feeds
-        fetch('https://feeds.feedburner.com/ndtvprofit-latest')
+        fetch("https://feeds.feedburner.com/ndtvprofit-latest"),
       ];
 
       const results = await Promise.allSettled(newsPromises);
       const news = [];
 
       // Process NewsAPI results
-      if (results[0].status === 'fulfilled') {
+      if (results[0].status === "fulfilled") {
         try {
           const newsData = await results[0].value.json();
           if (newsData.articles) {
-            news.push(...newsData.articles.slice(0, 5).map((article: any) => ({
-              title: article.title,
-              description: article.description,
-              url: article.url,
-              source: article.source.name,
-              publishedAt: article.publishedAt,
-              category: 'market',
-              impact: 'medium'
-            })));
+            news.push(
+              ...newsData.articles.slice(0, 5).map((article: any) => ({
+                title: article.title,
+                description: article.description,
+                url: article.url,
+                source: article.source.name,
+                publishedAt: article.publishedAt,
+                category: "market",
+                impact: "medium",
+              })),
+            );
           }
         } catch (error) {
-          console.warn('NewsAPI parsing failed:', error);
+          console.warn("NewsAPI parsing failed:", error);
         }
       }
 
       // Add market-specific news if no real news available
       if (news.length === 0) {
         const stocks = await storage.getMarketData();
-        const topGainer = stocks.reduce((max, stock) => stock.changePercent > max.changePercent ? stock : max, stocks[0]);
-        const topLoser = stocks.reduce((min, stock) => stock.changePercent < min.changePercent ? stock : min, stocks[0]);
-        
+        const topGainer = stocks.reduce(
+          (max, stock) =>
+            stock.changePercent > max.changePercent ? stock : max,
+          stocks[0],
+        );
+        const topLoser = stocks.reduce(
+          (min, stock) =>
+            stock.changePercent < min.changePercent ? stock : min,
+          stocks[0],
+        );
+
         news.push(
           {
             title: `${topGainer.symbol} Surges ${topGainer.changePercent.toFixed(2)}% in Today's Trading`,
@@ -704,7 +862,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             source: "PSX Live",
             publishedAt: new Date().toISOString(),
             category: "market",
-            impact: "high"
+            impact: "high",
           },
           {
             title: `Banking Sector Shows Mixed Performance Amid Policy Changes`,
@@ -713,7 +871,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             source: "Market Analysis",
             publishedAt: new Date().toISOString(),
             category: "economy",
-            impact: "medium"
+            impact: "medium",
           },
           {
             title: `${topLoser.symbol} Under Pressure, Down ${Math.abs(topLoser.changePercent).toFixed(2)}%`,
@@ -722,26 +880,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
             source: "PSX Live",
             publishedAt: new Date().toISOString(),
             category: "market",
-            impact: "medium"
+            impact: "medium",
           },
           {
             title: "Global Commodity Prices Impact Pakistani Export Sectors",
-            description: "International cotton and oil prices affecting textile and energy sector performance in today's session.",
+            description:
+              "International cotton and oil prices affecting textile and energy sector performance in today's session.",
             url: "/analysis/commodities",
             source: "Economic Times",
             publishedAt: new Date().toISOString(),
             category: "economy",
-            impact: "high"
+            impact: "high",
           },
           {
-            title: "Technology Sector Gains Momentum with Digital Transformation",
-            description: "IT and telecommunications companies showing strong fundamentals as digital adoption accelerates across Pakistan.",
+            title:
+              "Technology Sector Gains Momentum with Digital Transformation",
+            description:
+              "IT and telecommunications companies showing strong fundamentals as digital adoption accelerates across Pakistan.",
             url: "/sectors/technology",
             source: "Tech News",
             publishedAt: new Date().toISOString(),
             category: "technology",
-            impact: "medium"
-          }
+            impact: "medium",
+          },
         );
       }
 
@@ -757,53 +918,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { symbol } = req.params;
       const { interval = "int" } = req.query; // int for intraday, eod for end of day
-      
-      const VALID_INDICES = ["KSE100", "ALLSHR", "KSE30", "KMI30", "BKTI", "OGTI", 
-                            "KMIALLSHR", "PSXDIV20", "UPP9", "NITPGI", "NBPPGI", 
-                            "MZNPI", "JSMFI", "ACI", "JSGBKTI", "MII30", "HBLTT"];
-      
+
+      const VALID_INDICES = [
+        "KSE100",
+        "ALLSHR",
+        "KSE30",
+        "KMI30",
+        "BKTI",
+        "OGTI",
+        "KMIALLSHR",
+        "PSXDIV20",
+        "UPP9",
+        "NITPGI",
+        "NBPPGI",
+        "MZNPI",
+        "JSMFI",
+        "ACI",
+        "JSGBKTI",
+        "MII30",
+        "HBLTT",
+      ];
+
       if (!VALID_INDICES.includes(symbol.toUpperCase())) {
         return res.status(404).json({ error: "Invalid index symbol" });
       }
-      
+
       // Use PSXService to fetch data with CORS proxy support
       try {
-        const timeSeriesData = await PSXService.fetchStockTimeSeries(symbol, interval as any);
-        
+        const timeSeriesData = await PSXService.fetchStockTimeSeries(
+          symbol,
+          interval as any,
+        );
+
         if (timeSeriesData && timeSeriesData.chartData.length > 0) {
           const formattedData = {
             message: "",
-            data: timeSeriesData.chartData.map(point => [
+            data: timeSeriesData.chartData.map((point) => [
               Math.floor(point.timestamp / 1000),
               point.price,
-              point.volume
-            ])
+              point.volume,
+            ]),
           };
-          
-          res.json({ 
-            symbol: symbol.toUpperCase(), 
-            interval, 
+
+          res.json({
+            symbol: symbol.toUpperCase(),
+            interval,
             ...formattedData,
             currentPrice: timeSeriesData.currentPrice,
             change: timeSeriesData.change,
-            changePercent: timeSeriesData.changePercent
+            changePercent: timeSeriesData.changePercent,
           });
         } else {
           throw new Error("No data received from PSX service");
         }
       } catch (fetchError) {
         console.warn(`PSX service failed for ${symbol}, using direct API call`);
-        
+
         // Fallback to direct API call
         const apiUrl = `https://dps.psx.com.pk/timeseries/${interval}/${symbol}`;
         const response = await fetch(apiUrl, {
           headers: {
-            "accept": "application/json, text/javascript, */*; q=0.01",
+            accept: "application/json, text/javascript, */*; q=0.01",
             "accept-language": "en-US,en;q=0.9",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-          }
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          },
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           res.json({ symbol: symbol.toUpperCase(), interval, ...data });
@@ -812,19 +993,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
     } catch (error) {
-      console.error(`Error fetching index data for ${req.params.symbol}:`, error);
-      
+      console.error(
+        `Error fetching index data for ${req.params.symbol}:`,
+        error,
+      );
+
       // Final fallback with realistic market data
       const mockData = {
         message: "",
         data: Array.from({ length: 50 }, (_, i) => {
           const timestamp = Date.now() - (50 - i) * 60000;
-          const basePrice = symbol === "KSE100" ? 48000 + Math.random() * 4000 : 1000 + Math.random() * 500;
+          const basePrice =
+            symbol === "KSE100"
+              ? 48000 + Math.random() * 4000
+              : 1000 + Math.random() * 500;
           const volume = Math.floor(Math.random() * 1000000);
-          return interval === "eod" 
-            ? [Math.floor(timestamp / 1000), basePrice, volume, basePrice * 0.98]
+          return interval === "eod"
+            ? [
+                Math.floor(timestamp / 1000),
+                basePrice,
+                volume,
+                basePrice * 0.98,
+              ]
             : [Math.floor(timestamp / 1000), basePrice, volume];
-        })
+        }),
       };
       res.json({ symbol: symbol.toUpperCase(), interval, ...mockData });
     }
@@ -849,7 +1041,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const timeSeriesData = await PSXService.fetchStockTimeSeries(
         symbol.toUpperCase(),
-        interval as any
+        interval as any,
       );
 
       if (timeSeriesData) {
@@ -873,34 +1065,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sectors = await storage.getSectors();
       const performers = await storage.getPerformers();
       const marketSummary = await storage.getMarketSummary();
-      
+
       const topGainers = stocks
-        .filter(s => s.changePercent > 0)
+        .filter((s) => s.changePercent > 0)
         .sort((a, b) => b.changePercent - a.changePercent)
         .slice(0, 10);
-      
+
       const topLosers = stocks
-        .filter(s => s.changePercent < 0)
+        .filter((s) => s.changePercent < 0)
         .sort((a, b) => a.changePercent - b.changePercent)
         .slice(0, 10);
 
       const totalVolume = stocks.reduce((sum, stock) => sum + stock.volume, 0);
-      const avgChange = stocks.reduce((sum, stock) => sum + stock.changePercent, 0) / stocks.length;
-      const totalMarketCap = stocks.reduce((sum, stock) => sum + (stock.currentPrice * stock.volume), 0);
+      const avgChange =
+        stocks.reduce((sum, stock) => sum + stock.changePercent, 0) /
+        stocks.length;
+      const totalMarketCap = stocks.reduce(
+        (sum, stock) => sum + stock.currentPrice * stock.volume,
+        0,
+      );
 
       // Sector performance analysis
-      const sectorPerformance = sectors?.map((sector: any) => {
-        const sectorStocks = stocks.filter(s => s.symbol.includes(sector.code) || s.name?.toLowerCase().includes(sector.name.toLowerCase().split(' ')[0]));
-        const avgSectorChange = sectorStocks.length > 0 ? 
-          sectorStocks.reduce((sum, s) => sum + s.changePercent, 0) / sectorStocks.length : 0;
-        return {
-          name: sector.name,
-          volume: sector.volume,
-          performance: avgSectorChange
-        };
-      }) || [];
+      const sectorPerformance =
+        sectors?.map((sector: any) => {
+          const sectorStocks = stocks.filter(
+            (s) =>
+              s.symbol.includes(sector.code) ||
+              s.name
+                ?.toLowerCase()
+                .includes(sector.name.toLowerCase().split(" ")[0]),
+          );
+          const avgSectorChange =
+            sectorStocks.length > 0
+              ? sectorStocks.reduce((sum, s) => sum + s.changePercent, 0) /
+                sectorStocks.length
+              : 0;
+          return {
+            name: sector.name,
+            volume: sector.volume,
+            performance: avgSectorChange,
+          };
+        }) || [];
 
-      const htmlFormatInstruction = format === "html" ? `
+      const htmlFormatInstruction =
+        format === "html"
+          ? `
         Format your analysis using HTML for better presentation:
         - Use <h2> for main sections
         - Use <h3> for subsections
@@ -911,7 +1120,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         - Use <span class="percentage"> for percentage changes
         - Use <div class="alert alert-info"> for important alerts
         - Use <div class="recommendation"> for specific recommendations
-      ` : '';
+      `
+          : "";
 
       const prompt = `
         Provide a comprehensive, professional market analysis for Pakistan Stock Exchange based on today's real-time trading data:
@@ -926,16 +1136,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         - Estimated market activity: Rs. ${(totalMarketCap / 1000000).toFixed(2)} million
         
         TOP PERFORMERS TODAY:
-        ${topGainers.map(s => `- ${s.symbol} (${s.name?.substring(0, 30)}): +${s.changePercent.toFixed(2)}% at Rs. ${s.currentPrice}, Volume: ${s.volume.toLocaleString()}`).join('\n')}
+        ${topGainers.map((s) => `- ${s.symbol} (${s.name?.substring(0, 30)}): +${s.changePercent.toFixed(2)}% at Rs. ${s.currentPrice}, Volume: ${s.volume.toLocaleString()}`).join("\n")}
         
         MAJOR DECLINES:
-        ${topLosers.map(s => `- ${s.symbol} (${s.name?.substring(0, 30)}): ${s.changePercent.toFixed(2)}% at Rs. ${s.currentPrice}, Volume: ${s.volume.toLocaleString()}`).join('\n')}
+        ${topLosers.map((s) => `- ${s.symbol} (${s.name?.substring(0, 30)}): ${s.changePercent.toFixed(2)}% at Rs. ${s.currentPrice}, Volume: ${s.volume.toLocaleString()}`).join("\n")}
         
         SECTOR ANALYSIS:
-        ${sectorPerformance.slice(0, 8).map(sector => `- ${sector.name}: Volume ${sector.volume.toLocaleString()} (${sector.performance > 0 ? '+' : ''}${sector.performance.toFixed(2)}%)`).join('\n')}
+        ${sectorPerformance
+          .slice(0, 8)
+          .map(
+            (sector) =>
+              `- ${sector.name}: Volume ${sector.volume.toLocaleString()} (${sector.performance > 0 ? "+" : ""}${sector.performance.toFixed(2)}%)`,
+          )
+          .join("\n")}
         
         SPECIFIC STOCK ANALYSIS - Focus on these key stocks and their next moves:
-        ${topGainers.slice(0, 5).map(s => `${s.symbol}: Current Rs. ${s.currentPrice} (+${s.changePercent.toFixed(2)}%) - Analyze momentum, support/resistance levels, and predict next 1-week movement`).join('\n')}
+        ${topGainers
+          .slice(0, 5)
+          .map(
+            (s) =>
+              `${s.symbol}: Current Rs. ${s.currentPrice} (+${s.changePercent.toFixed(2)}%) - Analyze momentum, support/resistance levels, and predict next 1-week movement`,
+          )
+          .join("\n")}
         
         INTERNATIONAL IMPACT FACTORS:
         - US Federal Reserve policy and interest rates
@@ -970,20 +1192,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const apiKey = process.env.GEMINI_API_KEY;
       let aiInsight;
 
-      if (apiKey && apiKey !== 'AIzaSyDGjQJ6P3OU8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8') {
+      if (apiKey && apiKey !== "AIzaSyDGjQJ6P3OU8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8") {
         try {
-          const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: { temperature: 0.7, maxOutputTokens: 3500 }
-            })
-          });
+          const geminiResponse = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 3500 },
+              }),
+            },
+          );
 
           if (geminiResponse.ok) {
             const geminiData = await geminiResponse.json();
-            aiInsight = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            aiInsight =
+              geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
           }
         } catch (error) {
           console.error("Gemini API error:", error);
@@ -992,30 +1218,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Enhanced fallback with real data
       if (!aiInsight) {
-        const marketSentiment = avgChange >= 0 ? 'bullish' : 'bearish';
-        const volatility = Math.abs(avgChange) > 2 ? 'high' : Math.abs(avgChange) > 1 ? 'moderate' : 'low';
-        const topSector = sectorPerformance.sort((a: any, b: any) => b.volume - a.volume)[0];
-        
+        const marketSentiment = avgChange >= 0 ? "bullish" : "bearish";
+        const volatility =
+          Math.abs(avgChange) > 2
+            ? "high"
+            : Math.abs(avgChange) > 1
+              ? "moderate"
+              : "low";
+        const topSector = sectorPerformance.sort(
+          (a: any, b: any) => b.volume - a.volume,
+        )[0];
+
         aiInsight = `
 **Pakistan Stock Exchange - Comprehensive Market Analysis**
 
 **Market Sentiment**: Currently ${marketSentiment} with ${avgChange.toFixed(2)}% average movement across ${stocks.length} actively traded stocks.
 
-**Volume Analysis**: Total trading volume of ${totalVolume.toLocaleString()} shares indicates ${totalVolume > 100000000 ? 'high' : totalVolume > 50000000 ? 'moderate' : 'low'} market participation.
+**Volume Analysis**: Total trading volume of ${totalVolume.toLocaleString()} shares indicates ${totalVolume > 100000000 ? "high" : totalVolume > 50000000 ? "moderate" : "low"} market participation.
 
-**Leading Sectors**: ${topSector?.name || 'Banking'} sector leads with ${topSector?.volume.toLocaleString() || 'significant'} volume, followed by other key sectors showing ${sectorPerformance.filter(s => s.performance > 0).length} positive and ${sectorPerformance.filter(s => s.performance < 0).length} negative performances.
+**Leading Sectors**: ${topSector?.name || "Banking"} sector leads with ${topSector?.volume.toLocaleString() || "significant"} volume, followed by other key sectors showing ${sectorPerformance.filter((s) => s.performance > 0).length} positive and ${sectorPerformance.filter((s) => s.performance < 0).length} negative performances.
 
-**Top Gainers**: Leading stocks include ${topGainers.slice(0, 3).map(s => `${s.symbol} (+${s.changePercent.toFixed(2)}%)`).join(', ')}, showing strong momentum in their respective sectors.
+**Top Gainers**: Leading stocks include ${topGainers
+          .slice(0, 3)
+          .map((s) => `${s.symbol} (+${s.changePercent.toFixed(2)}%)`)
+          .join(", ")}, showing strong momentum in their respective sectors.
 
 **Market Volatility**: ${volatility.charAt(0).toUpperCase() + volatility.slice(1)} volatility environment with sector rotation evident in today's trading patterns.
 
-**Risk Assessment**: Current market conditions suggest ${avgChange > 1 ? 'opportunistic buying for growth-oriented investors with focus on momentum stocks' : avgChange < -1 ? 'defensive positioning recommended with emphasis on value plays' : 'balanced approach with selective stock picking based on fundamentals'}.
+**Risk Assessment**: Current market conditions suggest ${avgChange > 1 ? "opportunistic buying for growth-oriented investors with focus on momentum stocks" : avgChange < -1 ? "defensive positioning recommended with emphasis on value plays" : "balanced approach with selective stock picking based on fundamentals"}.
 
-**Investment Outlook**: ${avgChange >= 0 ? 'Positive momentum provides opportunities in leading sectors, particularly in stocks showing consistent volume and price action.' : 'Market correction creates selective opportunities for long-term investors focusing on quality names at attractive valuations.'}
+**Investment Outlook**: ${avgChange >= 0 ? "Positive momentum provides opportunities in leading sectors, particularly in stocks showing consistent volume and price action." : "Market correction creates selective opportunities for long-term investors focusing on quality names at attractive valuations."}
         `;
       }
 
-      res.json({ 
+      res.json({
         insight: aiInsight,
         marketData: {
           totalStocks: stocks.length,
@@ -1024,12 +1260,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           topGainers: topGainers.slice(0, 5),
           topLosers: topLosers.slice(0, 5),
           sectorPerformance: sectorPerformance.slice(0, 10),
-          marketSummary: marketSummary
-        }
+          marketSummary: marketSummary,
+        },
       });
     } catch (error) {
       console.error("Market insights error:", error);
-      res.status(500).json({ error: "Failed to generate comprehensive market insights" });
+      res
+        .status(500)
+        .json({ error: "Failed to generate comprehensive market insights" });
     }
   });
 
@@ -1037,19 +1275,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ai-predictions", async (req, res) => {
     try {
       const { symbols = [], timeframe = "1month" } = req.body;
-      
+
       // Get comprehensive market data
       const stocks = await storage.getMarketData();
       const sectors = await storage.getSectors();
-      
+
       // Select top performing stocks for predictions if no symbols provided
-      const stocksForPrediction = symbols.length > 0 
-        ? stocks.filter(s => symbols.includes(s.symbol))
-        : stocks.sort((a, b) => b.changePercent - a.changePercent).slice(0, 15);
-      
-      const marketTrend = stocks.reduce((sum, s) => sum + s.changePercent, 0) / stocks.length;
+      const stocksForPrediction =
+        symbols.length > 0
+          ? stocks.filter((s) => symbols.includes(s.symbol))
+          : stocks
+              .sort((a, b) => b.changePercent - a.changePercent)
+              .slice(0, 15);
+
+      const marketTrend =
+        stocks.reduce((sum, s) => sum + s.changePercent, 0) / stocks.length;
       const totalVolume = stocks.reduce((sum, s) => sum + s.volume, 0);
-      
+
       const prompt = `
         Provide AI-powered price predictions for Pakistan Stock Exchange stocks based on current market data:
         
@@ -1059,12 +1301,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         - Analysis timeframe: ${timeframe}
         
         STOCKS FOR PREDICTION:
-        ${stocksForPrediction.map(s => 
-          `- ${s.symbol} (${s.name?.substring(0, 30)}): Current Rs. ${s.currentPrice}, Change: ${s.changePercent.toFixed(2)}%, Volume: ${s.volume.toLocaleString()}`
-        ).join('\n')}
+        ${stocksForPrediction
+          .map(
+            (s) =>
+              `- ${s.symbol} (${s.name?.substring(0, 30)}): Current Rs. ${s.currentPrice}, Change: ${s.changePercent.toFixed(2)}%, Volume: ${s.volume.toLocaleString()}`,
+          )
+          .join("\n")}
         
         TOP SECTOR VOLUMES:
-        ${sectors?.slice(0, 5).map((sector: any) => `- ${sector.name}: ${sector.volume.toLocaleString()}`).join('\n') || 'Sector data loading...'}
+        ${
+          sectors
+            ?.slice(0, 5)
+            .map(
+              (sector: any) =>
+                `- ${sector.name}: ${sector.volume.toLocaleString()}`,
+            )
+            .join("\n") || "Sector data loading..."
+        }
         
         For each stock, provide:
         1. Predicted price range for ${timeframe}
@@ -1075,25 +1328,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         Format as JSON array with keys: symbol, currentPrice, predictedLow, predictedHigh, confidence, factors, risk, rationale
       `;
-      
+
       const apiKey = process.env.GEMINI_API_KEY;
       let aiPredictions = [];
-      
-      if (apiKey && apiKey !== 'AIzaSyDGjQJ6P3OU8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8') {
+
+      if (apiKey && apiKey !== "AIzaSyDGjQJ6P3OU8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8") {
         try {
-          const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: { temperature: 0.6, maxOutputTokens: 3000 }
-            })
-          });
-          
+          const geminiResponse = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.6, maxOutputTokens: 3000 },
+              }),
+            },
+          );
+
           if (geminiResponse.ok) {
             const geminiData = await geminiResponse.json();
-            const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-            
+            const aiText =
+              geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
             // Try to parse JSON response
             const jsonMatch = aiText.match(/\[[\s\S]*\]/);
             if (jsonMatch) {
@@ -1104,44 +1361,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error("Gemini API error for predictions:", error);
         }
       }
-      
+
       // Enhanced fallback with real data-based predictions
       if (!aiPredictions || aiPredictions.length === 0) {
-        aiPredictions = stocksForPrediction.slice(0, 10).map(stock => {
-          const volatility = Math.abs(stock.changePercent) > 3 ? 0.15 : Math.abs(stock.changePercent) > 1 ? 0.08 : 0.05;
-          const trendMultiplier = marketTrend > 0 ? 1.05 : marketTrend < -1 ? 0.95 : 1.0;
-          
-          const predictedLow = stock.currentPrice * (1 - volatility) * trendMultiplier;
-          const predictedHigh = stock.currentPrice * (1 + volatility) * trendMultiplier;
-          
+        aiPredictions = stocksForPrediction.slice(0, 10).map((stock) => {
+          const volatility =
+            Math.abs(stock.changePercent) > 3
+              ? 0.15
+              : Math.abs(stock.changePercent) > 1
+                ? 0.08
+                : 0.05;
+          const trendMultiplier =
+            marketTrend > 0 ? 1.05 : marketTrend < -1 ? 0.95 : 1.0;
+
+          const predictedLow =
+            stock.currentPrice * (1 - volatility) * trendMultiplier;
+          const predictedHigh =
+            stock.currentPrice * (1 + volatility) * trendMultiplier;
+
           return {
             symbol: stock.symbol,
             name: stock.name?.substring(0, 30) || stock.symbol,
             currentPrice: stock.currentPrice,
             predictedLow: Math.round(predictedLow * 100) / 100,
             predictedHigh: Math.round(predictedHigh * 100) / 100,
-            confidence: stock.volume > 100000 ? 75 : stock.volume > 50000 ? 65 : 55,
+            confidence:
+              stock.volume > 100000 ? 75 : stock.volume > 50000 ? 65 : 55,
             factors: [
-              `Current momentum: ${stock.changePercent > 0 ? 'Positive' : 'Negative'} (${stock.changePercent.toFixed(2)}%)`,
-              `Volume analysis: ${stock.volume > 100000 ? 'High' : stock.volume > 50000 ? 'Moderate' : 'Low'} liquidity`,
-              `Market correlation: ${marketTrend > 0 ? 'Following positive market trend' : 'Market headwinds present'}`
+              `Current momentum: ${stock.changePercent > 0 ? "Positive" : "Negative"} (${stock.changePercent.toFixed(2)}%)`,
+              `Volume analysis: ${stock.volume > 100000 ? "High" : stock.volume > 50000 ? "Moderate" : "Low"} liquidity`,
+              `Market correlation: ${marketTrend > 0 ? "Following positive market trend" : "Market headwinds present"}`,
             ],
-            risk: Math.abs(stock.changePercent) > 3 ? "High" : Math.abs(stock.changePercent) > 1 ? "Medium" : "Low",
-            rationale: `Based on current price action (${stock.changePercent.toFixed(2)}%) and volume patterns (${stock.volume.toLocaleString()}), ${timeframe} outlook considers market volatility and sector trends.`
+            risk:
+              Math.abs(stock.changePercent) > 3
+                ? "High"
+                : Math.abs(stock.changePercent) > 1
+                  ? "Medium"
+                  : "Low",
+            rationale: `Based on current price action (${stock.changePercent.toFixed(2)}%) and volume patterns (${stock.volume.toLocaleString()}), ${timeframe} outlook considers market volatility and sector trends.`,
           };
         });
       }
-      
+
       res.json({
         predictions: aiPredictions,
         marketContext: {
           overallTrend: marketTrend.toFixed(2),
           totalVolume: totalVolume,
           timeframe: timeframe,
-          analysisDate: new Date().toISOString().split('T')[0]
-        }
+          analysisDate: new Date().toISOString().split("T")[0],
+        },
       });
-      
     } catch (error) {
       console.error("AI predictions error:", error);
       res.status(500).json({ error: "Failed to generate AI predictions" });
@@ -1190,16 +1460,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [marketData, marketSummary] = await Promise.allSettled([
         Promise.race([
           storage.getMarketData(),
-          new Promise<StockData[]>((_, reject) => 
-            setTimeout(() => reject(new Error('Market data timeout')), 25000)
-          )
+          new Promise<StockData[]>((_, reject) =>
+            setTimeout(() => reject(new Error("Market data timeout")), 25000),
+          ),
         ]),
         Promise.race([
           storage.getMarketSummary(),
-          new Promise<MarketSummary | null>((_, reject) => 
-            setTimeout(() => reject(new Error('Market summary timeout')), 15000)
-          )
-        ])
+          new Promise<MarketSummary | null>((_, reject) =>
+            setTimeout(
+              () => reject(new Error("Market summary timeout")),
+              15000,
+            ),
+          ),
+        ]),
       ]);
 
       // Send available data even if some operations failed
@@ -1208,8 +1481,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: "market_update",
           timestamp: new Date().toISOString(),
           data: {
-            stocks: marketData.status === 'fulfilled' ? marketData.value : [],
-            summary: marketSummary.status === 'fulfilled' ? marketSummary.value : null,
+            stocks: marketData.status === "fulfilled" ? marketData.value : [],
+            summary:
+              marketSummary.status === "fulfilled" ? marketSummary.value : null,
           },
         };
 
@@ -1285,7 +1559,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   fetchAndBroadcastData();
 
   // Set up periodic data fetching (every 30 seconds for live updates)
-  setInterval(fetchAndBroadcastData, 30000);
+  setInterval(fetchAndBroadcastData, 230000);
 
   // Periodic company data fetching (once per day)
   async function fetchAllCompaniesDataPeriodically() {

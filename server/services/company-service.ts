@@ -318,12 +318,8 @@ export class CompanyService {
     // Initialize company data with symbol
     const companyData: CompanyData = {
       symbol: symbol,
-      name: symbol + " Limited", // Default fallback
+      name: symbol + "", // Default fallback
       description: "",
-      financials: {
-        annual: [],
-        quarterly: [],
-      },
     };
 
     try {

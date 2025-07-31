@@ -105,7 +105,6 @@ interface Symbol {
   isDebt: boolean;
 }
 const CORS_PROXIES = [
-  "https://api.allorigins.win/get?url=",
   "https://cors-proxy.org/?",
   "https://thingproxy.freeboard.io/fetch/",
   "https://corsproxy.io/?",
@@ -211,6 +210,7 @@ export class PSXService {
       await this.fetchSymbols(); // Call fetchSymbols first to get proper names and sectors
       const html = await this.fetchWithRetry<string>(this.API_URL, false);
       const stockData = this.parseHTMLData(html);
+
       //console.log(stockData, "stockData");
 
       // Map stock data with proper names and sectors from symbols service
@@ -219,12 +219,12 @@ export class PSXService {
 
         if (symbolInfo) {
           // Use proper company name from symbols service
-          stock.name = symbolInfo.name || `${stock.symbol} Limited`;
+          stock.name = symbolInfo.name || `${stock.symbol}`;
           // Use proper sector name from symbols service
           stock.sector = symbolInfo.sectorName || stock.sector;
         } else {
           // Fallback if symbol not found in cache
-          stock.name = `${stock.symbol} Limited`;
+          stock.name = `${stock.symbol}`;
         }
       });
 

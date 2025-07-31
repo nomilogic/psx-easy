@@ -89,35 +89,21 @@ export class DatabaseStorage implements IStorage {
     connectedClients: 0,
   };
 
-  // Helper methods for data sanitization
-  private sanitizeNumber(value: any, defaultValue: number = 0): number {
-    if (value === null || value === undefined || value === '' || value === 'NaN' || isNaN(Number(value))) {
-      return defaultValue;
-    }
-    const num = Number(value);
-    return isFinite(num) ? num : defaultValue;
-  }
-
-  private sanitizeInteger(value: any, defaultValue: number = 0): number {
-    const sanitized = this.sanitizeNumber(value, defaultValue);
-    return Math.floor(sanitized);
-  }
-
   async getMarketData(): Promise<StockData[]> {
     try {
       // First try to get from PSX service with timeout
       const psxData = await Promise.race([
         PSXService.fetchMarketData(),
-        new Promise<null>((_, reject) => 
-          setTimeout(() => reject(new Error('PSX service timeout')), 30000)
-        )
+        new Promise<null>((_, reject) =>
+          setTimeout(() => reject(new Error("PSX service timeout")), 230000),
+        ),
       ]);
-      
+
       if (psxData && psxData.length > 0) {
         console.log(`Got ${psxData.length} stocks from PSX service`);
         // Store in database for caching (non-blocking)
-        this.setMarketData(psxData).catch(err => 
-          console.warn("Background database update failed:", err)
+        this.setMarketData(psxData).catch((err) =>
+          console.warn("Background database update failed:", err),
         );
         return psxData;
       }
@@ -132,9 +118,9 @@ export class DatabaseStorage implements IStorage {
     try {
       return await Promise.race([
         this.getMarketDataFromDatabase(),
-        new Promise<StockData[]>((_, reject) => 
-          setTimeout(() => reject(new Error('Database timeout')), 15000)
-        )
+        new Promise<StockData[]>((_, reject) =>
+          setTimeout(() => reject(new Error("Database timeout")), 15000),
+        ),
       ]);
     } catch (dbError) {
       console.error("Database failed, trying Supabase direct query:", dbError);
@@ -176,44 +162,52 @@ export class DatabaseStorage implements IStorage {
     try {
       // Use much smaller batches and faster operations
       const batchSize = 20; // Reduced from 50 to 20
-      
+
       // Skip delete operation to avoid locks, use upsert instead
-      console.log(`Starting to upsert ${data.length} stocks in batches of ${batchSize}`);
+      console.log(
+        `Starting to upsert ${data.length} stocks in batches of ${batchSize}`,
+      );
 
       // Insert new data in smaller batches with data validation
-      const insertData: LegacyInsertStock[] = data.map((stock) => ({
-        symbol: stock.symbol || '',
-        name: stock.name || '',
-        sector: stock.sector || '',
-        ldcp: this.sanitizeNumber(stock.ldcp, 0),
-        open: this.sanitizeNumber(stock.open, 0),
-        high: this.sanitizeNumber(stock.high, 0),
-        low: this.sanitizeNumber(stock.low, 0),
-        current: this.sanitizeNumber(stock.current, 0),
-        change: this.sanitizeNumber(stock.change, 0),
-        changePercent: this.sanitizeNumber(stock.changePercent, 0),
-        volume: this.sanitizeInteger(stock.volume, 0),
-        isPositive: stock.isPositive ?? false,
-      })).filter(stock => stock.symbol && stock.name); // Filter out invalid records
+      const insertData: LegacyInsertStock[] = data
+        .map((stock) => {
+          // console.log(stock, "stock");
+          return {
+            symbol: stock.symbol || "",
+            name: stock.name || "",
+            sector: stock.sector || "",
+            ldcp: stock.ldcp || 0,
+            open: stock.open || 0,
+            high: stock.high || 0,
+            low: stock.low || 0,
+            current: stock.current || 0,
+            change: stock.change || 0,
+            changePercent: stock.changePercent || 0,
+            volume: stock.volume || 0,
+            isPositive: stock.isPositive ?? false,
+          };
+        })
+        .filter((stock) => stock.symbol && stock.name); // Filter out invalid records
 
       // Process in smaller batches with shorter timeout and better error handling
       let successCount = 0;
       for (let i = 0; i < insertData.length; i += batchSize) {
         const batch = insertData.slice(i, i + batchSize);
-        
+
         try {
           await Promise.race([
             this.insertBatchOptimized(batch),
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Batch timeout')), 10000) // Increased timeout
-            )
+            new Promise(
+              (_, reject) =>
+                setTimeout(() => reject(new Error("Batch timeout")), 10000), // Increased timeout
+            ),
           ]);
-          
+
           successCount += batch.length;
-          
+
           // Smaller delay between batches
           if (i + batchSize < insertData.length) {
-            await new Promise(resolve => setTimeout(resolve, 50));
+            await new Promise((resolve) => setTimeout(resolve, 50));
           }
         } catch (batchError) {
           console.warn(`Batch ${i}-${i + batchSize} failed:`, batchError);
@@ -221,15 +215,19 @@ export class DatabaseStorage implements IStorage {
           await this.insertIndividually(batch);
         }
       }
-      
-      console.log(`Successfully processed ${successCount}/${data.length} stocks`);
+
+      console.log(
+        `Successfully processed ${successCount}/${data.length} stocks`,
+      );
     } catch (error) {
       console.error("Error updating market data:", error);
       // Don't throw error to prevent cascading failures
     }
   }
 
-  private async insertBatchOptimized(batch: LegacyInsertStock[]): Promise<void> {
+  private async insertBatchOptimized(
+    batch: LegacyInsertStock[],
+  ): Promise<void> {
     // Use single bulk insert with conflict resolution
     await db
       .insert(stocksTable)
@@ -237,17 +235,17 @@ export class DatabaseStorage implements IStorage {
       .onConflictDoUpdate({
         target: stocksTable.symbol,
         set: {
-          name: sql.raw('EXCLUDED.name'),
-          sector: sql.raw('EXCLUDED.sector'),
-          ldcp: sql.raw('EXCLUDED.ldcp'),
-          open: sql.raw('EXCLUDED.open'),
-          high: sql.raw('EXCLUDED.high'),
-          low: sql.raw('EXCLUDED.low'),
-          current: sql.raw('EXCLUDED.current'),
-          change: sql.raw('EXCLUDED.change'),
-          changePercent: sql.raw('EXCLUDED.change_percent'),
-          volume: sql.raw('EXCLUDED.volume'),
-          isPositive: sql.raw('EXCLUDED.is_positive'),
+          name: sql.raw("EXCLUDED.name"),
+          sector: sql.raw("EXCLUDED.sector"),
+          ldcp: sql.raw("EXCLUDED.ldcp"),
+          open: sql.raw("EXCLUDED.open"),
+          high: sql.raw("EXCLUDED.high"),
+          low: sql.raw("EXCLUDED.low"),
+          current: sql.raw("EXCLUDED.current"),
+          change: sql.raw("EXCLUDED.change"),
+          changePercent: sql.raw("EXCLUDED.change_percent"),
+          volume: sql.raw("EXCLUDED.volume"),
+          isPositive: sql.raw("EXCLUDED.is_positive"),
           updatedAt: new Date(),
         },
       });
@@ -259,23 +257,25 @@ export class DatabaseStorage implements IStorage {
       try {
         // Additional validation for individual inserts
         const sanitizedStock = {
-          symbol: stock.symbol || '',
-          name: stock.name || '',
-          sector: stock.sector || '',
-          ldcp: this.sanitizeNumber(stock.ldcp, 0),
-          open: this.sanitizeNumber(stock.open, 0),
-          high: this.sanitizeNumber(stock.high, 0),
-          low: this.sanitizeNumber(stock.low, 0),
-          current: this.sanitizeNumber(stock.current, 0),
-          change: this.sanitizeNumber(stock.change, 0),
-          changePercent: this.sanitizeNumber(stock.changePercent, 0),
-          volume: this.sanitizeInteger(stock.volume, 0),
+          symbol: stock.symbol || "",
+          name: stock.name || "",
+          sector: stock.sector || "",
+          ldcp: stock.ldcp || 0,
+          open: stock.open || 0,
+          high: stock.high || 0,
+          low: stock.low || 0,
+          current: stock.current || 0,
+          change: stock.change || 0,
+          changePercent: stock.changePercent || 0,
+          volume: stock.volume || 0,
           isPositive: stock.isPositive ?? false,
         };
 
         // Skip stocks with missing essential data
         if (!sanitizedStock.symbol || !sanitizedStock.name) {
-          console.warn(`Skipping stock with missing essential data: ${JSON.stringify(stock)}`);
+          console.warn(
+            `Skipping stock with missing essential data: ${JSON.stringify(stock)}`,
+          );
           continue;
         }
 
@@ -300,12 +300,18 @@ export class DatabaseStorage implements IStorage {
                 updatedAt: new Date(),
               },
             }),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Individual insert timeout')), 5000)
-          )
+          new Promise((_, reject) =>
+            setTimeout(
+              () => reject(new Error("Individual insert timeout")),
+              5000,
+            ),
+          ),
         ]);
       } catch (error) {
-        console.warn(`Failed to insert individual stock ${stock.symbol}:`, error);
+        console.warn(
+          `Failed to insert individual stock ${stock.symbol}:`,
+          error,
+        );
       }
     }
   }
@@ -505,10 +511,10 @@ export class DatabaseStorage implements IStorage {
       freeFloat: company.freeFloat || undefined,
       payoutRatio: company.payoutRatio || undefined,
       retentionRatio: company.retentionRatio || undefined,
-      financialData: company.financialData as any || undefined,
-      ratiosData: company.ratiosData as any || undefined,
-      equityProfile: company.equityProfile as any || undefined,
-      payoutsData: company.payoutsData as any || undefined,
+      financialData: (company.financialData as any) || undefined,
+      ratiosData: (company.ratiosData as any) || undefined,
+      equityProfile: (company.equityProfile as any) || undefined,
+      payoutsData: (company.payoutsData as any) || undefined,
       // Include announcements data
       announcements:
         (company.announcements as {
