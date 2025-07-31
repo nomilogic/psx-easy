@@ -1,0 +1,101 @@
+Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+live-stock-ticker.tsx:75 Uncaught TypeError: Cannot read properties of undefined (reading 'sort')
+    at live-stock-ticker.tsx:75:21
+    at mountMemo (chunk-WERSD76P.js?v=fd969098:12194:27)
+    at Object.useMemo (chunk-WERSD76P.js?v=fd969098:12518:24)
+    at useMemo (chunk-3TFVT2CW.js?v=fd969098:1094:29)
+    at LiveStockTicker (live-stock-ticker.tsx:63:35)
+    at renderWithHooks (chunk-WERSD76P.js?v=fd969098:11548:26)
+    at mountIndeterminateComponent (chunk-WERSD76P.js?v=fd969098:14926:21)
+    at beginWork (chunk-WERSD76P.js?v=fd969098:15914:22)
+    at HTMLUnknownElement.callCallback2 (chunk-WERSD76P.js?v=fd969098:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-WERSD76P.js?v=fd969098:3699:24)
+(anonymous) @ live-stock-ticker.tsx:75
+mountMemo @ chunk-WERSD76P.js?v=fd969098:12194
+useMemo @ chunk-WERSD76P.js?v=fd969098:12518
+useMemo @ chunk-3TFVT2CW.js?v=fd969098:1094
+LiveStockTicker @ live-stock-ticker.tsx:63
+renderWithHooks @ chunk-WERSD76P.js?v=fd969098:11548
+mountIndeterminateComponent @ chunk-WERSD76P.js?v=fd969098:14926
+beginWork @ chunk-WERSD76P.js?v=fd969098:15914
+callCallback2 @ chunk-WERSD76P.js?v=fd969098:3674
+invokeGuardedCallbackDev @ chunk-WERSD76P.js?v=fd969098:3699
+invokeGuardedCallback @ chunk-WERSD76P.js?v=fd969098:3733
+beginWork$1 @ chunk-WERSD76P.js?v=fd969098:19765
+performUnitOfWork @ chunk-WERSD76P.js?v=fd969098:19198
+workLoopSync @ chunk-WERSD76P.js?v=fd969098:19137
+renderRootSync @ chunk-WERSD76P.js?v=fd969098:19116
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=fd969098:18678
+workLoop @ chunk-WERSD76P.js?v=fd969098:197
+flushWork @ chunk-WERSD76P.js?v=fd969098:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=fd969098:384Understand this error
+live-stock-ticker.tsx:75 Uncaught TypeError: Cannot read properties of undefined (reading 'sort')
+    at live-stock-ticker.tsx:75:21
+    at mountMemo (chunk-WERSD76P.js?v=fd969098:12194:27)
+    at Object.useMemo (chunk-WERSD76P.js?v=fd969098:12518:24)
+    at useMemo (chunk-3TFVT2CW.js?v=fd969098:1094:29)
+    at LiveStockTicker (live-stock-ticker.tsx:63:35)
+    at renderWithHooks (chunk-WERSD76P.js?v=fd969098:11548:26)
+    at mountIndeterminateComponent (chunk-WERSD76P.js?v=fd969098:14926:21)
+    at beginWork (chunk-WERSD76P.js?v=fd969098:15914:22)
+    at HTMLUnknownElement.callCallback2 (chunk-WERSD76P.js?v=fd969098:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-WERSD76P.js?v=fd969098:3699:24)
+(anonymous) @ live-stock-ticker.tsx:75
+mountMemo @ chunk-WERSD76P.js?v=fd969098:12194
+useMemo @ chunk-WERSD76P.js?v=fd969098:12518
+useMemo @ chunk-3TFVT2CW.js?v=fd969098:1094
+LiveStockTicker @ live-stock-ticker.tsx:63
+renderWithHooks @ chunk-WERSD76P.js?v=fd969098:11548
+mountIndeterminateComponent @ chunk-WERSD76P.js?v=fd969098:14926
+beginWork @ chunk-WERSD76P.js?v=fd969098:15914
+callCallback2 @ chunk-WERSD76P.js?v=fd969098:3674
+invokeGuardedCallbackDev @ chunk-WERSD76P.js?v=fd969098:3699
+invokeGuardedCallback @ chunk-WERSD76P.js?v=fd969098:3733
+beginWork$1 @ chunk-WERSD76P.js?v=fd969098:19765
+performUnitOfWork @ chunk-WERSD76P.js?v=fd969098:19198
+workLoopSync @ chunk-WERSD76P.js?v=fd969098:19137
+renderRootSync @ chunk-WERSD76P.js?v=fd969098:19116
+recoverFromConcurrentError @ chunk-WERSD76P.js?v=fd969098:18736
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=fd969098:18684
+workLoop @ chunk-WERSD76P.js?v=fd969098:197
+flushWork @ chunk-WERSD76P.js?v=fd969098:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=fd969098:384Understand this error
+chunk-WERSD76P.js?v=fd969098:14032 The above error occurred in the <LiveStockTicker> component:
+
+    at LiveStockTicker (https://9045925c-69ec-4d89-98ee-4855e9021983-00-2si4iz04rdm5a.pike.replit.dev:4200/src/components/live-stock-ticker.tsx:22:43)
+    at div
+    at Homepage (https://9045925c-69ec-4d89-98ee-4855e9021983-00-2si4iz04rdm5a.pike.replit.dev:4200/src/pages/homepage.tsx:60:62)
+    at Route (https://9045925c-69ec-4d89-98ee-4855e9021983-00-2si4iz04rdm5a.pike.replit.dev:4200/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=fd969098:323:16)
+    at Switch (https://9045925c-69ec-4d89-98ee-4855e9021983-00-2si4iz04rdm5a.pike.replit.dev:4200/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=fd969098:379:17)
+    at div
+    at QueryClientProvider (https://9045925c-69ec-4d89-98ee-4855e9021983-00-2si4iz04rdm5a.pike.replit.dev:4200/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=fd969098:2805:3)
+    at App (https://9045925c-69ec-4d89-98ee-4855e9021983-00-2si4iz04rdm5a.pike.replit.dev:4200/src/App.tsx?v=ANKdIMoSA4X2eAAQbEXK5:37:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-WERSD76P.js?v=fd969098:14032
+update.callback @ chunk-WERSD76P.js?v=fd969098:14052
+callCallback @ chunk-WERSD76P.js?v=fd969098:11248
+commitUpdateQueue @ chunk-WERSD76P.js?v=fd969098:11265
+commitLayoutEffectOnFiber @ chunk-WERSD76P.js?v=fd969098:17093
+commitLayoutMountEffects_complete @ chunk-WERSD76P.js?v=fd969098:17980
+commitLayoutEffects_begin @ chunk-WERSD76P.js?v=fd969098:17969
+commitLayoutEffects @ chunk-WERSD76P.js?v=fd969098:17920
+commitRootImpl @ chunk-WERSD76P.js?v=fd969098:19353
+commitRoot @ chunk-WERSD76P.js?v=fd969098:19277
+finishConcurrentRender @ chunk-WERSD76P.js?v=fd969098:18760
+performConcurrentWorkOnRoot @ chunk-WERSD76P.js?v=fd969098:18718
+workLoop @ chunk-WERSD76P.js?v=fd969098:197
+flushWork @ chunk-WERSD76P.js?v=fd969098:176
+performWorkUntilDeadline @ chunk-WERSD76P.js?v=fd969098:384Understand this error
+chunk-WERSD76P.js?v=fd969098:19413 Uncaught TypeError: Cannot read properties of undefined (reading 'sort')
+    at live-stock-ticker.tsx:75:21
+    at mountMemo (chunk-WERSD76P.js?v=fd969098:12194:27)
+    at Object.useMemo (chunk-WERSD76P.js?v=fd969098:12518:24)
+    at useMemo (chunk-3TFVT2CW.js?v=fd969098:1094:29)
+    at LiveStockTicker (live-stock-ticker.tsx:63:35)
+    at renderWithHooks (chunk-WERSD76P.js?v=fd969098:11548:26)
+    at mountIndeterminateComponent (chunk-WERSD76P.js?v=fd969098:14926:21)
+    at beginWork (chunk-WERSD76P.js?v=fd969098:15914:22)
+    at beginWork$1 (chunk-WERSD76P.js?v=fd969098:19753:22)
+    at performUnitOfWork (chunk-WERSD76P.js?v=fd969098:19198:20)
