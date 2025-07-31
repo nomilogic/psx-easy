@@ -55,11 +55,16 @@ export function useWebSocket(): WebSocketState {
               break;
             case 'stock_update':
               // Handle individual stock updates
-              console.log('Stock update:', message.data);
+              if (message.data && Array.isArray(message.data)) {
+                setMarketData(message.data);
+              }
               break;
             case 'sector_update':
-              // Handle sector updates  
-              console.log('Sector update:', message.data);
+              // Handle sector updates (just log for now)
+              // console.log('Sector update:', message.data);
+              break;
+            default:
+              // Handle unknown message types gracefully
               break;
           }
         } catch (error) {
@@ -81,6 +86,12 @@ export function useWebSocket(): WebSocketState {
       wsRef.current.onerror = (error) => {
         console.error("WebSocket error:", error);
         setIsConnected(false);
+        
+        // Don't attempt reconnection if error is due to network issues
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = null;
+        }
       };
 
     } catch (error) {

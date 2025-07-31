@@ -557,6 +557,9 @@ export default function StockDetail() {
         </div>
       </div>
 
+      {/* Live Stock Ticker */}
+      <LiveStockTicker stocks={wsStocks || []} />
+
       {/* Compact Tab Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
         {/* Company Profile Section */}

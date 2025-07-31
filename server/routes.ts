@@ -58,10 +58,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/stock/:symbol", async (req, res) => {
     try {
       const { symbol } = req.params;
+
+      if (!symbol) {
+        return res.status(400).json({ error: "Symbol parameter is required" });
+      }
+
       const stock = await storage.getStock(symbol.toUpperCase());
 
       if (!stock) {
-        return res.status(404).json({ error: "Stock not found" });
+        return res.status(404).json({ error: `Stock with symbol ${symbol} not found` });
       }
 
       res.json(stock);
@@ -132,6 +137,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/company/:symbol", async (req, res) => {
     try {
       const { symbol } = req.params;
+
+      if (!symbol) {
+        return res.status(400).json({ error: "Symbol parameter is required" });
+      }
+
       console.log(`Company endpoint called for symbol: ${symbol}`);
 
       // First, try to get cached data from database
@@ -446,7 +456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const prompt = `
         Provide a comprehensive AI-powered analysis for ${symbol} (${stock.name}) using real-time Pakistan Stock Exchange data:
-        
+
         CURRENT STOCK DATA:
         - Current Price: Rs. ${stock.current}
         - Daily Change: ${stock.change} (${stock.changePercent}%)
@@ -455,7 +465,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         - Day High: Rs. ${stock.high}
         - Day Low: Rs. ${stock.low}
         - Price Range: Rs. ${stock.low} - Rs. ${stock.high}
-        
+
         COMPANY FUNDAMENTALS:
         ${
           companyData
@@ -468,7 +478,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `
             : "Company fundamentals: Limited data available"
         }
-        
+
         MARKET CONTEXT:
         ${
           marketContext
@@ -479,7 +489,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `
             : "Market context: Analyzing individual stock performance"
         }
-        
+
         SECTOR ANALYSIS:
         ${
           sectorContext
@@ -490,7 +500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `
             : `Sector: ${stock.sector} - Individual analysis required`
         }
-        
+
         TECHNICAL INDICATORS:
         ${
           chartContext
@@ -500,7 +510,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `
             : "Technical analysis: Based on current price action and volume"
         }
-        
+
         ANALYSIS FOCUS:
         ${query ? `Specific focus: ${query}` : "Comprehensive analysis covering all aspects"}
 
@@ -696,16 +706,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         - Risk Level: ${riskLevel}
         - Investment Amount: Rs. ${investmentAmount.toLocaleString()}
         - Time Horizon: ${timeHorizon}
-        
+
         Top performing stocks today:
         ${topPerformers.map((s) => `- ${s.symbol}: ${s.name} (+${s.changePercent.toFixed(2)}%)`).join("\n")}
-        
+
         Provide:
         1. Portfolio allocation across sectors (Banking, Technology, Textiles, Oil & Gas, etc.)
         2. Specific stock recommendations with rationale
         3. Risk assessment and diversification strategy
         4. Expected returns and timeline considerations
-        
+
         Format as JSON with keys: allocation, recommendations, riskAssessment, expectedReturn
       `;
 
@@ -868,7 +878,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             title: `Banking Sector Shows Mixed Performance Amid Policy Changes`,
             description: `Commercial banks trading with varied performance as investors react to monetary policy signals and credit growth data.`,
             url: "/sectors/banking",
-            source: "Market Analysis",
+source: "Market Analysis",
             publishedAt: new Date().toISOString(),
             category: "economy",
             impact: "medium",
@@ -1126,7 +1136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const prompt = `
         Provide a comprehensive, professional market analysis for Pakistan Stock Exchange based on today's real-time trading data:
         ${htmlFormatInstruction}
-        
+
         MARKET OVERVIEW:
         - Total active stocks: ${stocks.length}
         - Market-wide average change: ${avgChange.toFixed(2)}%
@@ -1134,13 +1144,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         - Market gainers: ${marketSummary?.gainers || topGainers.length}
         - Market losers: ${marketSummary?.losers || topLosers.length}
         - Estimated market activity: Rs. ${(totalMarketCap / 1000000).toFixed(2)} million
-        
+
         TOP PERFORMERS TODAY:
         ${topGainers.map((s) => `- ${s.symbol} (${s.name?.substring(0, 30)}): +${s.changePercent.toFixed(2)}% at Rs. ${s.currentPrice}, Volume: ${s.volume.toLocaleString()}`).join("\n")}
-        
+
         MAJOR DECLINES:
         ${topLosers.map((s) => `- ${s.symbol} (${s.name?.substring(0, 30)}): ${s.changePercent.toFixed(2)}% at Rs. ${s.currentPrice}, Volume: ${s.volume.toLocaleString()}`).join("\n")}
-        
+
         SECTOR ANALYSIS:
         ${sectorPerformance
           .slice(0, 8)
@@ -1149,7 +1159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               `- ${sector.name}: Volume ${sector.volume.toLocaleString()} (${sector.performance > 0 ? "+" : ""}${sector.performance.toFixed(2)}%)`,
           )
           .join("\n")}
-        
+
         SPECIFIC STOCK ANALYSIS - Focus on these key stocks and their next moves:
         ${topGainers
           .slice(0, 5)
@@ -1158,7 +1168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               `${s.symbol}: Current Rs. ${s.currentPrice} (+${s.changePercent.toFixed(2)}%) - Analyze momentum, support/resistance levels, and predict next 1-week movement`,
           )
           .join("\n")}
-        
+
         INTERNATIONAL IMPACT FACTORS:
         - US Federal Reserve policy and interest rates
         - China-Pakistan Economic Corridor (CPEC) developments
@@ -1166,7 +1176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         - Regional geopolitical stability
         - IMF bailout program progress
         - Currency devaluation pressures
-        
+
         NATIONAL IMPACT FACTORS:
         - Government fiscal policies and budget implementation
         - Inflation rates and monetary policy by State Bank of Pakistan
@@ -1174,7 +1184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         - Energy sector reforms and IPP agreements
         - Political stability and policy continuity
         - Banking sector health and credit growth
-        
+
         Provide specific actionable insights including:
         1. Which stocks to BUY, HOLD, or SELL with specific price targets
         2. Sector rotation recommendations with timing
@@ -1184,7 +1194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         6. Specific support and resistance levels for major stocks
         7. Portfolio allocation suggestions for different risk profiles
         8. International diversification opportunities for Pakistani investors
-        
+
         Make this analysis highly specific, actionable, and focused on real trading opportunities.
       `;
 
@@ -1294,12 +1304,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const prompt = `
         Provide AI-powered price predictions for Pakistan Stock Exchange stocks based on current market data:
-        
+
         MARKET CONTEXT:
         - Overall market trend: ${marketTrend.toFixed(2)}%
         - Total market volume: ${totalVolume.toLocaleString()}
         - Analysis timeframe: ${timeframe}
-        
+
         STOCKS FOR PREDICTION:
         ${stocksForPrediction
           .map(
@@ -1307,7 +1317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               `- ${s.symbol} (${s.name?.substring(0, 30)}): Current Rs. ${s.currentPrice}, Change: ${s.changePercent.toFixed(2)}%, Volume: ${s.volume.toLocaleString()}`,
           )
           .join("\n")}
-        
+
         TOP SECTOR VOLUMES:
         ${
           sectors
@@ -1318,14 +1328,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             )
             .join("\n") || "Sector data loading..."
         }
-        
+
         For each stock, provide:
         1. Predicted price range for ${timeframe}
         2. Confidence level (1-100%)
         3. Key factors driving the prediction
         4. Risk assessment
         5. Technical and fundamental rationale
-        
+
         Format as JSON array with keys: symbol, currentPrice, predictedLow, predictedHigh, confidence, factors, risk, rationale
       `;
 
