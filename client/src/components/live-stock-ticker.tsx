@@ -15,12 +15,22 @@ type SortKey = 'symbol' | 'name' | 'current' | 'high' | 'low' | 'change' | 'volu
 type SortDirection = 'asc' | 'desc';
 
 export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>('volume');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [stocks, setStocks] = useState<StockData[]>([]);
+  const [sortBy, setSortBy] = useState<keyof StockData>('symbol');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [, setLocation] = useLocation();
+
+  const { isConnected, lastMessage } = useWebSocket();
+
+  // Initialize stocks with empty array if undefined
+  useEffect(() => {
+    if (!stocks) {
+      setStocks([]);
+    }
+  }, [stocks]);
   const formatPrice = (price: number) => {
     return `₨${price.toFixed(2)}`;
   };
@@ -98,6 +108,20 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
   useMemo(() => {
     setCurrentPage(1);
   }, [searchTerm, pageSize]);
+
+  useEffect(() => {
+    if (lastMessage) {
+      try {
+        const data = JSON.parse(lastMessage);
+        if (data.type === 'stocks' && Array.isArray(data.data)) {
+          setStocks(data.data);
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+        setStocks([]);
+      }
+    }
+  }, [lastMessage]);
 
   if (stocks.length === 0) {
     return (
