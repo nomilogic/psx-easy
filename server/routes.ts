@@ -873,7 +873,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         news.push(
           {
             title: `${topGainer.symbol} Surges ${topGainer.changePercent.toFixed(2)}% in Today's Trading`,
-            description: `${topGainer.name} reached Rs. ${topGainer.currentPrice} with significant volume of ${topGainer.volume.toLocaleString()} shares, making it today's top performer.`,
+            description: `${topGainer.name} reached Rs. ${topGainer.current} with significant volume of ${topGainer.volume.toLocaleString()} shares, making it today's top performer.`,
             url: `/stock/${topGainer.symbol}`,
             source: "PSX Live",
             publishedAt: new Date().toISOString(),
@@ -891,7 +891,7 @@ source: "Market Analysis",
           },
           {
             title: `${topLoser.symbol} Under Pressure, Down ${Math.abs(topLoser.changePercent).toFixed(2)}%`,
-            description: `${topLoser.name} faces selling pressure, trading at Rs. ${topLoser.currentPrice} with increased volume indicating investor concern.`,
+            description: `${topLoser.name} faces selling pressure, trading at Rs. ${topLoser.current} with increased volume indicating investor concern.`,
             url: `/stock/${topLoser.symbol}`,
             source: "PSX Live",
             publishedAt: new Date().toISOString(),
@@ -1020,11 +1020,11 @@ source: "Market Analysis",
         data: Array.from({ length: 50 }, (_, i) => {
           const timestamp = Date.now() - (50 - i) * 60000;
           const basePrice =
-            symbol === "KSE100"
+            req.params.symbol === "KSE100"
               ? 48000 + Math.random() * 4000
               : 1000 + Math.random() * 500;
           const volume = Math.floor(Math.random() * 1000000);
-          return interval === "eod"
+          return (req.query.interval as string) === "eod"
             ? [
                 Math.floor(timestamp / 1000),
                 basePrice,
@@ -1034,18 +1034,35 @@ source: "Market Analysis",
             : [Math.floor(timestamp / 1000), basePrice, volume];
         }),
       };
-      res.json({ symbol: symbol.toUpperCase(), interval, ...mockData });
+      res.json({ symbol: req.params.symbol.toUpperCase(), interval: req.query.interval, ...mockData });
     }
   });
 
   // Real-time symbols endpoint
   app.get("/api/symbols", async (req, res) => {
     try {
-      const symbols = await PSXService.fetchSymbols();
+      // Get symbols from storage first (most reliable)
+      const stocks = await storage.getMarketData();
+      const symbols = stocks.map(stock => ({
+        symbol: stock.symbol,
+        name: stock.name || stock.symbol,
+        sector: stock.sector || "Other"
+      }));
+      
       res.json(symbols);
     } catch (error) {
       console.error("Error fetching symbols:", error);
-      res.status(500).json({ error: "Failed to fetch symbols" });
+      
+      // Fallback symbols response
+      const fallbackSymbols = [
+        { symbol: "HBL", name: "Habib Bank Limited", sector: "COMMERCIAL BANKS" },
+        { symbol: "UBL", name: "United Bank Limited", sector: "COMMERCIAL BANKS" },
+        { symbol: "MEBL", name: "MCB Bank Limited", sector: "COMMERCIAL BANKS" },
+        { symbol: "UNITY", name: "Unity Foods Limited", sector: "FOOD & PERSONAL CARE PRODUCTS" },
+        { symbol: "PSO", name: "Pakistan State Oil Company Limited", sector: "OIL & GAS MARKETING COMPANIES" }
+      ];
+      
+      res.json(fallbackSymbols);
     }
   });
 
@@ -1152,10 +1169,10 @@ source: "Market Analysis",
         - Estimated market activity: Rs. ${(totalMarketCap / 1000000).toFixed(2)} million
 
         TOP PERFORMERS TODAY:
-        ${topGainers.map((s) => `- ${s.symbol} (${s.name?.substring(0, 30)}): +${s.changePercent.toFixed(2)}% at Rs. ${s.currentPrice}, Volume: ${s.volume.toLocaleString()}`).join("\n")}
+        ${topGainers.map((s) => `- ${s.symbol} (${s.name?.substring(0, 30)}): +${s.changePercent.toFixed(2)}% at Rs. ${s.current}, Volume: ${s.volume.toLocaleString()}`).join("\n")}
 
         MAJOR DECLINES:
-        ${topLosers.map((s) => `- ${s.symbol} (${s.name?.substring(0, 30)}): ${s.changePercent.toFixed(2)}% at Rs. ${s.currentPrice}, Volume: ${s.volume.toLocaleString()}`).join("\n")}
+        ${topLosers.map((s) => `- ${s.symbol} (${s.name?.substring(0, 30)}): ${s.changePercent.toFixed(2)}% at Rs. ${s.current}, Volume: ${s.volume.toLocaleString()}`).join("\n")}
 
         SECTOR ANALYSIS:
         ${sectorPerformance
@@ -1171,7 +1188,7 @@ source: "Market Analysis",
           .slice(0, 5)
           .map(
             (s) =>
-              `${s.symbol}: Current Rs. ${s.currentPrice} (+${s.changePercent.toFixed(2)}%) - Analyze momentum, support/resistance levels, and predict next 1-week movement`,
+              `${s.symbol}: Current Rs. ${s.current} (+${s.changePercent.toFixed(2)}%) - Analyze momentum, support/resistance levels, and predict next 1-week movement`,
           )
           .join("\n")}
 
@@ -1320,7 +1337,7 @@ source: "Market Analysis",
         ${stocksForPrediction
           .map(
             (s) =>
-              `- ${s.symbol} (${s.name?.substring(0, 30)}): Current Rs. ${s.currentPrice}, Change: ${s.changePercent.toFixed(2)}%, Volume: ${s.volume.toLocaleString()}`,
+              `- ${s.symbol} (${s.name?.substring(0, 30)}): Current Rs. ${s.current}, Change: ${s.changePercent.toFixed(2)}%, Volume: ${s.volume.toLocaleString()}`,
           )
           .join("\n")}
 
@@ -1391,14 +1408,14 @@ source: "Market Analysis",
             marketTrend > 0 ? 1.05 : marketTrend < -1 ? 0.95 : 1.0;
 
           const predictedLow =
-            stock.currentPrice * (1 - volatility) * trendMultiplier;
+            stock.current * (1 - volatility) * trendMultiplier;
           const predictedHigh =
-            stock.currentPrice * (1 + volatility) * trendMultiplier;
+            stock.current * (1 + volatility) * trendMultiplier;
 
           return {
             symbol: stock.symbol,
             name: stock.name?.substring(0, 30) || stock.symbol,
-            currentPrice: stock.currentPrice,
+            currentPrice: stock.current,
             predictedLow: Math.round(predictedLow * 100) / 100,
             predictedHigh: Math.round(predictedHigh * 100) / 100,
             confidence:
