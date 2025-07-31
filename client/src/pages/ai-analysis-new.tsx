@@ -123,7 +123,7 @@ function AIAnalysisPage() {
     if (loading) return;
     setLoading(true);
     try {
-      const symbols = selectedStock ? [selectedStock] : [];
+      const symbols = selectedStock && selectedStock !== "all" ? [selectedStock] : [];
       const response = await fetch("/api/ai-predictions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -165,7 +165,7 @@ function AIAnalysisPage() {
   };
 
   const analyzeStock = async () => {
-    if (!selectedStock || loading) return;
+    if (!selectedStock || selectedStock === "all" || loading) return;
     setLoading(true);
     try {
       const response = await fetch("/api/ai-analysis", {
@@ -423,7 +423,7 @@ function AIAnalysisPage() {
                         <SelectValue placeholder="All top performers" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Top Performers</SelectItem>
+                        <SelectItem value="all">All Top Performers</SelectItem>
                         {stocks?.slice(0, 20).map((stock) => (
                           <SelectItem key={stock.symbol} value={stock.symbol}>
                             {stock.symbol} - {stock.name?.substring(0, 30)}
@@ -679,7 +679,7 @@ function AIAnalysisPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button onClick={analyzeStock} disabled={!selectedStock || loading} className="bg-blue-600 hover:bg-blue-700">
+                  <Button onClick={analyzeStock} disabled={!selectedStock || selectedStock === "all" || loading} className="bg-blue-600 hover:bg-blue-700">
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
                     Analyze Stock
                   </Button>

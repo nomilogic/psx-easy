@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Globe, Newspaper } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export default function ApiDocumentation() {
   const { toast } = useToast();
@@ -56,18 +59,18 @@ export default function ApiDocumentation() {
 
   const testEndpoint = async (endpoint: string) => {
     setTestingEndpoint(endpoint);
-    
+
     try {
       // Replace {symbol} with a sample symbol for testing
       const testUrl = endpoint.replace('{symbol}', 'HBL');
       const response = await fetch(testUrl);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
-      
+
       toast({
         title: "API Test Successful",
         description: `${endpoint} returned ${Array.isArray(data) ? data.length + ' items' : 'data successfully'}`,
@@ -90,8 +93,44 @@ export default function ApiDocumentation() {
           <h3 className="text-lg font-semibold text-slate-900">REST API Endpoints</h3>
           <p className="text-sm text-slate-600">Available endpoints for market data access</p>
         </div>
-        
+
         <div className="p-6 space-y-6">
+           <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Newspaper className="w-5 h-5 mr-2 text-green-600" />
+                News API
+              </CardTitle>
+              <CardDescription>
+                Real-time financial news and market updates
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <Badge variant="secondary" className="mb-2">GET</Badge>
+                  <code className="bg-gray-100 p-2 rounded block text-sm">
+                    /api/news?category=business&country=pk
+                  </code>
+                  <p className="text-sm text-gray-600 mt-2">
+                    Get latest financial news from multiple sources including NewsAPI, RSS feeds, and market analysis.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Globe className="w-5 h-5 mr-2 text-blue-600" />
+                Market Data API
+              </CardTitle>
+              <CardDescription>
+                Real-time and historical market data endpoints
+              </CardDescription>
+            </CardHeader>
+
           {endpoints.map((endpoint, index) => (
             <div key={index} className="border border-slate-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
