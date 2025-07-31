@@ -320,7 +320,7 @@ export interface CompanyData {
     }>;
   };
 
-  // Announcements
+  // Company Announcements by Category
   announcements?: {
     [category: string]: Array<{
       date: string;
@@ -328,6 +328,7 @@ export interface CompanyData {
       description?: string;
       url?: string;
       isImportant?: boolean;
+      document?: string;
     }>;
   };
   
@@ -358,15 +359,6 @@ export interface CompanyData {
     details?: string;
     bookClosure?: string;
   }>;
-
-  // Company Announcements by Category
-  announcements?: {
-    [category: string]: Array<{
-      date: string;
-      title: string;
-      document: string;
-    }>;
-  };
 
   // Comprehensive Equity Profile (Multi-year data)
   equityProfile?: Array<{

@@ -18,7 +18,7 @@ import {
   type ChartTimeInterval,
   type SystemStatus,
   type PerformersData,
-  type StockTimeSeries,
+  type stockTimeSeries,
 } from "@shared/schema";
 import { PSXService } from "./services/psx-service";
 import {
