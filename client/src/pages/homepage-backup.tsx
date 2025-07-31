@@ -419,7 +419,7 @@ export default function Homepage() {
                         Market Intelligence Report
                       </h3>
                       <div className="prose prose-gray max-w-none">
-                        {aiInsights.insight.split('\n').filter((para: string) => para.trim()).map((paragraph: string, idx: number) => (
+                        {aiInsights.insight.split('\n').filter(para => para.trim()).map((paragraph, idx) => (
                           <p key={idx} className="mb-3 text-gray-700 leading-relaxed">
                             {paragraph.replace(/\*\*(.*?)\*\*/g, '$1').trim()}
                           </p>
@@ -482,18 +482,6 @@ export default function Homepage() {
           </div>
         </div>
       </section>
-
-      {/* Enhanced Market Statistics */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Live Market Performance
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Real-time market data and comprehensive analytics
-            </p>
-          </div>
 
           <div className="grid lg:grid-cols-2 gap-8 mb-12">
             {/* Live Market Chart */}

@@ -273,7 +273,7 @@ function AIAnalysisPage() {
                             <div>
                               <p className="text-sm text-blue-700 dark:text-blue-300">Avg Change</p>
                               <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                                {formatPercent(parseFloat(marketInsights.marketData.avgChange))}
+                                {formatPercent(parseFloat(marketInsights.marketData.avgChange || "0"))}
                               </p>
                             </div>
                             <TrendingUp className="w-8 h-8 text-blue-600" />
@@ -287,7 +287,7 @@ function AIAnalysisPage() {
                             <div>
                               <p className="text-sm text-purple-700 dark:text-purple-300">Total Volume</p>
                               <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
-                                {(marketInsights.marketData.totalVolume / 1000000).toFixed(1)}M
+                                {((marketInsights.marketData.totalVolume || 0) / 1000000).toFixed(1)}M
                               </p>
                             </div>
                             <BarChart3 className="w-8 h-8 text-purple-600" />
@@ -301,7 +301,7 @@ function AIAnalysisPage() {
                             <div>
                               <p className="text-sm text-orange-700 dark:text-orange-300">Top Gainers</p>
                               <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">
-                                {marketInsights.marketData.topGainers.length}
+                                {marketInsights.marketData.topGainers?.length || 0}
                               </p>
                             </div>
                             <Star className="w-8 h-8 text-orange-600" />
@@ -342,7 +342,7 @@ function AIAnalysisPage() {
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-3">
-                            {marketInsights.marketData.topGainers.slice(0, 5).map((stock, idx) => (
+                            {marketInsights.marketData.topGainers?.slice(0, 5).map((stock, idx) => (
                               <div key={stock.symbol} className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                                 <div>
                                   <p className="font-semibold text-gray-900 dark:text-white">{stock.symbol}</p>
@@ -371,7 +371,7 @@ function AIAnalysisPage() {
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-3">
-                            {marketInsights.marketData.topLosers.slice(0, 5).map((stock, idx) => (
+                            {marketInsights.marketData.topLosers?.slice(0, 5).map((stock, idx) => (
                               <div key={stock.symbol} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
                                 <div>
                                   <p className="font-semibold text-gray-900 dark:text-white">{stock.symbol}</p>
