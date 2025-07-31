@@ -19,7 +19,7 @@ export function useWebSocket(): WebSocketState {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const connect = () => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
+    if (wsRef.current?.readyState === WebSocket.OPEN || wsRef.current?.readyState === WebSocket.CONNECTING) {
       return;
     }
 
@@ -109,6 +109,18 @@ export function useWebSocket(): WebSocketState {
     // Cleanup on unmount
     return () => {
       disconnect();
+    };
+  }, []);
+
+  // Prevent multiple instances
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      disconnect();
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, []);
 

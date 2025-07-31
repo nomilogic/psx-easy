@@ -18,8 +18,6 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  useWebSocket();
-
   return (
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen bg-background">
