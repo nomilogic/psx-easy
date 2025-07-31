@@ -4,8 +4,9 @@ import { Switch, Route } from "wouter";
 import Homepage from "@/pages/homepage";
 import ApiDashboard from "@/pages/api-dashboard";
 import StockDetail from "@/pages/stock-detail";
-import AIAnalysisNew from "@/pages/ai-analysis-new";
+import AIAnalysis from "@/pages/ai-analysis";
 import NotFound from "@/pages/not-found";
+import Navigation from "@/components/navigation";
 import { useWebSocket } from "@/hooks/use-websocket";
 
 const queryClient = new QueryClient({
@@ -22,10 +23,11 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen bg-background">
+        <Navigation />
         <Switch>
           <Route path="/" component={Homepage} />
           <Route path="/api" component={ApiDashboard} />
-          <Route path="/ai-analysis" component={AIAnalysisNew} />
+          <Route path="/ai-analysis" component={AIAnalysis} />
           <Route path="/stock/:symbol" component={StockDetail} />
           <Route component={NotFound} />
         </Switch>

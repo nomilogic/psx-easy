@@ -138,7 +138,7 @@ export default function Homepage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Live Stock Ticker */}
-      <LiveStockTicker />
+      <LiveStockTicker stocks={stocks || []} />
       
       {/* Compact Hero Section */}
       <section className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 text-white py-12">
