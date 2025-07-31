@@ -487,6 +487,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI Portfolio Recommendations endpoint
+  app.post("/api/ai-portfolio", async (req, res) => {
+    try {
+      const { riskLevel = "medium", investmentAmount = 100000, timeHorizon = "1 year" } = req.body;
+
+      // Get current market data
+      const stocks = await storage.getMarketData();
+      const topPerformers = stocks
+        .filter(s => s.changePercent > 0)
+        .sort((a, b) => b.changePercent - a.changePercent)
+        .slice(0, 10);
+
+      const prompt = `
+        Create a diversified investment portfolio for Pakistan Stock Exchange based on:
+        - Risk Level: ${riskLevel}
+        - Investment Amount: Rs. ${investmentAmount.toLocaleString()}
+        - Time Horizon: ${timeHorizon}
+        
+        Top performing stocks today:
+        ${topPerformers.map(s => `- ${s.symbol}: ${s.name} (+${s.changePercent.toFixed(2)}%)`).join('\n')}
+        
+        Provide:
+        1. Portfolio allocation across sectors (Banking, Technology, Textiles, Oil & Gas, etc.)
+        2. Specific stock recommendations with rationale
+        3. Risk assessment and diversification strategy
+        4. Expected returns and timeline considerations
+        
+        Format as JSON with keys: allocation, recommendations, riskAssessment, expectedReturn
+      `;
+
+      // Call Gemini API
+      const apiKey = process.env.GEMINI_API_KEY;
+      let portfolioAnalysis;
+
+      if (apiKey && apiKey !== 'AIzaSyDGjQJ6P3OU8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8') {
+        try {
+          const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+            })
+          });
+
+          if (geminiResponse.ok) {
+            const geminiData = await geminiResponse.json();
+            const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            
+            // Try to parse JSON response
+            const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              portfolioAnalysis = JSON.parse(jsonMatch[0]);
+            }
+          }
+        } catch (error) {
+          console.error("Gemini API error for portfolio:", error);
+        }
+      }
+
+      // Fallback analysis if AI fails
+      if (!portfolioAnalysis) {
+        const sectorAllocation = riskLevel === "high" 
+          ? { "Technology": 30, "Banking": 25, "Oil & Gas": 20, "Textiles": 15, "Others": 10 }
+          : riskLevel === "low"
+          ? { "Banking": 40, "Utilities": 25, "Consumer Goods": 20, "Government Bonds": 15 }
+          : { "Banking": 30, "Technology": 20, "Oil & Gas": 20, "Textiles": 15, "Cement": 15 };
+
+        portfolioAnalysis = {
+          allocation: sectorAllocation,
+          recommendations: topPerformers.slice(0, 5).map(stock => ({
+            symbol: stock.symbol,
+            name: stock.name,
+            allocation: Math.round(20 + Math.random() * 10),
+            rationale: `Strong performer with ${stock.changePercent.toFixed(2)}% gain today. Good ${riskLevel}-risk investment for ${timeHorizon} timeframe.`
+          })),
+          riskAssessment: `${riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1)} risk portfolio with diversification across ${Object.keys(sectorAllocation).length} sectors. Expected volatility appropriate for ${timeHorizon} investment horizon.`,
+          expectedReturn: riskLevel === "high" ? "15-25%" : riskLevel === "low" ? "8-12%" : "10-18%"
+        };
+      }
+
+      res.json(portfolioAnalysis);
+    } catch (error) {
+      console.error("Portfolio analysis error:", error);
+      res.status(500).json({ error: "Failed to generate portfolio recommendations" });
+    }
+  });
+
   app.post("/api/market-insights", async (req, res) => {
     try {
       const { type } = req.body;

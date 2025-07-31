@@ -75,6 +75,9 @@ function AIAnalysisPage() {
   const [customQuery, setCustomQuery] = useState("");
   const [aiPredictions, setAiPredictions] = useState<any[]>([]);
   const [backtestResults, setBacktestResults] = useState<any>(null);
+  const [portfolioRecommendations, setPortfolioRecommendations] = useState<any>(null);
+  const [riskLevel, setRiskLevel] = useState("medium");
+  const [investmentAmount, setInvestmentAmount] = useState("100000");
 
   const { data: stocks } = useQuery<Stock[]>({
     queryKey: ["/api/stocks"],
@@ -158,6 +161,7 @@ function AIAnalysisPage() {
   };
 
   const getMarketInsights = async () => {
+    setLoading(true);
     try {
       const response = await fetch('/api/market-insights', {
         method: 'POST',
@@ -170,13 +174,47 @@ function AIAnalysisPage() {
       if (response.ok) {
         const insights = await response.json();
         setMarketInsight(insights.insight);
+      } else {
+        setMarketInsight("Market insights are temporarily unavailable. Please try again later.");
       }
     } catch (error) {
       console.error('Failed to get market insights:', error);
+      setMarketInsight("Unable to connect to AI service. Please check your connection and try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
   const formatPrice = (price: number) => `Rs. ${price.toFixed(2)}`;
+
+  // Auto-load market insights on component mount
+  useEffect(() => {
+    getMarketInsights();
+  }, []);
+
+  const getPortfolioRecommendations = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/ai-portfolio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          riskLevel,
+          investmentAmount: parseInt(investmentAmount),
+          timeHorizon: "1 year"
+        }),
+      });
+
+      if (response.ok) {
+        const portfolio = await response.json();
+        setPortfolioRecommendations(portfolio);
+      }
+    } catch (error) {
+      console.error('Failed to get portfolio recommendations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-white">
@@ -366,9 +404,19 @@ function AIAnalysisPage() {
                 <Button
                   onClick={getMarketInsights}
                   className="mb-6 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700"
+                  disabled={loading}
                 >
-                  <Lightbulb className="w-4 h-4 mr-2" />
-                  Generate Market Insights
+                  {loading ? (
+                    <>
+                      <Activity className="w-4 h-4 mr-2 animate-spin" />
+                      Generating Insights...
+                    </>
+                  ) : (
+                    <>
+                      <Lightbulb className="w-4 h-4 mr-2" />
+                      Generate Market Insights
+                    </>
+                  )}
                 </Button>
 
                 {marketInsight && (
@@ -569,20 +617,134 @@ function AIAnalysisPage() {
             </Card>
           </TabsContent>
 
-          {/* Investment Opportunities Tab */}
+          {/* Investment Opportunities Tab */}  
           <TabsContent value="opportunities" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <DollarSign className="w-5 h-5 text-green-600" />
-                  <span>AI Investment Recommendations</span>
+                  <span>AI Portfolio Builder</span>
                 </CardTitle>
                 <CardDescription>
-                  Personalized investment tips and opportunities for Pakistani and international markets
+                  Get personalized portfolio recommendations based on your risk profile and investment goals
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Risk Level</label>
+                    <Select value={riskLevel} onValueChange={setRiskLevel}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Conservative (Low Risk)</SelectItem>
+                        <SelectItem value="medium">Balanced (Medium Risk)</SelectItem>
+                        <SelectItem value="high">Aggressive (High Risk)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Investment Amount (Rs.)</label>
+                    <Input
+                      type="number"
+                      value={investmentAmount}
+                      onChange={(e) => setInvestmentAmount(e.target.value)}
+                      placeholder="100000"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button
+                      onClick={getPortfolioRecommendations}
+                      className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <>
+                          <Activity className="w-4 h-4 mr-2 animate-spin" />
+                          Building Portfolio...
+                        </>
+                      ) : (
+                        <>
+                          <Bot className="w-4 h-4 mr-2" />
+                          Get AI Portfolio
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                {portfolioRecommendations && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+                    <Card className="border-green-200">
+                      <CardHeader>
+                        <CardTitle className="text-lg">Sector Allocation</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {Object.entries(portfolioRecommendations.allocation || {}).map(([sector, percentage]) => (
+                            <div key={sector} className="flex justify-between items-center">
+                              <span className="text-sm font-medium">{sector}</span>
+                              <div className="flex items-center space-x-2">
+                                <div className="w-20 bg-gray-200 rounded-full h-2">
+                                  <div
+                                    className="bg-green-500 h-2 rounded-full"
+                                    style={{ width: `${percentage}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm text-gray-600 w-10">{percentage}%</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-blue-200">
+                      <CardHeader>
+                        <CardTitle className="text-lg">Top Recommendations</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {portfolioRecommendations.recommendations?.slice(0, 5).map((rec: any, idx: number) => (
+                            <div key={idx} className="p-3 bg-gray-50 rounded-lg">
+                              <div className="flex justify-between items-start mb-2">
+                                <h4 className="font-semibold text-sm">{rec.symbol}</h4>
+                                <Badge className="bg-blue-100 text-blue-800">{rec.allocation}%</Badge>
+                              </div>
+                              <p className="text-xs text-gray-600">{rec.rationale}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="lg:col-span-2 border-purple-200">
+                      <CardHeader>
+                        <CardTitle className="text-lg">Risk Assessment & Expected Returns</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <h4 className="font-semibold text-gray-900 mb-2">Risk Analysis</h4>
+                            <p className="text-sm text-gray-600">{portfolioRecommendations.riskAssessment}</p>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-gray-900 mb-2">Expected Annual Return</h4>
+                            <div className="flex items-center space-x-2">
+                              <TrendingUp className="w-5 h-5 text-green-600" />
+                              <span className="text-2xl font-bold text-green-600">{portfolioRecommendations.expectedReturn}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+
+                <div className="mt-8">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Static Investment Opportunities</h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <Card className="bg-green-50 border-green-200">
                     <CardHeader>
                       <CardTitle className="text-lg text-green-800">Pakistan Market Opportunities</CardTitle>
@@ -658,6 +820,7 @@ function AIAnalysisPage() {
                     </div>
                   </CardContent>
                 </Card>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
