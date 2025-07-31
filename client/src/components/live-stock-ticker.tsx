@@ -14,23 +14,23 @@ interface LiveStockTickerProps {
 type SortKey = 'symbol' | 'name' | 'current' | 'high' | 'low' | 'change' | 'volume';
 type SortDirection = 'asc' | 'desc';
 
-export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
-  const [stocks, setStocks] = useState<StockData[]>([]);
-  const [sortBy, setSortBy] = useState<keyof StockData>('symbol');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [searchTerm, setSearchTerm] = useState('');
+export default function LiveStockTicker({ stocks: initialStocks }: LiveStockTickerProps) {
+  const [stocks, setStocks] = useState<StockData[]>(initialStocks || []);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>('volume');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [pageSize, setPageSize] = useState(25);
   const [, setLocation] = useLocation();
 
   const { isConnected, lastMessage } = useWebSocket();
 
-  // Initialize stocks with empty array if undefined
+  // Initialize stocks with props data or empty array
   useEffect(() => {
-    if (!stocks) {
-      setStocks([]);
+    if (initialStocks && initialStocks.length > 0) {
+      setStocks(initialStocks);
     }
-  }, [stocks]);
+  }, [initialStocks]);
   const formatPrice = (price: number) => {
     return `₨${price.toFixed(2)}`;
   };
@@ -71,6 +71,11 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
   };
 
   const filteredAndSortedStocks = useMemo(() => {
+    // Ensure stocks is an array before processing
+    if (!Array.isArray(stocks)) {
+      return [];
+    }
+    
     let filtered = stocks;
 
     if (searchTerm.trim()) {
@@ -118,12 +123,11 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
-        setStocks([]);
       }
     }
   }, [lastMessage]);
 
-  if (stocks.length === 0) {
+  if (!Array.isArray(stocks) || stocks.length === 0) {
     return (
       <section id="stocks" className="mb-8">
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
