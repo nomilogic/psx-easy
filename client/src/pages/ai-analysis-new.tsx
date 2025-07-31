@@ -505,7 +505,7 @@ function AIAnalysisPage() {
                       <SelectContent>
                         <SelectItem value="all">All Top Performers</SelectItem>
                         {filteredStocks?.slice(0, 20).map((stock) => (
-                          stock.symbol ? (
+                          stock.symbol && stock.symbol.trim() ? (
                             <SelectItem key={stock.symbol} value={stock.symbol}>
                               {stock.symbol} - {stock.name?.substring(0, 30)}
                             </SelectItem>
@@ -844,7 +844,7 @@ function AIAnalysisPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {filteredStocks?.slice(0, 50).map((stock) => (
-                          stock.symbol ? (
+                          stock.symbol && stock.symbol.trim() ? (
                             <SelectItem key={stock.symbol} value={stock.symbol}>
                               {stock.symbol} - {stock.name?.substring(0, 40)}
                             </SelectItem>
