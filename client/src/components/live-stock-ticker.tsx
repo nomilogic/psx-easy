@@ -1,9 +1,8 @@
 import { ArrowUp, ArrowDown, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import type { StockData } from "@shared/schema";
-import { useEffect, useState } from "react";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Activity } from "lucide-react";
