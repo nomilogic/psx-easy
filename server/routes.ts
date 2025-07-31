@@ -530,8 +530,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       `;
 
       // Call Gemini API with proper error handling
-      const apiKey =
-        process.env.GEMINI_API_KEY || "AIzaSyDGjQJ6P3OU8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8"; // Use your actual API key
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ 
+          error: "Gemini API key not configured",
+          message: "Please set GEMINI_API_KEY environment variable" 
+        });
+      }
+
       const geminiResponse = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
         {
@@ -723,7 +729,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const apiKey = process.env.GEMINI_API_KEY;
       let portfolioAnalysis;
 
-      if (apiKey && apiKey !== "AIzaSyDGjQJ6P3OU8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8") {
+      if (apiKey) {
         try {
           const geminiResponse = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
@@ -1202,7 +1208,7 @@ source: "Market Analysis",
       const apiKey = process.env.GEMINI_API_KEY;
       let aiInsight;
 
-      if (apiKey && apiKey !== "AIzaSyDGjQJ6P3OU8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8") {
+      if (apiKey) {
         try {
           const geminiResponse = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
@@ -1342,7 +1348,7 @@ source: "Market Analysis",
       const apiKey = process.env.GEMINI_API_KEY;
       let aiPredictions = [];
 
-      if (apiKey && apiKey !== "AIzaSyDGjQJ6P3OU8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8Q8") {
+      if (apiKey) {
         try {
           const geminiResponse = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
