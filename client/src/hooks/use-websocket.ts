@@ -31,7 +31,6 @@ export function useWebSocket(): WebSocketState {
 
       wsRef.current.onopen = () => {
         console.log("WebSocket connected");
-        setWsConnected(true);
         setIsConnected(true);
 
         // Clear any pending reconnection attempts
@@ -70,7 +69,6 @@ export function useWebSocket(): WebSocketState {
 
       wsRef.current.onclose = () => {
         console.log("WebSocket disconnected");
-        setWsConnected(false);
         setIsConnected(false);
 
         // Attempt to reconnect after 5 seconds

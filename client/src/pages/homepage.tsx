@@ -96,7 +96,7 @@ export default function Homepage() {
 
   const sectorChartData = React.useMemo(() => {
     return (
-      sectorsData?.slice(0, 5).map((sector) => ({
+      (sectorsData as any[])?.slice(0, 5).map((sector: any) => ({
         name: sector.name.split(" ")[0],
         volume: sector.volume,
         code: sector.code,
@@ -244,20 +244,29 @@ export default function Homepage() {
               </CardHeader>
               <CardContent>
                 <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData}>
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Area
-                        type="monotone"
-                        dataKey="value"
-                        stroke="rgb(59 130 246)"
-                        fill="rgb(59 130 246 / 0.1)"
-                        strokeWidth={2}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                  <ChartContainer
+                    config={{
+                      value: {
+                        label: "Index Value",
+                        color: "hsl(221.2, 83.2%, 53.3%)",
+                      },
+                    }}
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={chartData}>
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Area
+                          type="monotone"
+                          dataKey="value"
+                          stroke="rgb(59 130 246)"
+                          fill="rgb(59 130 246 / 0.1)"
+                          strokeWidth={2}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
                 </div>
               </CardContent>
             </Card>
@@ -273,18 +282,27 @@ export default function Homepage() {
               </CardHeader>
               <CardContent>
                 <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={sectorChartData}>
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar
-                        dataKey="volume"
-                        fill="rgb(34 197 94)"
-                        radius={[4, 4, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <ChartContainer
+                    config={{
+                      volume: {
+                        label: "Trading Volume",
+                        color: "hsl(142.1, 76.2%, 36.3%)",
+                      },
+                    }}
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={sectorChartData}>
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Bar
+                          dataKey="volume"
+                          fill="rgb(34 197 94)"
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
                 </div>
               </CardContent>
             </Card>
