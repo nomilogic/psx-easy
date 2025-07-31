@@ -3,6 +3,10 @@ import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import type { StockData } from "@shared/schema";
+import { useEffect, useState } from "react";
+import { useWebSocket } from "@/hooks/use-websocket";
+import { Badge } from "@/components/ui/badge";
+import { TrendingUp, TrendingDown, Activity } from "lucide-react";
 
 interface LiveStockTickerProps {
   stocks: StockData[];
@@ -59,7 +63,7 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
 
   const filteredAndSortedStocks = useMemo(() => {
     let filtered = stocks;
-    
+
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase().trim();
       filtered = stocks.filter(stock => 
@@ -104,7 +108,7 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
             <h3 className="text-lg font-semibold text-slate-900">Live Stock Data</h3>
             <p className="text-sm text-slate-600">Real-time updates via WebSocket</p>
           </div>
-          
+
           <div className="p-8 text-center">
             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-slate-600">Loading stock data...</p>
@@ -137,7 +141,7 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
               </select>
             </div>
           </div>
-          
+
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
             <input
@@ -155,7 +159,7 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
             )}
           </div>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">
@@ -249,7 +253,7 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
             </tbody>
           </table>
         </div>
-        
+
         {/* Pagination Controls */}
         {totalPages > 1 && (
           <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
@@ -266,7 +270,7 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
                 <ChevronLeft className="h-4 w-4 mr-1" />
                 Previous
               </Button>
-              
+
               <div className="flex items-center space-x-1">
                 {/* Show first page */}
                 {currentPage > 3 && (
@@ -281,7 +285,7 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
                     {currentPage > 4 && <span className="text-slate-400">...</span>}
                   </>
                 )}
-                
+
                 {/* Show pages around current page */}
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                   const pageNum = Math.max(1, Math.min(totalPages, currentPage - 2 + i));
@@ -311,7 +315,7 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
                     </Button>
                   );
                 })}
-                
+
                 {/* Show last page */}
                 {currentPage < totalPages - 2 && (
                   <>
@@ -326,7 +330,7 @@ export default function LiveStockTicker({ stocks }: LiveStockTickerProps) {
                   </>
                 )}
               </div>
-              
+
               <Button
                 variant="outline"
                 size="sm"

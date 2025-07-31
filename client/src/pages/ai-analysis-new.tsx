@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,37 +20,48 @@ import {
   Calendar,
   Clock,
   Percent,
-  Globe,
-  ChevronRight,
-  Activity,
-  Shield,
-  Zap,
   PieChart,
   RefreshCw,
   TrendingDown,
   Star,
   Eye,
-  CheckCircle,
   Lightbulb,
   Loader2,
   Download,
   Share2,
-  Bookmark,
   Filter,
-  Search
+  Search,
+  Activity,
+  LineChart,
+  Zap,
+  Shield,
+  Globe,
+  ArrowUpRight,
+  ArrowDownRight,
+  ChevronRight,
+  Users,
+  Building
 } from "lucide-react";
 import { Link } from "wouter";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { ResponsiveContainer, PieChart as RechartsPieChart, Cell, BarChart, Bar, XAxis, YAxis, LineChart, Line, AreaChart, Area } from 'recharts';
+import { ResponsiveContainer, PieChart as RechartsPieChart, Cell, BarChart, Bar, XAxis, YAxis, LineChart as RechartsLineChart, Line, AreaChart, Area } from 'recharts';
 
 interface Stock {
   symbol: string;
   name: string;
-  currentPrice: number;
+  current: number;
   changePercent: number;
   volume: number;
   high: number;
   low: number;
+  sector: string;
+}
+
+interface IndexData {
+  symbol: string;
+  interval: string;
+  data: number[][];
+  message: string;
 }
 
 interface MarketInsight {
@@ -85,21 +95,32 @@ interface Portfolio {
   expectedReturn: string;
 }
 
-const CHART_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
+const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
+
+const MAJOR_INDICES = [
+  { symbol: "KSE100", name: "KSE-100 Index" },
+  { symbol: "ALLSHR", name: "All Share Index" },
+  { symbol: "KSE30", name: "KSE-30 Index" },
+  { symbol: "KMI30", name: "KMI-30 Index" },
+  { symbol: "OGTI", name: "Oil & Gas Index" },
+  { symbol: "BKTI", name: "Banking Index" }
+];
 
 function AIAnalysisPage() {
-  const [activeTab, setActiveTab] = useState("insights");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedStock, setSelectedStock] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState("KSE100");
   const [riskLevel, setRiskLevel] = useState("medium");
   const [investmentAmount, setInvestmentAmount] = useState("100000");
   const [timeframe, setTimeframe] = useState("1month");
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   const [marketInsights, setMarketInsights] = useState<MarketInsight | null>(null);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [indexData, setIndexData] = useState<IndexData[]>([]);
 
   const { data: stocks } = useQuery<Stock[]>({
     queryKey: ["/api/stocks"],
@@ -110,10 +131,27 @@ function AIAnalysisPage() {
     stock.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Auto-load market insights on component mount
+  // Auto-load data on component mount
   useEffect(() => {
     fetchMarketInsights();
+    fetchIndexData();
   }, []);
+
+  const fetchIndexData = async () => {
+    try {
+      const promises = MAJOR_INDICES.map(async (index) => {
+        const response = await fetch(`/api/index/${index.symbol}?interval=int`);
+        if (response.ok) {
+          return await response.json();
+        }
+        return null;
+      });
+      const results = await Promise.all(promises);
+      setIndexData(results.filter(Boolean));
+    } catch (error) {
+      console.error("Failed to fetch index data:", error);
+    }
+  };
 
   const fetchMarketInsights = async () => {
     try {
@@ -122,7 +160,7 @@ function AIAnalysisPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           type: "comprehensive",
-          format: "html" // Request HTML format
+          format: "html"
         })
       });
       if (response.ok) {
@@ -142,7 +180,7 @@ function AIAnalysisPage() {
       const response = await fetch("/api/ai-predictions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symbols, timeframe, format: "html" })
+        body: JSON.stringify({ symbols, timeframe })
       });
       if (response.ok) {
         const data = await response.json();
@@ -165,8 +203,7 @@ function AIAnalysisPage() {
         body: JSON.stringify({ 
           riskLevel, 
           investmentAmount: parseInt(investmentAmount),
-          timeHorizon: "1 year",
-          format: "html"
+          timeHorizon: "1 year"
         })
       });
       if (response.ok) {
@@ -189,7 +226,7 @@ function AIAnalysisPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           symbol: selectedStock,
-          format: "html" // Request HTML format
+          format: "html"
         })
       });
       if (response.ok) {
@@ -210,285 +247,514 @@ function AIAnalysisPage() {
     return <div dangerouslySetInnerHTML={{ __html: htmlContent }} className="prose prose-sm max-w-none dark:prose-invert prose-blue" />;
   };
 
+  const getIndexChartData = (data: number[][]) => {
+    return data.slice(-20).map((item, idx) => ({
+      time: idx,
+      price: item[1],
+      volume: item[2]
+    }));
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20">
-      <div className="container mx-auto px-4 py-8">
-        {/* Enhanced Header */}
-        <div className="mb-8">
+      <div className="container mx-auto px-4 py-6">
+        {/* Compact Header */}
+        <div className="mb-6">
           <div className="flex items-center justify-between">
-            <div className="space-y-4">
+            <div className="space-y-3">
               <Link href="/">
-                <Button variant="ghost" size="sm" className="mb-4 hover:bg-blue-100 dark:hover:bg-blue-900/50">
-                  <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
+                <Button variant="ghost" size="sm" className="mb-2 hover:bg-blue-100 dark:hover:bg-blue-900/50">
+                  <ArrowLeft className="w-4 h-4 mr-2" /> Dashboard
                 </Button>
               </Link>
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl">
-                  <Brain className="w-10 h-10 text-white" />
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
+                  <Brain className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                    AI Market Intelligence
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    AI Trading Intelligence
                   </h1>
-                  <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
-                    Advanced AI-powered analysis for Pakistan Stock Exchange with real-time insights and predictive analytics
+                  <p className="text-gray-600 dark:text-gray-300">
+                    Advanced AI-powered analysis for Pakistan Stock Exchange
                   </p>
                 </div>
               </div>
             </div>
             <div className="flex gap-2">
-              <Button onClick={fetchMarketInsights} variant="outline" size="sm" className="border-blue-200 hover:bg-blue-50">
+              <Button onClick={fetchMarketInsights} variant="outline" size="sm">
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Refresh
-              </Button>
-              <Button variant="outline" size="sm" className="border-green-200 hover:bg-green-50">
-                <Download className="w-4 h-4 mr-2" />
-                Export
               </Button>
             </div>
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl p-1">
-            <TabsTrigger value="insights" className="flex items-center gap-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white rounded-lg">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="grid w-full grid-cols-5 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl p-1">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2 data-[state=active]:bg-blue-500 data-[state=active]:text-white rounded-lg text-sm">
+              <Activity className="w-4 h-4" />
+              Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="insights" className="flex items-center gap-2 data-[state=active]:bg-green-500 data-[state=active]:text-white rounded-lg text-sm">
               <Lightbulb className="w-4 h-4" />
-              Market Insights
+              Market AI
             </TabsTrigger>
-            <TabsTrigger value="predictions" className="flex items-center gap-2 data-[state=active]:bg-purple-500 data-[state=active]:text-white rounded-lg">
+            <TabsTrigger value="predictions" className="flex items-center gap-2 data-[state=active]:bg-purple-500 data-[state=active]:text-white rounded-lg text-sm">
               <Target className="w-4 h-4" />
-              AI Predictions
+              Predictions
             </TabsTrigger>
-            <TabsTrigger value="portfolio" className="flex items-center gap-2 data-[state=active]:bg-green-500 data-[state=active]:text-white rounded-lg">
+            <TabsTrigger value="portfolio" className="flex items-center gap-2 data-[state=active]:bg-orange-500 data-[state=active]:text-white rounded-lg text-sm">
               <PieChart className="w-4 h-4" />
-              Portfolio Builder
+              Portfolio
             </TabsTrigger>
-            <TabsTrigger value="analysis" className="flex items-center gap-2 data-[state=active]:bg-orange-500 data-[state=active]:text-white rounded-lg">
+            <TabsTrigger value="analysis" className="flex items-center gap-2 data-[state=active]:bg-red-500 data-[state=active]:text-white rounded-lg text-sm">
               <BarChart3 className="w-4 h-4" />
-              Stock Analysis
+              Stock AI
             </TabsTrigger>
           </TabsList>
 
-          {/* Enhanced Market Insights Tab */}
-          <TabsContent value="insights" className="space-y-6">
-            <Card className="border-2 border-blue-200 dark:border-blue-800 shadow-xl bg-white/90 backdrop-blur-sm">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-t-lg">
-                <CardTitle className="flex items-center text-2xl">
-                  <Bot className="w-6 h-6 mr-3 text-blue-600" />
-                  Comprehensive Market Analysis
-                  <Badge className="ml-auto bg-blue-100 text-blue-800 border-blue-200">Live Data</Badge>
+          {/* Dashboard Tab */}
+          <TabsContent value="dashboard" className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Major Indices */}
+              <Card className="lg:col-span-2 border-2 border-blue-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center text-lg">
+                    <LineChart className="w-5 h-5 mr-2 text-blue-600" />
+                    Major Indices Live Data
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {indexData.slice(0, 6).map((index, idx) => {
+                      const latestData = index.data?.[index.data.length - 1];
+                      const prevData = index.data?.[index.data.length - 2];
+                      const change = latestData && prevData ? 
+                        ((latestData[1] - prevData[1]) / prevData[1] * 100) : 0;
+
+                      return (
+                        <div key={index.symbol} className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border">
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-bold text-gray-900">{index.symbol}</h3>
+                            <Badge className={`${change >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} text-xs`}>
+                              {formatPercent(change)}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-lg font-bold">
+                              {latestData ? latestData[1].toLocaleString() : 'Loading...'}
+                            </span>
+                            {change >= 0 ? 
+                              <ArrowUpRight className="w-4 h-4 text-green-500" /> : 
+                              <ArrowDownRight className="w-4 h-4 text-red-500" />
+                            }
+                          </div>
+                          <div className="mt-2">
+                            <div className="h-16">
+                              {index.data && (
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <AreaChart data={getIndexChartData(index.data)}>
+                                    <Area 
+                                      type="monotone" 
+                                      dataKey="price" 
+                                      stroke={CHART_COLORS[idx % CHART_COLORS.length]}
+                                      fill={CHART_COLORS[idx % CHART_COLORS.length]}
+                                      fillOpacity={0.1}
+                                      strokeWidth={2}
+                                    />
+                                  </AreaChart>
+                                </ResponsiveContainer>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* AI Quick Tools */}
+              <Card className="border-2 border-purple-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center text-lg">
+                    <Bot className="w-5 h-5 mr-2 text-purple-600" />
+                    AI Quick Tools
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button 
+                    onClick={fetchMarketInsights} 
+                    className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg"
+                    size="sm"
+                  >
+                    <Brain className="w-4 h-4 mr-2" />
+                    Generate Market AI
+                  </Button>
+                  <Button 
+                    onClick={fetchPredictions} 
+                    className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white shadow-lg"
+                    size="sm"
+                  >
+                    <Target className="w-4 h-4 mr-2" />
+                    AI Predictions
+                  </Button>
+                  <Button 
+                    onClick={fetchPortfolio} 
+                    className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg"
+                    size="sm"
+                  >
+                    <Shield className="w-4 h-4 mr-2" />
+                    Build Portfolio
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Real-time Market Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card className="border-l-4 border-l-blue-500">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Active Stocks</p>
+                      <p className="text-2xl font-bold">{stocks?.length || 0}</p>
+                    </div>
+                    <Activity className="w-8 h-8 text-blue-500" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 border-l-green-500">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Gainers</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {stocks?.filter(s => s.changePercent > 0).length || 0}
+                      </p>
+                    </div>
+                    <TrendingUp className="w-8 h-8 text-green-500" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 border-l-red-500">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Losers</p>
+                      <p className="text-2xl font-bold text-red-600">
+                        {stocks?.filter(s => s.changePercent < 0).length || 0}
+                      </p>
+                    </div>
+                    <TrendingDown className="w-8 h-8 text-red-500" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 border-l-purple-500">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Total Volume</p>
+                      <p className="text-2xl font-bold text-purple-600">
+                        {stocks ? `${(stocks.reduce((sum, s) => sum + s.volume, 0) / 1000000).toFixed(0)}M` : '0M'}
+                      </p>
+                    </div>
+                    <BarChart3 className="w-8 h-8 text-purple-500" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Market Insights Tab */}
+          <TabsContent value="insights" className="space-y-4">
+            <Card className="border-2 border-green-200">
+              <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
+                <CardTitle className="flex items-center text-xl">
+                  <Sparkles className="w-6 h-6 mr-3 text-green-600" />
+                  AI Market Intelligence
+                  <Badge className="ml-auto bg-green-100 text-green-800">Real-time</Badge>
                 </CardTitle>
-                <CardDescription className="text-lg">
-                  AI-powered insights based on real-time PSX data with advanced analytics
-                </CardDescription>
               </CardHeader>
-              <CardContent className="p-8">
+              <CardContent className="p-6">
                 {marketInsights ? (
-                  <div className="space-y-8">
-                    {/* Enhanced Market Overview Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                      <Card className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-800/20 border-green-200 hover:shadow-lg transition-all duration-300">
-                        <CardContent className="p-6">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-green-700 dark:text-green-300">Active Stocks</p>
-                              <p className="text-3xl font-bold text-green-900 dark:text-green-100 mt-2">
-                                {marketInsights.marketData.totalStocks}
-                              </p>
-                              <p className="text-xs text-green-600 mt-1">Currently Trading</p>
-                            </div>
-                            <div className="p-3 bg-green-100 dark:bg-green-800/30 rounded-full">
-                              <Activity className="w-8 h-8 text-green-600" />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card className="bg-gradient-to-br from-blue-50 to-cyan-100 dark:from-blue-900/20 dark:to-cyan-800/20 border-blue-200 hover:shadow-lg transition-all duration-300">
-                        <CardContent className="p-6">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Market Change</p>
-                              <p className="text-3xl font-bold text-blue-900 dark:text-blue-100 mt-2">
-                                {formatPercent(parseFloat(marketInsights.marketData.avgChange || "0"))}
-                              </p>
-                              <p className="text-xs text-blue-600 mt-1">Average Movement</p>
-                            </div>
-                            <div className="p-3 bg-blue-100 dark:bg-blue-800/30 rounded-full">
-                              <TrendingUp className="w-8 h-8 text-blue-600" />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card className="bg-gradient-to-br from-purple-50 to-violet-100 dark:from-purple-900/20 dark:to-violet-800/20 border-purple-200 hover:shadow-lg transition-all duration-300">
-                        <CardContent className="p-6">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">Total Volume</p>
-                              <p className="text-3xl font-bold text-purple-900 dark:text-purple-100 mt-2">
-                                {((marketInsights.marketData.totalVolume || 0) / 1000000).toFixed(1)}M
-                              </p>
-                              <p className="text-xs text-purple-600 mt-1">Shares Traded</p>
-                            </div>
-                            <div className="p-3 bg-purple-100 dark:bg-purple-800/30 rounded-full">
-                              <BarChart3 className="w-8 h-8 text-purple-600" />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card className="bg-gradient-to-br from-orange-50 to-amber-100 dark:from-orange-900/20 dark:to-amber-800/20 border-orange-200 hover:shadow-lg transition-all duration-300">
-                        <CardContent className="p-6">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">Top Performers</p>
-                              <p className="text-3xl font-bold text-orange-900 dark:text-orange-100 mt-2">
-                                {marketInsights.marketData.topGainers?.length || 0}
-                              </p>
-                              <p className="text-xs text-orange-600 mt-1">Gaining Stocks</p>
-                            </div>
-                            <div className="p-3 bg-orange-100 dark:bg-orange-800/30 rounded-full">
-                              <Star className="w-8 h-8 text-orange-600" />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl">
+                        <p className="text-sm text-blue-700">Total Stocks</p>
+                        <p className="text-2xl font-bold text-blue-900">{marketInsights.marketData.totalStocks}</p>
+                      </div>
+                      <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
+                        <p className="text-sm text-green-700">Avg Change</p>
+                        <p className="text-2xl font-bold text-green-900">{marketInsights.marketData.avgChange}%</p>
+                      </div>
+                      <div className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl">
+                        <p className="text-sm text-purple-700">Volume</p>
+                        <p className="text-2xl font-bold text-purple-900">
+                          {((marketInsights.marketData.totalVolume || 0) / 1000000).toFixed(0)}M
+                        </p>
+                      </div>
+                      <div className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl">
+                        <p className="text-sm text-orange-700">Top Gainers</p>
+                        <p className="text-2xl font-bold text-orange-900">{marketInsights.marketData.topGainers?.length || 0}</p>
+                      </div>
                     </div>
 
-                    {/* Enhanced AI Analysis with HTML Rendering */}
-                    <Card className="border-2 border-gradient-to-r from-yellow-200 to-orange-200">
-                      <CardHeader className="bg-gradient-to-r from-yellow-50 to-orange-50">
-                        <CardTitle className="flex items-center text-xl">
-                          <Sparkles className="w-6 h-6 mr-3 text-yellow-600" />
-                          AI Market Intelligence Report
-                          <Badge className="ml-auto bg-yellow-100 text-yellow-800">Enhanced Analysis</Badge>
-                        </CardTitle>
-                        <CardDescription>
-                          Advanced AI analysis with specific stock recommendations and market predictions
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="p-8">
-                        <div className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 rounded-xl p-6">
+                    <Card>
+                      <CardContent className="p-6">
+                        <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-6">
                           {marketInsights.insight.includes('<') ? 
                             renderHTMLContent(marketInsights.insight) : 
-                            (
-                              <div className="prose prose-lg max-w-none dark:prose-invert">
-                                {marketInsights.insight.split('\n').map((paragraph, idx) => (
-                                  paragraph.trim() && (
-                                    <p key={idx} className="mb-4 text-gray-700 dark:text-gray-300 leading-relaxed">
-                                      {paragraph.trim()}
-                                    </p>
-                                  )
-                                ))}
-                              </div>
-                            )
+                            <p className="text-gray-700 leading-relaxed">{marketInsights.insight}</p>
                           }
                         </div>
                       </CardContent>
                     </Card>
-
-                    {/* Enhanced Top Performers with Better Styling */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      <Card className="border-2 border-green-200 hover:border-green-300 transition-all duration-300">
-                        <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
-                          <CardTitle className="flex items-center text-green-700 dark:text-green-400">
-                            <TrendingUp className="w-5 h-5 mr-2" />
-                            Top Gainers Today
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-6">
-                          <div className="space-y-4">
-                            {marketInsights.marketData.topGainers?.slice(0, 5).map((stock, idx) => (
-                              <div key={stock.symbol} className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-xl hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors duration-200 border border-green-100">
-                                <div className="flex items-center space-x-3">
-                                  <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                                    {idx + 1}
-                                  </div>
-                                  <div>
-                                    <p className="font-bold text-gray-900 dark:text-white">{stock.symbol}</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                      {stock.name?.substring(0, 25)}...
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <p className="font-bold text-green-600 text-lg">{formatPercent(stock.changePercent)}</p>
-                                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    {formatCurrency(stock.currentPrice)}
-                                  </p>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      <Card className="border-2 border-red-200 hover:border-red-300 transition-all duration-300">
-                        <CardHeader className="bg-gradient-to-r from-red-50 to-pink-50">
-                          <CardTitle className="flex items-center text-red-700 dark:text-red-400">
-                            <TrendingDown className="w-5 h-5 mr-2" />
-                            Top Losers Today
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-6">
-                          <div className="space-y-4">
-                            {marketInsights.marketData.topLosers?.slice(0, 5).map((stock, idx) => (
-                              <div key={stock.symbol} className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors duration-200 border border-red-100">
-                                <div className="flex items-center space-x-3">
-                                  <div className="w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                                    {idx + 1}
-                                  </div>
-                                  <div>
-                                    <p className="font-bold text-gray-900 dark:text-white">{stock.symbol}</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                      {stock.name?.substring(0, 25)}...
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <p className="font-bold text-red-600 text-lg">{formatPercent(stock.changePercent)}</p>
-                                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    {formatCurrency(stock.currentPrice)}
-                                  </p>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-16">
-                    <div className="animate-spin">
-                      <Brain className="w-12 h-12 text-blue-600 mb-4" />
-                    </div>
-                    <p className="text-lg font-medium text-gray-600">Generating comprehensive market analysis...</p>
-                    <p className="text-sm text-gray-500 mt-2">Analyzing real-time data from Pakistan Stock Exchange</p>
+                  <div className="text-center py-12">
+                    <Brain className="w-12 h-12 text-green-600 mx-auto mb-4 animate-pulse" />
+                    <p className="text-lg">Generating AI market insights...</p>
                   </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Enhanced AI Predictions Tab */}
-          <TabsContent value="predictions" className="space-y-6">
-            <Card className="bg-white/90 backdrop-blur-sm border-2 border-purple-200">
-              <CardHeader className="bg-gradient-to-r from-purple-50 to-violet-50">
-                <CardTitle className="flex items-center text-2xl">
+          {/* Predictions Tab */}
+          <TabsContent value="predictions" className="space-y-4">
+            <Card className="border-2 border-purple-200">
+              <CardHeader>
+                <CardTitle className="flex items-center">
                   <Target className="w-6 h-6 mr-3 text-purple-600" />
-                  AI Future Predictions
-                  <Badge className="ml-auto bg-purple-100 text-purple-800">Machine Learning</Badge>
+                  AI Price Predictions
                 </CardTitle>
-                <CardDescription className="text-lg">
-                  Advanced ML-powered price forecasts with confidence intervals
-                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6 p-8">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Search & Select Stock</label>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Stock Selection</label>
+                    <Select value={selectedStock} onValueChange={setSelectedStock}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All top performers" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Top Performers</SelectItem>
+                        {filteredStocks?.slice(0, 20).map((stock) => (
+                          <SelectItem key={stock.symbol} value={stock.symbol}>
+                            {stock.symbol} - {stock.name?.substring(0, 25)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Timeframe</label>
+                    <Select value={timeframe} onValueChange={setTimeframe}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1week">1 Week</SelectItem>
+                        <SelectItem value="1month">1 Month</SelectItem>
+                        <SelectItem value="3months">3 Months</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-end">
+                    <Button 
+                      onClick={fetchPredictions} 
+                      disabled={loading} 
+                      className="w-full bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white"
+                    >
+                      {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Zap className="w-4 h-4 mr-2" />}
+                      Generate Predictions
+                    </Button>
+                  </div>
+                </div>
+
+                {predictions.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+                    {predictions.map((prediction) => (
+                      <Card key={prediction.symbol} className="border-l-4 border-l-purple-500">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <CardTitle className="text-lg">{prediction.symbol}</CardTitle>
+                              <CardDescription>{prediction.name}</CardDescription>
+                            </div>
+                            <Badge variant="outline">{prediction.confidence}%</Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="bg-purple-50 rounded-lg p-3">
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <div>
+                                <span className="text-gray-600">Current</span>
+                                <p className="font-bold">{formatCurrency(prediction.currentPrice)}</p>
+                              </div>
+                              <div>
+                                <span className="text-gray-600">Target Range</span>
+                                <p className="font-bold text-purple-600">
+                                  {formatCurrency(prediction.predictedLow)} - {formatCurrency(prediction.predictedHigh)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <span className="text-sm font-medium block mb-1">Risk Level</span>
+                            <Badge 
+                              variant="outline" 
+                              className={`${
+                                prediction.risk === "Low" ? "border-green-500 text-green-700" :
+                                prediction.risk === "Medium" ? "border-yellow-500 text-yellow-700" :
+                                "border-red-500 text-red-700"
+                              }`}
+                            >
+                              {prediction.risk}
+                            </Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Portfolio Tab */}
+          <TabsContent value="portfolio" className="space-y-4">
+            <Card className="border-2 border-orange-200">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Shield className="w-6 h-6 mr-3 text-orange-600" />
+                  AI Portfolio Builder
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Risk Level</label>
+                    <Select value={riskLevel} onValueChange={setRiskLevel}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">🛡️ Conservative</SelectItem>
+                        <SelectItem value="medium">⚖️ Balanced</SelectItem>
+                        <SelectItem value="high">🚀 Aggressive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Investment (PKR)</label>
+                    <Input
+                      type="number"
+                      value={investmentAmount}
+                      onChange={(e) => setInvestmentAmount(e.target.value)}
+                      placeholder="100000"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Time Horizon</label>
+                    <Select defaultValue="1year">
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="6months">6 Months</SelectItem>
+                        <SelectItem value="1year">1 Year</SelectItem>
+                        <SelectItem value="3years">3 Years</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-end">
+                    <Button 
+                      onClick={fetchPortfolio} 
+                      disabled={loading} 
+                      className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white"
+                    >
+                      {loading ? <Loader2 className="w-4 h-4 mr-2" /> : <Shield className="w-4 h-4 mr-2" />}
+                      Build Portfolio
+                    </Button>
+                  </div>
+                </div>
+
+                {portfolio && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Sector Allocation</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {Object.entries(portfolio.allocation).map(([sector, percent], idx) => (
+                            <div key={sector} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                              <div className="flex items-center">
+                                <div 
+                                  className="w-4 h-4 rounded-full mr-3" 
+                                  style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }}
+                                />
+                                <span className="font-medium">{sector}</span>
+                              </div>
+                              <span className="font-bold text-orange-600">{percent}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Portfolio Summary</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="p-3 bg-orange-50 rounded-xl">
+                            <p className="text-sm text-orange-700">Expected Return</p>
+                            <p className="text-xl font-bold text-orange-800">{portfolio.expectedReturn}</p>
+                          </div>
+                          <div className="p-3 bg-blue-50 rounded-xl">
+                            <p className="text-sm text-blue-700">Investment</p>
+                            <p className="text-xl font-bold text-blue-800">
+                              {formatCurrency(parseInt(investmentAmount))}
+                            </p>
+                          </div>
+                        </div>
+
+                        <Alert className="border-orange-200 bg-orange-50">
+                          <Shield className="w-4 h-4" />
+                          <AlertDescription className="text-orange-800">
+                            {portfolio.riskAssessment}
+                          </AlertDescription>
+                        </Alert>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Stock Analysis Tab */}
+          <TabsContent value="analysis" className="space-y-4">
+            <Card className="border-2 border-red-200">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <BarChart3 className="w-6 h-6 mr-3 text-red-600" />
+                  Individual Stock AI Analysis
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Search & Select Stock</label>
                     <div className="relative">
                       <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                       <Input
@@ -499,356 +765,14 @@ function AIAnalysisPage() {
                       />
                     </div>
                     <Select value={selectedStock} onValueChange={setSelectedStock}>
-                      <SelectTrigger className="bg-white border-purple-200">
-                        <SelectValue placeholder="All top performers" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Top Performers</SelectItem>
-                        {filteredStocks?.slice(0, 20).map((stock) => (
-                          stock.symbol && stock.symbol.trim() ? (
-                            <SelectItem key={stock.symbol} value={stock.symbol}>
-                              {stock.symbol} - {stock.name?.substring(0, 30)}
-                            </SelectItem>
-                          ) : null
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Prediction Timeframe</label>
-                    <Select value={timeframe} onValueChange={setTimeframe}>
-                      <SelectTrigger className="bg-white border-purple-200">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1week">1 Week Forecast</SelectItem>
-                        <SelectItem value="1month">1 Month Forecast</SelectItem>
-                        <SelectItem value="3months">3 Months Forecast</SelectItem>
-                        <SelectItem value="6months">6 Months Forecast</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-end">
-                    <Button 
-                      onClick={fetchPredictions} 
-                      disabled={loading} 
-                      className="w-full bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 shadow-lg"
-                    >
-                      {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Zap className="w-4 h-4 mr-2" />}
-                      Generate AI Predictions
-                    </Button>
-                  </div>
-                </div>
-
-                {predictions.length > 0 && (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                      {predictions.map((prediction, idx) => (
-                        <Card key={prediction.symbol} className="border-l-4 border-l-purple-500 hover:shadow-xl transition-all duration-300 bg-white">
-                          <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <CardTitle className="text-xl text-purple-900">{prediction.symbol}</CardTitle>
-                                <CardDescription className="text-gray-600">{prediction.name}</CardDescription>
-                              </div>
-                              <div className="text-right">
-                                <Badge 
-                                  variant={prediction.risk === "Low" ? "default" : prediction.risk === "Medium" ? "secondary" : "destructive"}
-                                  className="mb-2"
-                                >
-                                  {prediction.confidence}% Confidence
-                                </Badge>
-                                <p className="text-xs text-gray-500">{timeframe} forecast</p>
-                              </div>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                            <div className="bg-purple-50 rounded-lg p-4">
-                              <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                  <span className="text-gray-600">Current Price</span>
-                                  <p className="font-bold text-lg">{formatCurrency(prediction.currentPrice)}</p>
-                                </div>
-                                <div>
-                                  <span className="text-gray-600">Predicted Range</span>
-                                  <p className="font-bold text-lg text-purple-600">
-                                    {formatCurrency(prediction.predictedLow)} - {formatCurrency(prediction.predictedHigh)}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div>
-                              <span className="text-sm font-medium text-gray-700 block mb-2">Key Factors</span>
-                              <div className="space-y-1">
-                                {prediction.factors.slice(0, 3).map((factor, i) => (
-                                  <p key={i} className="text-xs text-gray-600 flex items-start">
-                                    <ChevronRight className="w-3 h-3 mr-1 mt-0.5 text-purple-500" />
-                                    {factor}
-                                  </p>
-                                ))}
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center justify-between pt-2">
-                              <Badge 
-                                variant="outline" 
-                                className={`${
-                                  prediction.risk === "Low" ? "border-green-500 text-green-700 bg-green-50" :
-                                  prediction.risk === "Medium" ? "border-yellow-500 text-yellow-700 bg-yellow-50" :
-                                  "border-red-500 text-red-700 bg-red-50"
-                                }`}
-                              >
-                                {prediction.risk} Risk
-                              </Badge>
-                              <Button variant="ghost" size="sm" className="text-purple-600 hover:bg-purple-50">
-                                <Eye className="w-4 h-4 mr-1" />
-                                Details
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Enhanced Portfolio Builder Tab */}
-          <TabsContent value="portfolio" className="space-y-6">
-            <Card className="bg-white/90 backdrop-blur-sm border-2 border-green-200">
-              <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
-                <CardTitle className="flex items-center text-2xl">
-                  <PieChart className="w-6 h-6 mr-3 text-green-600" />
-                  AI Portfolio Builder
-                  <Badge className="ml-auto bg-green-100 text-green-800">Smart Allocation</Badge>
-                </CardTitle>
-                <CardDescription className="text-lg">
-                  Personalized investment recommendations with risk-adjusted returns
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6 p-8">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Risk Profile</label>
-                    <Select value={riskLevel} onValueChange={setRiskLevel}>
-                      <SelectTrigger className="bg-white border-green-200">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">🛡️ Conservative (Low Risk)</SelectItem>
-                        <SelectItem value="medium">⚖️ Balanced (Medium Risk)</SelectItem>
-                        <SelectItem value="high">🚀 Aggressive (High Risk)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Investment Amount (PKR)</label>
-                    <Input
-                      type="number"
-                      value={investmentAmount}
-                      onChange={(e) => setInvestmentAmount(e.target.value)}
-                      placeholder="100000"
-                      className="bg-white border-green-200"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Investment Horizon</label>
-                    <Select defaultValue="1year">
-                      <SelectTrigger className="bg-white border-green-200">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="6months">6 Months</SelectItem>
-                        <SelectItem value="1year">1 Year</SelectItem>
-                        <SelectItem value="3years">3 Years</SelectItem>
-                        <SelectItem value="5years">5+ Years</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-end">
-                    <Button 
-                      onClick={fetchPortfolio} 
-                      disabled={loading} 
-                      className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg"
-                    >
-                      {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Shield className="w-4 h-4 mr-2" />}
-                      Build Smart Portfolio
-                    </Button>
-                  </div>
-                </div>
-
-                {portfolio && (
-                  <div className="space-y-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      {/* Enhanced Sector Allocation Chart */}
-                      <Card className="border-2 border-green-200">
-                        <CardHeader>
-                          <CardTitle className="text-xl flex items-center">
-                            <PieChart className="w-5 h-5 mr-2 text-green-600" />
-                            Sector Allocation
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="h-64 mb-6">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <RechartsPieChart>
-                                <ChartTooltip content={<ChartTooltipContent />} />
-                                <RechartsPieChart
-                                  data={Object.entries(portfolio.allocation).map(([sector, percent]) => ({ 
-                                    name: sector, 
-                                    value: percent 
-                                  }))}
-                                  cx="50%"
-                                  cy="50%"
-                                  outerRadius={80}
-                                  dataKey="value"
-                                >
-                                  {Object.entries(portfolio.allocation).map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                                  ))}
-                                </RechartsPieChart>
-                              </RechartsPieChart>
-                            </ResponsiveContainer>
-                          </div>
-                          <div className="space-y-3">
-                            {Object.entries(portfolio.allocation).map(([sector, percent], idx) => (
-                              <div key={sector} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                <div className="flex items-center">
-                                  <div 
-                                    className="w-4 h-4 rounded-full mr-3" 
-                                    style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }}
-                                  />
-                                  <span className="font-medium">{sector}</span>
-                                </div>
-                                <span className="font-bold text-green-600">{percent}%</span>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      {/* Enhanced Portfolio Summary */}
-                      <Card className="border-2 border-green-200">
-                        <CardHeader>
-                          <CardTitle className="text-xl flex items-center">
-                            <DollarSign className="w-5 h-5 mr-2 text-green-600" />
-                            Portfolio Summary
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-green-50 rounded-xl">
-                              <p className="text-sm text-green-700">Expected Return</p>
-                              <p className="text-2xl font-bold text-green-800">{portfolio.expectedReturn}</p>
-                            </div>
-                            <div className="p-4 bg-blue-50 rounded-xl">
-                              <p className="text-sm text-blue-700">Investment</p>
-                              <p className="text-2xl font-bold text-blue-800">
-                                {formatCurrency(parseInt(investmentAmount))}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <Alert className="border-green-200 bg-green-50">
-                            <Shield className="w-4 h-4" />
-                            <AlertDescription className="text-green-800">
-                              {portfolio.riskAssessment.includes('<') ? 
-                                renderHTMLContent(portfolio.riskAssessment) : 
-                                portfolio.riskAssessment
-                              }
-                            </AlertDescription>
-                          </Alert>
-
-                          <div className="flex gap-2">
-                            <Button variant="outline" className="flex-1 border-green-200 text-green-700 hover:bg-green-50">
-                              <Bookmark className="w-4 h-4 mr-2" />
-                              Save Portfolio
-                            </Button>
-                            <Button variant="outline" className="flex-1 border-green-200 text-green-700 hover:bg-green-50">
-                              <Share2 className="w-4 h-4 mr-2" />
-                              Share
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-
-                    {/* Enhanced Stock Recommendations */}
-                    <Card className="border-2 border-green-200">
-                      <CardHeader>
-                        <CardTitle className="text-xl flex items-center">
-                          <Star className="w-5 h-5 mr-2 text-green-600" />
-                          Recommended Stocks
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {portfolio.recommendations.map((stock, idx) => (
-                            <div key={stock.symbol} className="p-6 border-2 border-green-100 rounded-xl hover:border-green-300 transition-all duration-300 bg-white hover:shadow-lg">
-                              <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-bold text-lg text-gray-900">{stock.symbol}</h3>
-                                <Badge className="bg-green-100 text-green-800 border-green-200">
-                                  {stock.allocation}%
-                                </Badge>
-                              </div>
-                              <p className="text-sm text-gray-600 mb-3 font-medium">{stock.name}</p>
-                              <p className="text-xs text-gray-500 leading-relaxed">
-                                {stock.rationale.includes('<') ? 
-                                  renderHTMLContent(stock.rationale) : 
-                                  stock.rationale
-                                }
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Enhanced Stock Analysis Tab */}
-          <TabsContent value="analysis" className="space-y-6">
-            <Card className="bg-white/90 backdrop-blur-sm border-2 border-orange-200">
-              <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50">
-                <CardTitle className="flex items-center text-2xl">
-                  <BarChart3 className="w-6 h-6 mr-3 text-orange-600" />
-                  Individual Stock Analysis
-                  <Badge className="ml-auto bg-orange-100 text-orange-800">Deep Dive</Badge>
-                </CardTitle>
-                <CardDescription className="text-lg">
-                  Comprehensive AI analysis with technical and fundamental insights
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6 p-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Search & Select Stock</label>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-                      <Input
-                        placeholder="Search stocks..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 border-orange-200"
-                      />
-                    </div>
-                    <Select value={selectedStock} onValueChange={setSelectedStock}>
-                      <SelectTrigger className="bg-white border-orange-200">
+                      <SelectTrigger className="mt-2">
                         <SelectValue placeholder="Choose a stock to analyze" />
                       </SelectTrigger>
                       <SelectContent>
                         {filteredStocks?.slice(0, 50).map((stock) => (
-                          stock.symbol && stock.symbol.trim() ? (
-                            <SelectItem key={stock.symbol} value={stock.symbol}>
-                              {stock.symbol} - {stock.name?.substring(0, 40)}
-                            </SelectItem>
-                          ) : null
+                          <SelectItem key={stock.symbol} value={stock.symbol}>
+                            {stock.symbol} - {stock.name?.substring(0, 30)}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -857,7 +781,7 @@ function AIAnalysisPage() {
                     <Button 
                       onClick={analyzeStock} 
                       disabled={!selectedStock || selectedStock === "all" || loading} 
-                      className="w-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 shadow-lg"
+                      className="w-full bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white"
                     >
                       {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
                       Analyze Stock
@@ -866,71 +790,46 @@ function AIAnalysisPage() {
                 </div>
 
                 {analysisResult && (
-                  <Card className="border-l-4 border-l-orange-500 shadow-xl">
-                    <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50">
-                      <CardTitle className="flex items-center justify-between text-xl">
-                        <span className="flex items-center">
-                          <BarChart3 className="w-5 h-5 mr-2 text-orange-600" />
-                          Analysis for {analysisResult.symbol}
-                        </span>
+                  <Card className="border-l-4 border-l-red-500">
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        Analysis for {analysisResult.symbol}
                         <Badge 
                           variant={analysisResult.recommendation?.includes("BUY") ? "default" : 
                                   analysisResult.recommendation?.includes("SELL") ? "destructive" : "secondary"}
-                          className="text-lg px-4 py-1"
                         >
                           {analysisResult.recommendation?.split(' ')[0] || 'HOLD'}
                         </Badge>
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-6 p-8">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-200">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-blue-700">Target Price</p>
-                              <p className="text-3xl font-bold text-blue-900 mt-2">
-                                {formatCurrency(analysisResult.targetPrice)}
-                              </p>
-                            </div>
-                            <Target className="w-8 h-8 text-blue-600" />
-                          </div>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="p-4 bg-blue-50 rounded-xl">
+                          <p className="text-sm text-blue-700">Target Price</p>
+                          <p className="text-2xl font-bold text-blue-900">
+                            {formatCurrency(analysisResult.targetPrice)}
+                          </p>
                         </div>
-                        <div className="p-6 bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl border border-purple-200">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-purple-700">AI Confidence</p>
-                              <p className="text-3xl font-bold text-purple-900 mt-2">
-                                {analysisResult.confidence}%
-                              </p>
-                            </div>
-                            <Brain className="w-8 h-8 text-purple-600" />
-                          </div>
+                        <div className="p-4 bg-purple-50 rounded-xl">
+                          <p className="text-sm text-purple-700">AI Confidence</p>
+                          <p className="text-2xl font-bold text-purple-900">
+                            {analysisResult.confidence}%
+                          </p>
                         </div>
-                        <div className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl border border-orange-200">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-orange-700">Risk Level</p>
-                              <p className="text-3xl font-bold text-orange-900 mt-2">
-                                {analysisResult.riskLevel}
-                              </p>
-                            </div>
-                            <AlertTriangle className="w-8 h-8 text-orange-600" />
-                          </div>
+                        <div className="p-4 bg-orange-50 rounded-xl">
+                          <p className="text-sm text-orange-700">Risk Level</p>
+                          <p className="text-2xl font-bold text-orange-900">
+                            {analysisResult.riskLevel}
+                          </p>
                         </div>
                       </div>
-                      
-                      <Card className="border-2 border-gray-200">
-                        <CardHeader>
-                          <CardTitle className="flex items-center">
-                            <Lightbulb className="w-5 h-5 mr-2 text-yellow-600" />
-                            AI Analysis Report
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
+
+                      <Card>
+                        <CardContent className="p-6">
                           <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-6">
                             {analysisResult.analysis?.includes('<') ? 
                               renderHTMLContent(analysisResult.analysis) : 
-                              <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-lg">
+                              <p className="text-gray-700 leading-relaxed">
                                 {analysisResult.analysis}
                               </p>
                             }

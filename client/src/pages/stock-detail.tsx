@@ -27,6 +27,7 @@ import {
 import { useState, useEffect } from "react";
 
 import type { StockData, CompanyData } from "@shared/schema";
+import LiveStockTicker from "@/components/live-stock-ticker";
 
 export default function StockDetail() {
   const { symbol } = useParams<{ symbol: string }>();
@@ -288,6 +289,7 @@ export default function StockDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <LiveStockTicker />
 
       {/* Compact Stock Header Section */}
       <div className="bg-white shadow-sm border-b border-gray-200">
@@ -304,7 +306,7 @@ export default function StockDetail() {
                 </span>
               </div>
             </div>
-            
+
             <div className="mt-3 lg:mt-0 text-right">
               <div className="text-3xl font-bold text-gray-900 mb-1 font-mono">
                 {formatPrice(stockData.current)}
@@ -355,7 +357,7 @@ export default function StockDetail() {
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 <span className="font-medium text-sm">PSX Dashboard</span>
               </Link>
-              
+
               <nav className="flex space-x-1 overflow-x-auto">
                 {tabs.map((tab) => (
                   <button
@@ -390,7 +392,7 @@ export default function StockDetail() {
                 Company Profile
               </h2>
             </div>
-            
+
             <div className="p-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Company Details - Left Column */}
@@ -402,7 +404,7 @@ export default function StockDetail() {
                        `${stockData.name} is a leading company in the ${stockData.sector} sector, providing innovative solutions and services to customers across Pakistan.`}
                     </p>
                   </div>
-                  
+
                   {/* Company Details */}
                   <div className="space-y-2">
                     <div className="flex justify-between p-2 bg-gray-50 rounded">
@@ -444,7 +446,7 @@ export default function StockDetail() {
                           </a>
                         </div>
                       )}
-                      
+
                       {companyData?.phone && (
                         <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
                           <Phone className="w-4 h-4 text-green-600" />
@@ -474,7 +476,7 @@ export default function StockDetail() {
                           </div>
                         </div>
                       )}
-                      
+
                       {companyData?.keyPeople?.map((person, index) => (
                         <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
                           <User className="w-4 h-4 text-gray-600" />
@@ -509,7 +511,7 @@ export default function StockDetail() {
                 Equity Profile
               </h2>
             </div>
-            
+
             <div className="p-6">
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 {[
@@ -553,7 +555,7 @@ export default function StockDetail() {
                 Announcements
               </h2>
             </div>
-            
+
             <div className="p-6">
               {/* Compact Announcement Categories */}
               <div className="mb-6">
@@ -628,7 +630,7 @@ export default function StockDetail() {
                 Financials
               </h2>
             </div>
-            
+
             <div className="p-6 space-y-6">
               {/* Annual Financials */}
               <div>
@@ -712,7 +714,7 @@ export default function StockDetail() {
                 Financial Ratios
               </h2>
             </div>
-            
+
             <div className="p-6">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -761,7 +763,7 @@ export default function StockDetail() {
                 Payouts & Dividends
               </h2>
             </div>
-            
+
             <div className="p-6">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">

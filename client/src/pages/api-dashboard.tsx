@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import LiveStockTicker from "@/components/live-stock-ticker";
+import { useQuery } from "@tanstack/react-query";
+import { Input } from "@/components/ui/input";
 import { TrendingUp, Search, BarChart3, Users, Server, Globe, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import MarketOverview from "@/components/market-overview";
-import LiveStockTicker from "@/components/live-stock-ticker";
 import ApiDocumentation from "@/components/api-documentation";
 import SystemStatus from "@/components/system-status";
 import WebSocketInfo from "@/components/websocket-info";
@@ -98,7 +98,7 @@ function ApiDashboard() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -112,7 +112,7 @@ function ApiDashboard() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -124,7 +124,7 @@ function ApiDashboard() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
