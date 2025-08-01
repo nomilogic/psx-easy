@@ -98,8 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Apply sector_code filter
       if (sector_code && typeof sector_code === 'string') {
         stocks = stocks.filter(stock => 
-          stock.sectorCodes && Array.isArray(stock.sectorCodes) && 
-          stock.sectorCodes.includes(sector_code)
+          stock.sectorCode === sector_code
         );
       }
       
@@ -128,7 +127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         availableFilters: {
           sectors: [...new Set(stocks.map(s => s.sector))].sort(),
           indices: [...new Set(stocks.flatMap(s => s.listedIn || []))].sort(),
-          sectorCodes: [...new Set(stocks.flatMap(s => s.sectorCodes || []))].sort()
+          sectorCodes: [...new Set(stocks.map(s => s.sectorCode).filter(Boolean))].sort()
         }
       });
     } catch (error) {
@@ -236,17 +235,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allSectorCodes = new Set<string>();
       
       stocks.forEach(stock => {
-        if (stock.sectorCodes && Array.isArray(stock.sectorCodes)) {
-          stock.sectorCodes.forEach(code => allSectorCodes.add(code));
+        if (stock.sectorCode) {
+          allSectorCodes.add(stock.sectorCode);
         }
       });
       
       const sectorCodes = Array.from(allSectorCodes).sort().map(code => ({
         code: code,
-        name: this.mapSectorCodeToName(code),
-        stockCount: stocks.filter(s => 
-          s.sectorCodes && s.sectorCodes.includes(code)
-        ).length
+        name: mapSectorCodeToName(code),
+        stockCount: stocks.filter(s => s.sectorCode === code).length
       }));
       
       res.json(sectorCodes);

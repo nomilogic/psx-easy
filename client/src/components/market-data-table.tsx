@@ -302,20 +302,27 @@ export default function MarketDataTable({ stocks: initialStocks }: MarketDataTab
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-slate-900">{stock.name}</div>
                     <div className="text-xs text-slate-500">{stock.sector}</div>
-                    {stock.listedIn && Array.isArray(stock.listedIn) && stock.listedIn.length > 0 && (
-                      <div className="flex gap-1 mt-1">
-                        {stock.listedIn.slice(0, 3).map((index) => (
-                          <Badge key={index} variant="outline" className="text-xs px-1 py-0">
-                            {index}
-                          </Badge>
-                        ))}
-                        {stock.listedIn.length > 3 && (
-                          <Badge variant="outline" className="text-xs px-1 py-0">
-                            +{stock.listedIn.length - 3}
-                          </Badge>
-                        )}
-                      </div>
-                    )}
+                    <div className="flex gap-1 mt-1">
+                      {stock.sectorCode && (
+                        <Badge variant="outline" className="text-xs px-1 py-0">
+                          {stock.sectorCode}
+                        </Badge>
+                      )}
+                      {stock.listedIn && Array.isArray(stock.listedIn) && stock.listedIn.length > 0 && (
+                        <>
+                          {stock.listedIn.slice(0, 2).map((index) => (
+                            <Badge key={index} variant="outline" className="text-xs px-1 py-0">
+                              {index}
+                            </Badge>
+                          ))}
+                          {stock.listedIn.length > 2 && (
+                            <Badge variant="outline" className="text-xs px-1 py-0">
+                              +{stock.listedIn.length - 2}
+                            </Badge>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <div className="text-sm font-medium text-slate-900 font-mono">{formatPrice(stock.current)}</div>

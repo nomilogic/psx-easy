@@ -252,46 +252,48 @@ export class DatabaseStorage implements IStorage {
   }
 
   private async insertBatchOptimized(batch: any[]): Promise<void> {
-    // Use single bulk insert with conflict resolution - include listed_in and sector_codes
-    const basicBatch = batch.map(stock => ({
-      symbol: stock.symbol,
-      name: stock.name,
-      sector: stock.sector,
-      ldcp: stock.ldcp,
-      open: stock.open,
-      high: stock.high,
-      low: stock.low,
-      current: stock.current,
-      change: stock.change,
-      changePercent: stock.changePercent,
-      volume: stock.volume,
-      isPositive: stock.isPositive,
-      listedIn: stock.listedIn || null,
-      sectorCodes: stock.sectorCodes || null,
-    }));
+    // Separate new stocks from existing ones
+    const existingSymbols = await db
+      .select({ symbol: stocksTable.symbol })
+      .from(stocksTable)
+      .where(sql`symbol = ANY(${batch.map(s => s.symbol)})`);
 
-    await db
-      .insert(stocksTable)
-      .values(basicBatch)
-      .onConflictDoUpdate({
-        target: stocksTable.symbol,
-        set: {
-          name: sql.raw("EXCLUDED.name"),
-          sector: sql.raw("EXCLUDED.sector"),
-          ldcp: sql.raw("EXCLUDED.ldcp"),
-          open: sql.raw("EXCLUDED.open"),
-          high: sql.raw("EXCLUDED.high"),
-          low: sql.raw("EXCLUDED.low"),
-          current: sql.raw("EXCLUDED.current"),
-          change: sql.raw("EXCLUDED.change"),
-          changePercent: sql.raw("EXCLUDED.change_percent"),
-          volume: sql.raw("EXCLUDED.volume"),
-          isPositive: sql.raw("EXCLUDED.is_positive"),
-          listedIn: sql.raw("EXCLUDED.listed_in"),
-          sectorCodes: sql.raw("EXCLUDED.sector_codes"),
-          updatedAt: new Date(),
-        },
-      });
+    const existingSet = new Set(existingSymbols.map(s => s.symbol));
+    const newStocks = batch.filter(stock => !existingSet.has(stock.symbol));
+    const existingStocks = batch.filter(stock => existingSet.has(stock.symbol));
+
+    // Insert new stocks with all data
+    if (newStocks.length > 0) {
+      await db.insert(stocksTable).values(newStocks);
+      console.log(`Inserted ${newStocks.length} new stocks`);
+    }
+
+    // Update existing stocks with only dynamic fields
+    if (existingStocks.length > 0) {
+      for (const stock of existingStocks) {
+        await db
+          .update(stocksTable)
+          .set({
+            ldcp: stock.ldcp,
+            open: stock.open,
+            high: stock.high,
+            low: stock.low,
+            current: stock.current,
+            change: stock.change,
+            changePercent: stock.changePercent,
+            volume: stock.volume,
+            isPositive: stock.isPositive,
+            // Only update these if they're new/different
+            bidPrice: stock.bidPrice,
+            bidVolume: stock.bidVolume,
+            askPrice: stock.askPrice,
+            askVolume: stock.askVolume,
+            updatedAt: new Date(),
+          })
+          .where(eq(stocksTable.symbol, stock.symbol));
+      }
+      console.log(`Updated ${existingStocks.length} existing stocks with dynamic data only`);
+    }
   }
 
   private async insertIndividually(batch: any[]): Promise<void> {

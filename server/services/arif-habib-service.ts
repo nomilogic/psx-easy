@@ -117,7 +117,7 @@ export class ArifHabibService {
         haircut: stock.haircut,
         beta: stock.beta,
         listedIn: this.parseListedIn(stock.listed_in),
-        sectorCodes: this.parseSectorCodes(stock.sector_code, stock.listed_in),
+        sectorCode: stock.sector_code,
         pivotPoints: stock.pivot_points,
         returns: stock.returns,
         lastTradeDate: stock.date,
@@ -197,22 +197,5 @@ export class ArifHabibService {
     return listedIn || [];
   }
 
-  private static parseSectorCodes(sectorCode: string, listedIn: string[]): string[] {
-    const sectorCodes: string[] = [];
-
-    if (sectorCode) {
-      sectorCodes.push(sectorCode);
-    }
-
-    // Add indices from listedIn array if they exist
-    if (listedIn && Array.isArray(listedIn)) {
-      listedIn.forEach(index => {
-        if (index && !sectorCodes.includes(index)) {
-          sectorCodes.push(index);
-        }
-      });
-    }
-
-    return sectorCodes;
-  }
+  
 }
