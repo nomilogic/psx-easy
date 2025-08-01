@@ -475,12 +475,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getSectors(): Promise<SectorData[]> {
-    const result = await db.select().from(sectorsTable);
-    return result.map((sector) => ({
-      name: sector.name,
-      code: sector.code,
-      volume: sector.volume,
-    }));
+    try {
+      const result = await db.select().from(sectorsTable);
+      return result.map((sector) => ({
+        name: sector.name,
+        code: sector.code,
+        volume: sector.volume || 0,
+      }));
+    } catch (error) {
+      console.error("Error fetching sectors from database:", error);
+      // Return empty array if database query fails
+      return [];
+    }
   }
 
   async setSectors(sectorsData: SectorData[]): Promise<void> {

@@ -240,11 +240,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
       
-      const sectorCodes = Array.from(allSectorCodes).sort().map(code => ({
-        code: code,
-        name: mapSectorCodeToName(code),
-        stockCount: stocks.filter(s => s.sectorCode === code).length
-      }));
+      const sectorCodes = await Promise.all(
+        Array.from(allSectorCodes).sort().map(async code => ({
+          code: code,
+          name: await mapSectorCodeToName(code),
+          stockCount: stocks.filter(s => s.sectorCode === code).length
+        }))
+      );
       
       res.json(sectorCodes);
     } catch (error) {
@@ -254,48 +256,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Helper method for sector code mapping
-  function mapSectorCodeToName(code: string): string {
-    const sectorMap: { [key: string]: string } = {
-      "0801": "AUTOMOBILE ASSEMBLER",
-      "0802": "AUTOMOBILE PARTS & ACCESSORIES", 
-      "0803": "CABLE & ELECTRICAL GOODS",
-      "0804": "CEMENT",
-      "0805": "CHEMICAL",
-      "0806": "CLOSE - END MUTUAL FUND",
-      "0807": "COMMERCIAL BANKS",
-      "0808": "ENGINEERING",
-      "0809": "FERTILIZER",
-      "0810": "FOOD & PERSONAL CARE PRODUCTS",
-      "0811": "GLASS & CERAMICS",
-      "0812": "INSURANCE",
-      "0813": "INVESTMENT BANKS/INVESTMENT COS./SECURITIES COS.",
-      "0814": "JUTE",
-      "0815": "LEATHER & TANNERIES",
-      "0816": "MISCELLANEOUS",
-      "0817": "MODARABA",
-      "0818": "OIL & GAS EXPLORATION COMPANIES",
-      "0819": "OIL & GAS MARKETING COMPANIES",
-      "0820": "PAPER & BOARD",
-      "0821": "PHARMACEUTICALS",
-      "0822": "POWER GENERATION & DISTRIBUTION",
-      "0823": "REFINERY",
-      "0824": "SUGAR & ALLIED INDUSTRIES",
-      "0825": "SYNTHETIC & RAYON",
-      "0826": "TECHNOLOGY & COMMUNICATION",
-      "0827": "TEXTILE COMPOSITE",
-      "0828": "TEXTILE SPINNING",
-      "0829": "TEXTILE WEAVING",
-      "0830": "TRANSPORT",
-      "0831": "VANASPATI & ALLIED INDUSTRIES",
-      "0832": "WOOLLEN",
-      // Index codes
-      "KSE100": "KSE 100 Index",
-      "ALLSHR": "All Share Index",
-      "KSE30": "KSE 30 Index",
-      "KMI30": "KMI 30 Index"
-    };
-    
-    return sectorMap[code] || code;
+  async function mapSectorCodeToName(code: string): Promise<string> {
+    try {
+      const sectors = await storage.getSectors();
+      const sector = sectors.find(s => s.code === code);
+      return sector ? sector.name : code;
+    } catch (error) {
+      console.error("Error fetching sector name:", error);
+      return code;
+    }
   }
 
   // Performers endpoint
