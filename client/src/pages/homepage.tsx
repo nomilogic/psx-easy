@@ -67,6 +67,7 @@ import {
 import NewsSection from "@/components/news-section";
 import HeaderTicker from "@/components/header-ticker";
 import IndicesTicker from "@/components/indices-ticker";
+import MarketDataTable from "@/components/market-data-table";
 const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
 
 export default function Homepage() {
@@ -141,7 +142,7 @@ export default function Homepage() {
       <IndicesTicker />
       {/* Stock Ticker */}
       <HeaderTicker stocks={stocks || []} />
-      
+
       {/* Compact Hero Section */}
       <section className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 text-white py-12">
         <div className="absolute inset-0 bg-black/10"></div>

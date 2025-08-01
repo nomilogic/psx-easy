@@ -29,6 +29,7 @@ import { useState, useEffect } from "react";
 import type { StockData, CompanyData } from "@shared/schema";
 import HeaderTicker from "@/components/header-ticker";
 import { useWebSocket } from "@/hooks/use-websocket";
+import MarketDataTable from "@/components/market-data-table";
 
 export default function StockDetail() {
   const { symbol } = useParams<{ symbol: string }>();
@@ -578,7 +579,7 @@ export default function StockDetail() {
       </div>
 
       {/* Live Stock Ticker */}
-      <LiveStockTicker stocks={stocksData || []} />
+      <MarketDataTable stocks={stocksData || []} />
 
       {/* Compact Tab Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
