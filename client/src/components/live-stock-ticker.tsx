@@ -72,12 +72,13 @@ export default function LiveStockTicker({ stocks: initialStocks }: LiveStockTick
       <ChevronDown className="w-4 h-4 inline-block ml-1" />;
   };
 
-  // KSE100 constituent symbols - hardcoded list for filtering
-  const KSE100_CONSTITUENTS = [
-    'HBL', 'UBL', 'ENGRO', 'LUCKY', 'PIBTL', 'BAFL', 'MCB', 'HUBCO', 
-    'OGDC', 'PSMC', 'HUBC', 'DAWH', 'MLCF', 'SYS', 'TRG', 'HASCOL', 
-    'SEARL', 'FFC', 'NESTLE', 'UNITY'
-  ];
+  // Get the count of available stocks for each index
+  const getIndexStockCount = (indexName: string) => {
+    if (!Array.isArray(stocks)) return 0;
+    return stocks.filter(stock => 
+      stock.listedIn && Array.isArray(stock.listedIn) && stock.listedIn.includes(indexName)
+    ).length;
+  };
 
   const filteredAndSortedStocks = useMemo(() => {
     // Ensure stocks is an array before processing
@@ -96,9 +97,11 @@ export default function LiveStockTicker({ stocks: initialStocks }: LiveStockTick
       );
     }
 
-    // Apply index filter
-    if (indexFilter === "KSE100") {
-      filtered = filtered.filter(stock => KSE100_CONSTITUENTS.includes(stock.symbol));
+    // Apply index filter based on listed_in data from Arif Habib API
+    if (indexFilter !== "ALL") {
+      filtered = filtered.filter(stock => 
+        stock.listedIn && Array.isArray(stock.listedIn) && stock.listedIn.includes(indexFilter)
+      );
     }
 
     return filtered.sort((a, b) => {
@@ -209,7 +212,9 @@ export default function LiveStockTicker({ stocks: initialStocks }: LiveStockTick
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">All Stocks</SelectItem>
-                  <SelectItem value="KSE100">KSE100 ({KSE100_CONSTITUENTS.length} stocks)</SelectItem>
+                  <SelectItem value="KSE100">KSE100 ({getIndexStockCount('KSE100')} stocks)</SelectItem>
+                  <SelectItem value="ALLSHR">All Share ({getIndexStockCount('ALLSHR')} stocks)</SelectItem>
+                  <SelectItem value="KSE30">KSE30 ({getIndexStockCount('KSE30')} stocks)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
