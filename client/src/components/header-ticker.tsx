@@ -58,7 +58,14 @@ export default function HeaderTicker({ stocks: initialStocks }: HeaderTickerProp
 
   // Filter stocks with proper company names and exclude market indices
   const tickerStocks = useMemo(() => {
-    return currentStocks
+    console.log('HeaderTicker currentStocks:', currentStocks?.length || 0, 'items');
+    
+    if (!currentStocks || currentStocks.length === 0) {
+      console.log('No stocks available for ticker');
+      return [];
+    }
+    
+    const filtered = currentStocks
       .filter(stock => {
         // Exclude market indices
         if (MARKET_INDICES.includes(stock.symbol)) return false;
@@ -66,16 +73,19 @@ export default function HeaderTicker({ stocks: initialStocks }: HeaderTickerProp
         // Only include stocks with proper company names (not just symbol or generic names)
         const hasProperName = stock.name && 
           stock.name !== stock.symbol && 
-          stock.name.length > 5 && 
+          stock.name.length > 3 && 
           !stock.name.includes('Unknown') &&
           !stock.name.includes('index') &&
           !stock.name.includes('Index') &&
-          stock.volume > 1000; // Minimum volume filter
+          stock.volume > 100; // Lower minimum volume filter
         
         return hasProperName;
       })
       .sort((a, b) => (b.volume || 0) - (a.volume || 0))
       .slice(0, 12); // Show top 12 stocks with proper names
+    
+    console.log('Filtered ticker stocks:', filtered.length, 'items');
+    return filtered;
   }, [currentStocks]);
 
   if (!tickerStocks.length) {

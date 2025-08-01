@@ -30,11 +30,11 @@ router.get("/api/stocks/:indexSymbol", async (req, res) => {
         symbol, name, sector, ldcp, open, high, low, current, 
         change, change_percent as "changePercent", volume, is_positive as "isPositive"
       FROM stocks
-      WHERE listed_in @> ARRAY['${indexSymbol}']
+      WHERE listed_in @> ARRAY[$1]
       ORDER BY current DESC
     `;
 
-    const stocks = await pool.query(stocksQuery, []);
+    const stocks = await pool.query(stocksQuery, [indexSymbol]);
 
     res.json(stocks.rows);
   } catch (error) {

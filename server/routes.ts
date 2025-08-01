@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { PSXService } from "./services/psx-service";
 import { CompanyService } from "./services/company-service";
+import kse100Routes from "./routes-kse100";
 import type {
   StockData,
   MarketSummary,
@@ -18,6 +19,9 @@ setInterval(() => {
 }, 60000);
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register KSE100 routes first
+  app.use(kse100Routes);
+  
   // Middleware to track API calls
   app.use("/api", (req, res, next) => {
     apiCallsThisMinute++;
