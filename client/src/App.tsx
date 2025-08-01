@@ -24,16 +24,16 @@ function AppContent() {
 
   // Determine current page and extract stock symbol if applicable
   const getCurrentPage = () => {
-    if (location === '/') return 'home';
-    if (location === '/api') return 'api';
-    if (location === '/ai-analysis') return 'ai-analysis';
-    if (location.startsWith('/stock/')) return 'stock-detail';
-    return 'home';
+    if (location === "/") return "home";
+    if (location === "/api") return "api";
+    if (location === "/ai-analysis") return "ai-analysis";
+    if (location.startsWith("/stock/")) return "stock-detail";
+    return "home";
   };
 
   const getStockSymbol = () => {
-    if (location.startsWith('/stock/')) {
-      return location.split('/')[2];
+    if (location.startsWith("/stock/")) {
+      return location.split("/")[2];
     }
     return undefined;
   };
@@ -42,11 +42,11 @@ function AppContent() {
   const stockSymbol = getStockSymbol();
 
   return (
-    <div className="pt-12"> {/* Add padding for fixed header ticker */}
-      <GlobalHeaderTicker />
+    <div className="pt-12">
+      {" "}
+      {/* Add padding for fixed header ticker */}
       <Navigation />
-      <StickyNavigation currentPage={currentPage as any} stockSymbol={stockSymbol} />
-
+      {/* <StickyNavigation currentPage={currentPage as any} stockSymbol={stockSymbol} /> */}
       <Switch>
         <Route path="/" component={Homepage} />
         <Route path="/stock/:symbol" component={StockDetail} />
