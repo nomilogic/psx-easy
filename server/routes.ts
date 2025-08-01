@@ -51,12 +51,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // All stocks endpoint
+  // All stocks endpoint with filtering
   app.get("/api/stocks", async (req, res) => {
     try {
-      const stocks = await storage.getMarketData();
-      //console.log(stocks, "stocks");
-      res.json(stocks);
+      const { sector, index, sector_code, limit, offset } = req.query;
+      
+      let stocks = await storage.getMarketData();
+      
+      // Apply filters
+      if (sector && typeof sector === 'string') {
+        stocks = stocks.filter(stock => 
+          stock.sector.toLowerCase().includes(sector.toLowerCase())
+        );
+      }
+      
+      if (index && typeof index === 'string') {
+        stocks = stocks.filter(stock => 
+          stock.listedIn && Array.isArray(stock.listedIn) && 
+          stock.listedIn.some(idx => 
+            idx.toLowerCase().includes(index.toLowerCase())
+          )
+        );
+      }
+      
+      if (sector_code && typeof sector_code === 'string') {
+        stocks = stocks.filter(stock => 
+          stock.sectorCodes && Array.isArray(stock.sectorCodes) && 
+          stock.sectorCodes.includes(sector_code)
+        );
+      }
+      
+      // Apply pagination
+      const startIndex = offset ? parseInt(offset as string, 10) : 0;
+      const endIndex = limit ? startIndex + parseInt(limit as string, 10) : stocks.length;
+      const paginatedStocks = stocks.slice(startIndex, endIndex);
+      
+      res.json({
+        stocks: paginatedStocks,
+        total: stocks.length,
+        filtered: paginatedStocks.length,
+        filters: {
+          sector: sector || null,
+          index: index || null,
+          sector_code: sector_code || null
+        }
+      });
     } catch (error) {
       console.error("Error fetching stocks:", error);
       res.status(500).json({ error: "Failed to fetch stocks data" });
@@ -127,6 +166,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch sectors data" });
     }
   });
+
+  // Available indices endpoint
+  app.get("/api/indices", async (req, res) => {
+    try {
+      const stocks = await storage.getMarketData();
+      const allIndices = new Set<string>();
+      
+      stocks.forEach(stock => {
+        if (stock.listedIn && Array.isArray(stock.listedIn)) {
+          stock.listedIn.forEach(index => allIndices.add(index));
+        }
+      });
+      
+      const indices = Array.from(allIndices).sort().map(index => ({
+        code: index,
+        name: index,
+        stockCount: stocks.filter(s => 
+          s.listedIn && s.listedIn.includes(index)
+        ).length
+      }));
+      
+      res.json(indices);
+    } catch (error) {
+      console.error("Error fetching indices:", error);
+      res.status(500).json({ error: "Failed to fetch indices data" });
+    }
+  });
+
+  // Available sector codes endpoint
+  app.get("/api/sector-codes", async (req, res) => {
+    try {
+      const stocks = await storage.getMarketData();
+      const allSectorCodes = new Set<string>();
+      
+      stocks.forEach(stock => {
+        if (stock.sectorCodes && Array.isArray(stock.sectorCodes)) {
+          stock.sectorCodes.forEach(code => allSectorCodes.add(code));
+        }
+      });
+      
+      const sectorCodes = Array.from(allSectorCodes).sort().map(code => ({
+        code: code,
+        name: this.mapSectorCodeToName(code),
+        stockCount: stocks.filter(s => 
+          s.sectorCodes && s.sectorCodes.includes(code)
+        ).length
+      }));
+      
+      res.json(sectorCodes);
+    } catch (error) {
+      console.error("Error fetching sector codes:", error);
+      res.status(500).json({ error: "Failed to fetch sector codes data" });
+    }
+  });
+
+  // Helper method for sector code mapping
+  function mapSectorCodeToName(code: string): string {
+    const sectorMap: { [key: string]: string } = {
+      "0801": "AUTOMOBILE ASSEMBLER",
+      "0802": "AUTOMOBILE PARTS & ACCESSORIES", 
+      "0803": "CABLE & ELECTRICAL GOODS",
+      "0804": "CEMENT",
+      "0805": "CHEMICAL",
+      "0806": "CLOSE - END MUTUAL FUND",
+      "0807": "COMMERCIAL BANKS",
+      "0808": "ENGINEERING",
+      "0809": "FERTILIZER",
+      "0810": "FOOD & PERSONAL CARE PRODUCTS",
+      "0811": "GLASS & CERAMICS",
+      "0812": "INSURANCE",
+      "0813": "INVESTMENT BANKS/INVESTMENT COS./SECURITIES COS.",
+      "0814": "JUTE",
+      "0815": "LEATHER & TANNERIES",
+      "0816": "MISCELLANEOUS",
+      "0817": "MODARABA",
+      "0818": "OIL & GAS EXPLORATION COMPANIES",
+      "0819": "OIL & GAS MARKETING COMPANIES",
+      "0820": "PAPER & BOARD",
+      "0821": "PHARMACEUTICALS",
+      "0822": "POWER GENERATION & DISTRIBUTION",
+      "0823": "REFINERY",
+      "0824": "SUGAR & ALLIED INDUSTRIES",
+      "0825": "SYNTHETIC & RAYON",
+      "0826": "TECHNOLOGY & COMMUNICATION",
+      "0827": "TEXTILE COMPOSITE",
+      "0828": "TEXTILE SPINNING",
+      "0829": "TEXTILE WEAVING",
+      "0830": "TRANSPORT",
+      "0831": "VANASPATI & ALLIED INDUSTRIES",
+      "0832": "WOOLLEN",
+      // Index codes
+      "KSE100": "KSE 100 Index",
+      "ALLSHR": "All Share Index",
+      "KSE30": "KSE 30 Index",
+      "KMI30": "KMI 30 Index"
+    };
+    
+    return sectorMap[code] || code;
+  }
 
   // Performers endpoint
   app.get("/api/performers", async (req, res) => {

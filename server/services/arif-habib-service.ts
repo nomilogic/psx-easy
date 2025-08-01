@@ -1,4 +1,3 @@
-
 import fetch from "node-fetch";
 import type { StockData, MarketSummary } from "@shared/schema";
 
@@ -53,6 +52,7 @@ interface ArifHabibStockData {
     "3m": number;
     "6m": number;
   };
+  sector_code: string;
 }
 
 interface ArifHabibResponse {
@@ -63,11 +63,11 @@ interface ArifHabibResponse {
 
 export class ArifHabibService {
   private static readonly API_URL = "https://www.arifhabibltd.com/api/market/stocks";
-  
+
   static async fetchMarketData(): Promise<StockData[] | undefined> {
     try {
       console.log("Fetching market data from Arif Habib API...");
-      
+
       const response = await fetch(this.API_URL, {
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
@@ -81,7 +81,7 @@ export class ArifHabibService {
       }
 
       const jsonData: ArifHabibResponse = await response.json();
-      
+
       if (jsonData.status !== "ok" || !jsonData.data || !Array.isArray(jsonData.data)) {
         throw new Error("Invalid response format from Arif Habib API");
       }
@@ -116,7 +116,8 @@ export class ArifHabibService {
         lowerCap: stock.lcap,
         haircut: stock.haircut,
         beta: stock.beta,
-        listedIn: stock.listed_in,
+        listedIn: this.parseListedIn(stock.listed_in),
+        sectorCodes: this.parseSectorCodes(stock.sector_code, stock.listed_in),
         pivotPoints: stock.pivot_points,
         returns: stock.returns,
         lastTradeDate: stock.date,
@@ -190,5 +191,22 @@ export class ArifHabibService {
     };
 
     return sectorMap[sectorCode] || `SECTOR_${sectorCode}`;
+  }
+
+  private static parseListedIn(listedIn: string[]): string[] {
+    return listedIn || [];
+  }
+
+  private static parseSectorCodes(sectorCode: string, listedIn: string[]): string[] {
+    const sectorCodes: string[] = [];
+
+    if (sectorCode) {
+      sectorCodes.push(sectorCode);
+    }
+
+    // You might want to add more logic here to derive sector codes from listedIn
+    // based on some predefined mapping or criteria.
+
+    return sectorCodes;
   }
 }

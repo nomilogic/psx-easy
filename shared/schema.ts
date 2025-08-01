@@ -42,6 +42,7 @@ export const stocks = pgTable("stocks", {
   haircut: real("haircut"),
   beta: real("beta"),
   listedIn: jsonb("listed_in"),
+  sectorCodes: jsonb("sector_codes"),
   pivotPoints: jsonb("pivot_points"),
   returns: jsonb("returns"),
   lastTradeDate: text("last_trade_date"),
@@ -220,6 +221,7 @@ export interface StockData {
   freeFloat?: number;
   beta?: number;
   listedIn?: string[];
+  sectorCodes?: string[];
   pivotPoints?: {
     pp: number;
     r1: number;
