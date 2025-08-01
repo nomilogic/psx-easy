@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Route, Switch, useLocation } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
 import GlobalHeaderTicker from "@/components/global-header-ticker";
+import Navigation from "@/components/navigation";
 import StickyNavigation from "@/components/sticky-navigation";
 import Homepage from "@/pages/homepage";
 import StockDetail from "@/pages/stock-detail";
@@ -43,6 +44,7 @@ function AppContent() {
   return (
     <div className="pt-12"> {/* Add padding for fixed header ticker */}
       <GlobalHeaderTicker />
+      <Navigation />
       <StickyNavigation currentPage={currentPage as any} stockSymbol={stockSymbol} />
 
       <Switch>
