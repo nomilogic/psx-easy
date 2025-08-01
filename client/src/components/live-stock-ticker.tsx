@@ -1,4 +1,4 @@
-import { ArrowUp, ArrowDown, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowUp, ArrowDown, Search, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import type { StockData } from "@shared/schema";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Activity } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface LiveStockTickerProps {
   stocks: StockData[];
@@ -21,6 +22,7 @@ export default function LiveStockTicker({ stocks: initialStocks }: LiveStockTick
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [indexFilter, setIndexFilter] = useState<string>("ALL");
   const [, setLocation] = useLocation();
 
   const { isConnected, lastMessage } = useWebSocket();
@@ -70,6 +72,13 @@ export default function LiveStockTicker({ stocks: initialStocks }: LiveStockTick
       <ChevronDown className="w-4 h-4 inline-block ml-1" />;
   };
 
+  // KSE100 constituent symbols - hardcoded list for filtering
+  const KSE100_CONSTITUENTS = [
+    'HBL', 'UBL', 'ENGRO', 'LUCKY', 'PIBTL', 'BAFL', 'MCB', 'HUBCO', 
+    'OGDC', 'PSMC', 'HUBC', 'DAWH', 'MLCF', 'SYS', 'TRG', 'HASCOL', 
+    'SEARL', 'FFC', 'NESTLE', 'UNITY'
+  ];
+
   const filteredAndSortedStocks = useMemo(() => {
     // Ensure stocks is an array before processing
     if (!Array.isArray(stocks)) {
@@ -87,6 +96,11 @@ export default function LiveStockTicker({ stocks: initialStocks }: LiveStockTick
       );
     }
 
+    // Apply index filter
+    if (indexFilter === "KSE100") {
+      filtered = filtered.filter(stock => KSE100_CONSTITUENTS.includes(stock.symbol));
+    }
+
     return filtered.sort((a, b) => {
       let aValue: any = a[sortKey];
       let bValue: any = b[sortKey];
@@ -100,7 +114,7 @@ export default function LiveStockTicker({ stocks: initialStocks }: LiveStockTick
       if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [stocks, searchTerm, sortKey, sortDirection]);
+  }, [stocks, searchTerm, sortKey, sortDirection, indexFilter]);
 
   const paginatedStocks = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
@@ -169,21 +183,36 @@ export default function LiveStockTicker({ stocks: initialStocks }: LiveStockTick
             </div>
           </div>
 
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-            <input
-              type="text"
-              placeholder="Search stocks by symbol, name, or sector..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-              autoComplete="off"
-            />
-            {searchTerm && (
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-slate-500">
-                {filteredAndSortedStocks.length} results
-              </div>
-            )}
+          <div className="flex flex-col sm:flex-row gap-4 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search stocks by symbol, name, or sector..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                autoComplete="off"
+              />
+              {searchTerm && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-slate-500">
+                  {filteredAndSortedStocks.length} results
+                </div>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-slate-400" />
+              <Select value={indexFilter} onValueChange={setIndexFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Filter by index" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All Stocks</SelectItem>
+                  <SelectItem value="KSE100">KSE100 ({KSE100_CONSTITUENTS.length} stocks)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 

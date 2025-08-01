@@ -121,6 +121,35 @@ export const companies = pgTable("companies", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Market Indices Table
+export const marketIndices = pgTable("market_indices", {
+  id: serial("id").primaryKey(),
+  symbol: text("symbol").notNull().unique(),
+  name: text("name").notNull(),
+  currentValue: real("current_value").notNull(),
+  changeValue: real("change_value").notNull(),
+  changePercent: real("change_percent").notNull(),
+  isPositive: boolean("is_positive").notNull(),
+  constituentStocks: jsonb("constituent_stocks"),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Index Constituents Table
+export const indexConstituents = pgTable("index_constituents", {
+  id: serial("id").primaryKey(),
+  indexSymbol: text("index_symbol").notNull(),
+  stockSymbol: text("stock_symbol").notNull(),
+  companyName: text("company_name").notNull(),
+  weightPercentage: real("weight_percentage"),
+  sector: text("sector"),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+});
+
+// Types for market indices
+export type MarketIndex = typeof marketIndices.$inferSelect;
+export type IndexConstituent = typeof indexConstituents.$inferSelect;
+
 // Create Zod schemas for validation
 export const insertStockSchema = createInsertSchema(stocks).omit({
   id: true,

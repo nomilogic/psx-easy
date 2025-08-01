@@ -6,6 +6,8 @@ import {
   sectors as sectorsTable,
   stockTimeSeries as stockTimeSeriesTable,
   companies as companiesTable,
+  marketIndices,
+  indexConstituents,
   insertStockSchema,
   insertMarketSummarySchema,
   insertSectorSchema,
@@ -19,6 +21,8 @@ import {
   type SystemStatus,
   type PerformersData,
   type stockTimeSeries,
+  type MarketIndex,
+  type IndexConstituent,
 } from "@shared/schema";
 import { PSXService } from "./services/psx-service";
 import { ArifHabibService } from "./services/arif-habib-service";
