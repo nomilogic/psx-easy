@@ -36,6 +36,17 @@ export function useMarketWebSocket(): MarketWebSocketData {
       return;
     }
 
+    // Fetch initial market status from REST API
+    fetch('/api/market/status')
+      .then(res => res.json())
+      .then(status => {
+        setData(prev => ({
+          ...prev,
+          marketStatus: status,
+        }));
+      })
+      .catch(err => console.warn('Could not fetch market status:', err));
+
     try {
       // Connect to the separate market WebSocket server
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";

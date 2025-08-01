@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { PSXService } from "./services/psx-service";
 import { CompanyService } from "./services/company-service";
+import { MarketSchedule } from "./market-schedule";
 import type {
   StockData,
   MarketSummary,
@@ -18,11 +19,28 @@ setInterval(() => {
 }, 60000);
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  const marketSchedule = new MarketSchedule();
   
   // Middleware to track API calls
   app.use("/api", (req, res, next) => {
     apiCallsThisMinute++;
     next();
+  });
+
+  // Market status endpoint
+  app.get("/api/market/status", async (req, res) => {
+    try {
+      const marketStatus = {
+        isOpen: marketSchedule.isMarketOpen(),
+        nextOpenTime: marketSchedule.getNextOpenTime()?.toISOString(),
+        nextCloseTime: marketSchedule.getNextCloseTime()?.toISOString(),
+        currentTime: new Date().toISOString(),
+      };
+      res.json(marketStatus);
+    } catch (error) {
+      console.error("Error fetching market status:", error);
+      res.status(500).json({ error: "Failed to fetch market status" });
+    }
   });
 
   // Market overview endpoint
@@ -113,9 +131,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           search: search || null
         },
         availableFilters: {
-          sectors: [...new Set(stocks.map(s => s.sector))].sort(),
-          indices: [...new Set(stocks.flatMap(s => s.listedIn || []))].sort(),
-          sectorCode: [...new Set(stocks.map(s => s.sectorCode).filter(Boolean))].sort()
+          sectors: Array.from(new Set(stocks.map(s => s.sector))).sort(),
+          indices: Array.from(new Set(stocks.flatMap(s => s.listedIn || []))).sort(),
+          sectorCode: Array.from(new Set(stocks.map(s => s.sectorCode).filter(Boolean))).sort()
         }
       });
     } catch (error) {
@@ -398,18 +416,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update with current stats
       await storage.updateSystemStatus({
         apiCallsPerMin: apiCallsThisMinute,
-        connectedClients: connectedClients,
+        connectedClients: 0, // WebSocket clients are now handled by separate server
       });
       const updatedStatus = await storage.getSystemStatus();
       
       // Add data source status information
       const enhancedStatus = {
         ...updatedStatus,
-        capitalStakeConnected: capitalStakeService.isConnected(),
-        totalStocksReceived: capitalStakeService.getStocksData().length,
+        marketOpen: marketSchedule.isMarketOpen(),
         primaryDataSource: "Arif Habib API",
         fallbackDataSource: "PSX Service",
-        lastDataFetch: new Date(lastDataFetch).toISOString(),
+        lastDataFetch: new Date().toISOString(),
       };
       
       res.json(enhancedStatus);

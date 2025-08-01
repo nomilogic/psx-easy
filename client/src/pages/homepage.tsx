@@ -45,6 +45,7 @@ import {
   LineChart,
 } from "lucide-react";
 import { useWebSocket } from "@/hooks/use-websocket";
+import { useMarketWebSocket } from "@/hooks/useMarketWebSocket";
 import type { StockData, MarketSummary } from "@shared/schema";
 import {
   ChartContainer,
@@ -68,10 +69,12 @@ import NewsSection from "@/components/news-section";
 import HeaderTicker from "@/components/header-ticker";
 import IndicesTicker from "@/components/indices-ticker";
 import MarketDataTable from "@/components/market-data-table";
+import { MarketStatusIndicator } from "@/components/MarketStatusIndicator";
 const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
 
 export default function Homepage() {
   const { marketData: stocks, marketSummary, isConnected } = useWebSocket();
+  const { marketStatus, lastUpdate, isConnected: marketConnected } = useMarketWebSocket();
 
   const { data: performersData } = useQuery({
     queryKey: ["/api/performers"],
@@ -171,19 +174,17 @@ export default function Homepage() {
               </div>
             </div>
 
-            {/* Compact Market Status */}
+            {/* Market Status Indicator */}
             <Card className="bg-white/15 backdrop-blur-sm border-white/20 text-white">
               <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold">Live Market</h3>
-                  <Badge variant="secondary" className="bg-green-500/20 text-green-200 border-green-400/30 text-xs">
-                    {isConnected ? "Live" : "Offline"}
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-2 gap-3 text-sm">
+                <MarketStatusIndicator 
+                  marketStatus={marketStatus}
+                  lastUpdate={lastUpdate}
+                />
+                <div className="grid grid-cols-2 gap-3 text-sm mt-4">
                   <div>
                     <p className="text-blue-200 text-xs">Total Stocks</p>
-                    <p className="text-xl font-bold">{marketSummary?.totalStocks || "476"}</p>
+                    <p className="text-xl font-bold">{marketSummary?.totalStocks || stocks?.length || "476"}</p>
                   </div>
                   <div>
                     <p className="text-blue-200 text-xs">Volume</p>
