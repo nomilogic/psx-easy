@@ -74,6 +74,23 @@ const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#0
 
 export default function Homepage() {
   const { marketData: stocks, marketSummary, isConnected } = useWebSocket();
+  
+  // Fetch data directly from API when WebSocket isn't providing data
+  const { data: apiStocks } = useQuery({
+    queryKey: ['/api/stocks'],
+    enabled: !stocks || stocks.length === 0,
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+  
+  const { data: apiOverview } = useQuery({
+    queryKey: ['/api/overview'],
+    enabled: !marketSummary,
+    refetchInterval: 30000,
+  });
+  
+  // Use WebSocket data if available, otherwise fall back to API data
+  const displayStocks = stocks && stocks.length > 0 ? stocks : (apiStocks as any)?.stocks || [];
+  const displaySummary = marketSummary || apiOverview;
   const { marketStatus, lastUpdate, isConnected: marketConnected } = useMarketWebSocket();
 
   const { data: performersData } = useQuery({
@@ -102,7 +119,7 @@ export default function Homepage() {
 
   // Generate compact chart data
   const compactChartData = React.useMemo(() => {
-    if (!stocks || stocks.length === 0) {
+    if (!displayStocks || displayStocks.length === 0) {
       return Array.from({ length: 12 }, (_, i) => ({
         name: `H${i + 1}`,
         value: 48000 + Math.random() * 8000,
@@ -110,13 +127,13 @@ export default function Homepage() {
       }));
     }
 
-    return stocks.slice(0, 12).map((stock, index) => ({
+    return displayStocks.slice(0, 12).map((stock: any, index: number) => ({
       name: stock.symbol.substring(0, 4),
       value: stock.current,
       change: stock.changePercent,
       volume: stock.volume,
     }));
-  }, [stocks]);
+  }, [displayStocks]);
 
   const sectorChartData = React.useMemo(() => {
     return (
@@ -144,7 +161,7 @@ export default function Homepage() {
       {/* Market Indices Ticker */}
       <IndicesTicker />
       {/* Stock Ticker */}
-      <HeaderTicker stocks={stocks || []} />
+      <HeaderTicker stocks={displayStocks} />
 
       {/* Compact Hero Section */}
       <section className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 text-white py-12">
@@ -181,21 +198,21 @@ export default function Homepage() {
                 <div className="grid grid-cols-2 gap-3 text-sm mt-4">
                   <div>
                     <p className="text-blue-200 text-xs">Total Stocks</p>
-                    <p className="text-xl font-bold">{marketSummary?.totalStocks || stocks?.length || "476"}</p>
+                    <p className="text-xl font-bold">{(displaySummary as any)?.totalStocks || displayStocks?.length || "476"}</p>
                   </div>
                   <div>
                     <p className="text-blue-200 text-xs">Volume</p>
                     <p className="text-xl font-bold">
-                      {marketSummary?.totalVolume ? (marketSummary.totalVolume / 1000000).toFixed(1) + "M" : "245M"}
+                      {(displaySummary as any)?.totalVolume ? ((displaySummary as any).totalVolume / 1000000).toFixed(1) + "M" : "245M"}
                     </p>
                   </div>
                   <div>
                     <p className="text-blue-200 text-xs">Gainers</p>
-                    <p className="text-lg font-bold text-green-300">{marketSummary?.gainers || "156"}</p>
+                    <p className="text-lg font-bold text-green-300">{(displaySummary as any)?.totalAdvances || "156"}</p>
                   </div>
                   <div>
                     <p className="text-blue-200 text-xs">Decliners</p>
-                    <p className="text-lg font-bold text-red-300">{marketSummary?.losers || "142"}</p>
+                    <p className="text-lg font-bold text-red-300">{(displaySummary as any)?.totalDeclines || "142"}</p>
                   </div>
                 </div>
               </CardContent>
