@@ -27,6 +27,7 @@ interface StockData {
   changePercent: number;
   volume: number;
   isPositive: boolean;
+  listedIn: string[];
 }
 
 interface MarketSummary {
@@ -356,6 +357,8 @@ export class PSXService {
         const symbol = $(cells[0]).find("strong").text().trim();
         const name = $(cells[0]).find("a").attr("data-title") || "";
         const sector = $(cells[0]).text().trim();
+        const listedIn = $(cells[1]).text().trim().split(",") || [];
+
         const ldcp = parseFloat($(cells[3]).attr("data-order") || "0");
         const open = parseFloat($(cells[4]).attr("data-order") || "0");
         const high = parseFloat($(cells[5]).attr("data-order") || "0");
@@ -396,6 +399,7 @@ export class PSXService {
             changePercent,
             volume,
             isPositive,
+            listedIn,
           });
         }
       }

@@ -127,7 +127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         availableFilters: {
           sectors: [...new Set(stocks.map(s => s.sector))].sort(),
           indices: [...new Set(stocks.flatMap(s => s.listedIn || []))].sort(),
-          sectorCodes: [...new Set(stocks.map(s => s.sectorCode).filter(Boolean))].sort()
+          sectorCode: [...new Set(stocks.map(s => s.sectorCode).filter(Boolean))].sort()
         }
       });
     } catch (error) {
@@ -240,7 +240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
       
-      const sectorCodes = await Promise.all(
+      const sectorCode = await Promise.all(
         Array.from(allSectorCodes).sort().map(async code => ({
           code: code,
           name: await mapSectorCodeToName(code),
@@ -248,7 +248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }))
       );
       
-      res.json(sectorCodes);
+      res.json(sectorCode);
     } catch (error) {
       console.error("Error fetching sector codes:", error);
       res.status(500).json({ error: "Failed to fetch sector codes data" });

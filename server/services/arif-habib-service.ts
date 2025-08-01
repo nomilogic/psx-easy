@@ -193,9 +193,9 @@ export class ArifHabibService {
       "836": "REAL ESTATE INVESTMENT TRUST",
       "837": "EXCHANGE TRADED FUNDS",
       "838": "PROPERTY",
-      "36": "Bills and Bonds",
-      "40": "Future Contracts", 
-      "41": "Stock Index Future Contracts"
+      "36": "BILL AND BONDS",
+      "40": "FUTURE CONTRACTS", 
+      "41": "STOCK INDEX FUTURE CONTRACTS",
     };
 
     return sectorMap[sectorCode] || sectorCode;

@@ -106,7 +106,7 @@ export class DatabaseStorage implements IStorage {
       ]);
     } catch (dbError) {
       console.error("Database failed, trying Supabase direct query:", dbError);
-      // Fallback to Supabase direct query  
+      // Fallback to Supabase direct query
       return this.getMarketDataFromSupabase();
     }
   }
@@ -123,7 +123,9 @@ export class DatabaseStorage implements IStorage {
       ]);
 
       if (arifHabibData && arifHabibData.length > 0) {
-        console.log(`✅ Priority 1: Got ${arifHabibData.length} stocks from Arif Habib API`);
+        console.log(
+          `✅ Priority 1: Got ${arifHabibData.length} stocks from Arif Habib API`,
+        );
         // Update database directly
         await this.setMarketData(arifHabibData);
         return arifHabibData;
@@ -142,7 +144,9 @@ export class DatabaseStorage implements IStorage {
       ]);
 
       if (psxData && psxData.length > 0) {
-        console.log(`✅ Priority 2: Got ${psxData.length} stocks from DPS service (fallback)`);
+        console.log(
+          `✅ Priority 2: Got ${psxData.length} stocks from DPS service (fallback)`,
+        );
         // Update database directly
         await this.setMarketData(psxData);
         return psxData;
@@ -152,7 +156,9 @@ export class DatabaseStorage implements IStorage {
     }
 
     // **PRIORITY 3: Return existing database data**
-    console.log("⚠️ All external APIs failed, returning existing database data");
+    console.log(
+      "⚠️ All external APIs failed, returning existing database data",
+    );
     return this.getMarketDataFromDatabase();
   }
 
@@ -211,6 +217,8 @@ export class DatabaseStorage implements IStorage {
             changePercent: stock.changePercent || 0,
             volume: stock.volume || 0,
             isPositive: stock.isPositive ?? false,
+            listedIn: stock.listedIn || null,
+            sectorCode: stock.sectorCode || null,
           };
         })
         .filter((stock) => stock.symbol && stock.name); // Filter out invalid records
@@ -251,16 +259,18 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  private async insertBatchOptimized(batch: any[]): Promise<void> {
+  private async insertBatchOptimized(batch: StockData[]): Promise<void> {
     // Separate new stocks from existing ones
     const existingSymbols = await db
       .select({ symbol: stocksTable.symbol })
       .from(stocksTable)
-      .where(sql`symbol = ANY(${batch.map(s => s.symbol)})`);
+      .where(sql`symbol = ANY(${batch.map((s) => s.symbol)})`);
 
-    const existingSet = new Set(existingSymbols.map(s => s.symbol));
-    const newStocks = batch.filter(stock => !existingSet.has(stock.symbol));
-    const existingStocks = batch.filter(stock => existingSet.has(stock.symbol));
+    const existingSet = new Set(existingSymbols.map((s) => s.symbol));
+    const newStocks = batch.filter((stock) => !existingSet.has(stock.symbol));
+    const existingStocks = batch.filter((stock) =>
+      existingSet.has(stock.symbol),
+    );
 
     // Insert new stocks with all data
     if (newStocks.length > 0) {
@@ -292,7 +302,9 @@ export class DatabaseStorage implements IStorage {
           })
           .where(eq(stocksTable.symbol, stock.symbol));
       }
-      console.log(`Updated ${existingStocks.length} existing stocks with dynamic data only`);
+      console.log(
+        `Updated ${existingStocks.length} existing stocks with dynamic data only`,
+      );
     }
   }
 
@@ -300,7 +312,7 @@ export class DatabaseStorage implements IStorage {
     // Fallback method for failed batches - insert one by one
     for (const stock of batch) {
       try {
-        // Additional validation for individual inserts - include listed_in and sector_codes
+        // Additional validation for individual inserts - include listed_in and sector_code
         const sanitizedStock = {
           symbol: stock.symbol || "",
           name: stock.name || "",
@@ -315,7 +327,7 @@ export class DatabaseStorage implements IStorage {
           volume: stock.volume || 0,
           isPositive: stock.isPositive ?? false,
           listedIn: stock.listedIn || null,
-          sectorCodes: stock.sectorCodes || null,
+          sectorCode: stock.sectorCode || null,
         };
 
         // Skip stocks with missing essential data
@@ -345,7 +357,7 @@ export class DatabaseStorage implements IStorage {
                 volume: sanitizedStock.volume,
                 isPositive: sanitizedStock.isPositive,
                 listedIn: sanitizedStock.listedIn,
-                sectorCodes: sanitizedStock.sectorCodes,
+                sectorCode: sanitizedStock.sectorCode,
                 updatedAt: new Date(),
               },
             }),
@@ -435,8 +447,8 @@ export class DatabaseStorage implements IStorage {
       changePercent: stock.changePercent,
       volume: stock.volume,
       isPositive: stock.isPositive,
-      listedIn: stock.listedIn as string[] || undefined,
-      sectorCodes: stock.sectorCodes || undefined,
+      listedIn: (stock.listedIn as string[]) || undefined,
+      sectorCode: stock.sectorCode || undefined,
     };
   }
 
