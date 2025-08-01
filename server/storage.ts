@@ -91,8 +91,26 @@ export class DatabaseStorage implements IStorage {
   };
 
   async getMarketData(): Promise<StockData[]> {
+    // **PRIORITY 1: Database as single source of truth for frontend**
+    // Frontend always gets data from database - cron jobs and APIs update database directly
     try {
-      // First try Arif Habib API as primary source
+      return await Promise.race([
+        this.getMarketDataFromDatabase(),
+        new Promise<StockData[]>((_, reject) =>
+          setTimeout(() => reject(new Error("Database timeout")), 10000),
+        ),
+      ]);
+    } catch (dbError) {
+      console.error("Database failed, trying Supabase direct query:", dbError);
+      // Fallback to Supabase direct query  
+      return this.getMarketDataFromSupabase();
+    }
+  }
+
+  // **PRIORITY SYSTEM: For cron jobs and background updates**
+  async fetchFreshMarketData(): Promise<StockData[]> {
+    // **PRIORITY 1: Arif Habib API** - Most comprehensive data
+    try {
       const arifHabibData = await Promise.race([
         ArifHabibService.fetchMarketData(),
         new Promise<null>((_, reject) =>
@@ -101,57 +119,37 @@ export class DatabaseStorage implements IStorage {
       ]);
 
       if (arifHabibData && arifHabibData.length > 0) {
-        console.log(`Got ${arifHabibData.length} stocks from Arif Habib API`);
-        // Store in database for caching (non-blocking)
-        this.setMarketData(arifHabibData).catch((err) =>
-          console.warn("Background database update failed:", err),
-        );
+        console.log(`✅ Priority 1: Got ${arifHabibData.length} stocks from Arif Habib API`);
+        // Update database directly
+        await this.setMarketData(arifHabibData);
         return arifHabibData;
       }
     } catch (error) {
-      console.error(
-        "Arif Habib API failed, trying PSX service:",
-        error,
-      );
+      console.error("❌ Priority 1 failed (Arif Habib API):", error);
     }
 
+    // **PRIORITY 2: DPS Service** - Secondary data source
     try {
-      // Fallback to PSX service
       const psxData = await Promise.race([
         PSXService.fetchMarketData(),
         new Promise<null>((_, reject) =>
-          setTimeout(() => reject(new Error("PSX service timeout")), 230000),
+          setTimeout(() => reject(new Error("PSX service timeout")), 20000),
         ),
       ]);
 
       if (psxData && psxData.length > 0) {
-        console.log(`Got ${psxData.length} stocks from PSX service (fallback)`);
-        // Store in database for caching (non-blocking)
-        this.setMarketData(psxData).catch((err) =>
-          console.warn("Background database update failed:", err),
-        );
+        console.log(`✅ Priority 2: Got ${psxData.length} stocks from DPS service (fallback)`);
+        // Update database directly
+        await this.setMarketData(psxData);
         return psxData;
       }
     } catch (error) {
-      console.error(
-        "PSX service failed, falling back to database data:",
-        error,
-      );
+      console.error("❌ Priority 2 failed (DPS service):", error);
     }
 
-    // Try database with timeout protection
-    try {
-      return await Promise.race([
-        this.getMarketDataFromDatabase(),
-        new Promise<StockData[]>((_, reject) =>
-          setTimeout(() => reject(new Error("Database timeout")), 15000),
-        ),
-      ]);
-    } catch (dbError) {
-      console.error("Database failed, trying Supabase direct query:", dbError);
-      // Fallback to Supabase direct query
-      return this.getMarketDataFromSupabase();
-    }
+    // **PRIORITY 3: Return existing database data**
+    console.log("⚠️ All external APIs failed, returning existing database data");
+    return this.getMarketDataFromDatabase();
   }
 
   async getMarketDataFromDatabase(): Promise<StockData[]> {

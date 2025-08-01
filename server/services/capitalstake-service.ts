@@ -120,7 +120,7 @@ export class CapitalStakeService {
   private processTickData(message: CapitalStakeTickData): void {
     const { d } = message;
 
-    // Convert CapitalStake format to our StockData format
+    // Convert CapitalStake format to our StockData format - only basic fields for database compatibility
     const stockData: StockData = {
       symbol: d.s,
       name: `${d.s} Limited`, // We'll need to map this properly later
@@ -134,6 +134,7 @@ export class CapitalStakeService {
       changePercent: d.pch, // Already in percentage format
       volume: d.v,
       isPositive: d.ch >= 0,
+      // Extended fields as optional - not saved to database
       lastTradeTime: d.lt ? new Date(d.lt.t * 1000).toISOString() : new Date().toISOString(),
       lastTradePrice: d.lt?.x || 0,
       lastTradeVolume: d.lt?.v || 0,

@@ -1476,27 +1476,16 @@ source: "Market Analysis",
   // WebSocket server setup
   const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
 
-  // Set up CapitalStake data subscription for real-time updates
+  // **PRIORITY 3: WebSocket for live updates only (no database writes from here)**
   const unsubscribeCapitalStake = capitalStakeService.subscribe((stocksData) => {
-    console.log(`Received ${stocksData.length} stocks from CapitalStake WebSocket`);
+    console.log(`📡 Received ${stocksData.length} live updates from CapitalStake WebSocket`);
     
-    // Only update database if we have a reasonable amount of data
-    if (stocksData.length > 10) {
-      // Update storage with CapitalStake data (non-blocking)
-      storage.setMarketData(stocksData).catch(error => {
-        console.error("Error updating storage with CapitalStake data:", error);
-      });
-
-      // Calculate and store market summary
-      const marketSummary = capitalStakeService.calculateMarketSummary();
-      storage.setMarketSummary(marketSummary).catch(error => {
-        console.error("Error updating market summary:", error);
-      });
-    }
-
+    // **WebSocket data is broadcast-only - does NOT update database**
+    // Database updates come from cron jobs using Priority 1 & 2 APIs
+    
     // Always broadcast real-time updates to WebSocket clients
     broadcastToClients({
-      type: "market_update",
+      type: "live_update", // Changed from "market_update" to "live_update"
       timestamp: new Date().toISOString(),
       data: {
         stocks: stocksData,
@@ -1505,8 +1494,8 @@ source: "Market Analysis",
     });
   });
 
-  // Periodic data fetching from primary APIs as backup
-  async function fetchPrimaryDataPeriodically() {
+  // **CRON JOB: Periodic database updates using priority system**
+  async function updateDatabasePeriodically() {
     const now = Date.now();
     if (now - lastDataFetch < DATA_FETCH_INTERVAL) {
       return;
@@ -1515,32 +1504,34 @@ source: "Market Analysis",
     lastDataFetch = now;
     
     try {
-      console.log("Starting periodic data fetch from primary APIs...");
-      const marketData = await storage.getMarketData();
+      console.log("🔄 Starting cron job: Priority-based database update...");
       
-      if (marketData && marketData.length > 0) {
-        const marketSummary = ArifHabibService.calculateMarketSummary(marketData);
+      // Use the priority system to fetch fresh data and update database
+      const freshMarketData = await storage.fetchFreshMarketData();
+      
+      if (freshMarketData && freshMarketData.length > 0) {
+        const marketSummary = ArifHabibService.calculateMarketSummary(freshMarketData);
         await storage.setMarketSummary(marketSummary);
         
-        // Broadcast updated data to all clients
+        // Broadcast database update to all clients
         broadcastToClients({
-          type: "market_update",
+          type: "database_update", // Distinguish from live updates
           timestamp: new Date().toISOString(),
           data: {
-            stocks: marketData,
+            stocks: freshMarketData,
             summary: marketSummary,
           },
         });
         
-        console.log(`Periodic fetch completed: ${marketData.length} stocks updated`);
+        console.log(`✅ Cron job completed: ${freshMarketData.length} stocks updated in database`);
       }
     } catch (error) {
-      console.error("Error in periodic data fetch:", error);
+      console.error("❌ Error in cron job database update:", error);
     }
   }
 
-  // Set up periodic fetching (every 30 seconds)
-  setInterval(fetchPrimaryDataPeriodically, DATA_FETCH_INTERVAL);
+  // Set up cron job for database updates (every 30 seconds)
+  setInterval(updateDatabasePeriodically, DATA_FETCH_INTERVAL);
 
   wss.on("connection", (ws: WebSocket) => {
     connectedClients++;
