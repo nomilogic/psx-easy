@@ -1,36 +1,66 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Route, Switch, useLocation } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
-import { Switch, Route } from "wouter";
+import GlobalHeaderTicker from "@/components/global-header-ticker";
+import StickyNavigation from "@/components/sticky-navigation";
 import Homepage from "@/pages/homepage";
-import ApiDashboard from "@/pages/api-dashboard";
 import StockDetail from "@/pages/stock-detail";
-import AIAnalysis from "@/pages/ai-analysis";
 import NotFound from "@/pages/not-found";
-import Navigation from "@/components/navigation";
-import { useWebSocket } from "@/hooks/use-websocket";
+import ApiDashboard from "@/pages/api-dashboard";
+import AiAnalysis from "@/pages/ai-analysis-new";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60, // 1 minute
+      staleTime: 1000 * 30, // 30 seconds
+      refetchInterval: 1000 * 30, // Auto-refetch every 30 seconds
     },
   },
 });
 
+function AppContent() {
+  const [location] = useLocation();
+
+  // Determine current page and extract stock symbol if applicable
+  const getCurrentPage = () => {
+    if (location === '/') return 'home';
+    if (location === '/api') return 'api';
+    if (location === '/ai-analysis') return 'ai-analysis';
+    if (location.startsWith('/stock/')) return 'stock-detail';
+    return 'home';
+  };
+
+  const getStockSymbol = () => {
+    if (location.startsWith('/stock/')) {
+      return location.split('/')[2];
+    }
+    return undefined;
+  };
+
+  const currentPage = getCurrentPage();
+  const stockSymbol = getStockSymbol();
+
+  return (
+    <div className="pt-12"> {/* Add padding for fixed header ticker */}
+      <GlobalHeaderTicker />
+      <StickyNavigation currentPage={currentPage as any} stockSymbol={stockSymbol} />
+
+      <Switch>
+        <Route path="/" component={Homepage} />
+        <Route path="/stock/:symbol" component={StockDetail} />
+        <Route path="/api" component={ApiDashboard} />
+        <Route path="/ai-analysis" component={AiAnalysis} />
+        <Route component={NotFound} />
+      </Switch>
+      <Toaster />
+    </div>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen bg-background">
-        <Navigation />
-        <Switch>
-          <Route path="/" component={Homepage} />
-          <Route path="/api" component={ApiDashboard} />
-          <Route path="/ai-analysis" component={AIAnalysis} />
-          <Route path="/stock/:symbol" component={StockDetail} />
-          <Route component={NotFound} />
-        </Switch>
-        <Toaster />
-      </div>
+      <AppContent />
     </QueryClientProvider>
   );
 }

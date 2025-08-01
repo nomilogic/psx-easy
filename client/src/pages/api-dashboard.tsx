@@ -4,7 +4,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LiveStockTicker from "@/components/live-stock-ticker";
-import HeaderTicker from "@/components/header-ticker";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { TrendingUp, Search, BarChart3, Users, Server, Globe, ArrowLeft } from "lucide-react";
@@ -55,9 +54,6 @@ function ApiDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header Ticker */}
-      <HeaderTicker stocks={liveStocks || []} />
-      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white shadow-md">

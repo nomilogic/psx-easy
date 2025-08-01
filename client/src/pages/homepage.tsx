@@ -65,8 +65,6 @@ import {
   Cell,
 } from "recharts";
 import NewsSection from "@/components/news-section";
-import HeaderTicker from "@/components/header-ticker";
-
 const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
 
 export default function Homepage() {
@@ -137,9 +135,6 @@ export default function Homepage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header Ticker */}
-      <HeaderTicker stocks={stocks || []} />
-      
       {/* Compact Hero Section */}
       <section className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 text-white py-12">
         <div className="absolute inset-0 bg-black/10"></div>

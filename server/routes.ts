@@ -331,7 +331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         ratiosDataPresent: {
           fresh: !!freshData?.ratiosData,
-          cached: !!cachedData?.ratiosData,
+          cached: cachedData?.ratiosData,
         },
         freeFloatPresent: {
           fresh: freshData?.freeFloat !== undefined,
@@ -1048,11 +1048,11 @@ source: "Market Analysis",
         name: stock.name || stock.symbol,
         sector: stock.sector || "Other"
       }));
-      
+
       res.json(symbols);
     } catch (error) {
       console.error("Error fetching symbols:", error);
-      
+
       // Fallback symbols response
       const fallbackSymbols = [
         { symbol: "HBL", name: "Habib Bank Limited", sector: "COMMERCIAL BANKS" },
@@ -1061,7 +1061,7 @@ source: "Market Analysis",
         { symbol: "UNITY", name: "Unity Foods Limited", sector: "FOOD & PERSONAL CARE PRODUCTS" },
         { symbol: "PSO", name: "Pakistan State Oil Company Limited", sector: "OIL & GAS MARKETING COMPANIES" }
       ];
-      
+
       res.json(fallbackSymbols);
     }
   });

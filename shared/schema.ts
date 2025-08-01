@@ -153,6 +153,15 @@ export interface StockData {
   changePercent: number;
   volume: number;
   isPositive: boolean;
+  lastTradeTime?: string;
+  lastTradePrice?: number;
+  lastTradeVolume?: number;
+  bidPrice?: number;
+  bidVolume?: number;
+  askPrice?: number;
+  askVolume?: number;
+  value?: number;
+  trades?: number;
 }
 
 export interface MarketSummary {
