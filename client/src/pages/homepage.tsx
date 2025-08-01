@@ -75,22 +75,30 @@ const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#0
 export default function Homepage() {
   const { marketData: stocks, marketSummary, isConnected } = useWebSocket();
   
-  // Fetch data directly from API when WebSocket isn't providing data
-  const { data: apiStocks } = useQuery({
+  // Always fetch data from API as fallback, regardless of WebSocket status
+  const { data: apiStocks, isLoading: stocksLoading } = useQuery({
     queryKey: ['/api/stocks'],
-    enabled: !stocks || stocks.length === 0,
     refetchInterval: 30000, // Refresh every 30 seconds
+    staleTime: 10000, // Consider data stale after 10 seconds
   });
   
-  const { data: apiOverview } = useQuery({
+  const { data: apiOverview, isLoading: overviewLoading } = useQuery({
     queryKey: ['/api/overview'],
-    enabled: !marketSummary,
     refetchInterval: 30000,
+    staleTime: 10000,
   });
   
-  // Use WebSocket data if available, otherwise fall back to API data
-  const displayStocks = stocks && stocks.length > 0 ? stocks : (apiStocks as any)?.stocks || [];
-  const displaySummary = marketSummary || apiOverview;
+  // Prefer WebSocket data when available and fresh, otherwise use API data
+  const displayStocks = (stocks && stocks.length > 0 && isConnected) ? stocks : (apiStocks as any)?.stocks || [];
+  const displaySummary = (marketSummary && isConnected) ? marketSummary : apiOverview;
+  
+  console.log('Homepage data source:', {
+    wsConnected: isConnected,
+    wsStocks: stocks?.length || 0,
+    apiStocks: (apiStocks as any)?.stocks?.length || 0,
+    usingWS: stocks && stocks.length > 0 && isConnected,
+    finalStocks: displayStocks.length
+  });
   const { marketStatus, lastUpdate, isConnected: marketConnected } = useMarketWebSocket();
 
   const { data: performersData } = useQuery({

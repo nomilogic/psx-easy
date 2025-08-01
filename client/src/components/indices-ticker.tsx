@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { TrendingUp, TrendingDown, BarChart3 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 interface IndexData {
   symbol: string;
@@ -26,14 +27,49 @@ const MARKET_INDICES = [
 
 export default function IndicesTicker({ className = "" }: IndicesTickerProps) {
   const [indices, setIndices] = useState<IndexData[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  // Use React Query for better data management and automatic fallbacks
+  const { data: indicesData, isLoading: loading } = useQuery({
+    queryKey: ['/api/indices'],
+    queryFn: async () => {
+      const results = await Promise.allSettled(
+        MARKET_INDICES.map(async (index) => {
+          const response = await fetch(`/api/index/${index.symbol}?interval=int`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.data && data.data.length > 0) {
+              const latest = data.data[data.data.length - 1];
+              const previous = data.data.length > 1 ? data.data[data.data.length - 2] : latest;
+              const change = latest[1] - previous[1];
+              const changePercent = previous[1] !== 0 ? (change / previous[1]) * 100 : 0;
+              
+              return {
+                symbol: index.symbol,
+                name: index.name,
+                value: latest[1],
+                change: change,
+                changePercent: changePercent,
+                isPositive: change >= 0
+              };
+            }
+          }
+          throw new Error(`Failed to fetch ${index.symbol}`);
+        })
+      );
+      
+      return results
+        .filter((result): result is PromiseFulfilledResult<IndexData> => result.status === 'fulfilled')
+        .map(result => result.value);
+    },
+    refetchInterval: 30000,
+    staleTime: 10000,
+  });
 
   useEffect(() => {
-    fetchIndicesData();
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchIndicesData, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    if (indicesData) {
+      setIndices(indicesData);
+    }
+  }, [indicesData]);
 
   const fetchIndicesData = async () => {
     try {

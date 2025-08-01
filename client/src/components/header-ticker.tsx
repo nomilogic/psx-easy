@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { TrendingUp, TrendingDown, Activity } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import type { StockData } from "@shared/schema";
 import { useWebSocket } from "@/hooks/use-websocket";
 
@@ -17,6 +18,24 @@ const MARKET_INDICES = [
 export default function HeaderTicker({ stocks: initialStocks }: HeaderTickerProps) {
   const [currentStocks, setCurrentStocks] = useState<StockData[]>(initialStocks || []);
   const { isConnected, lastMessage } = useWebSocket();
+  
+  // API fallback for when WebSocket fails
+  const { data: apiStocks } = useQuery({
+    queryKey: ['/api/stocks'],
+    refetchInterval: 30000,
+    staleTime: 10000,
+  });
+  
+  // Use WebSocket data if available, otherwise fall back to API
+  const effectiveStocks = useMemo(() => {
+    if (currentStocks && currentStocks.length > 0 && isConnected) {
+      return currentStocks;
+    }
+    if (initialStocks && initialStocks.length > 0) {
+      return initialStocks;
+    }
+    return (apiStocks as any)?.stocks || [];
+  }, [currentStocks, initialStocks, apiStocks, isConnected]);
 
   // Update stocks when WebSocket data changes, but prevent animation restart
   useEffect(() => {
@@ -58,15 +77,20 @@ export default function HeaderTicker({ stocks: initialStocks }: HeaderTickerProp
 
   // Filter stocks with proper company names and exclude market indices
   const tickerStocks = useMemo(() => {
-    console.log('HeaderTicker currentStocks:', currentStocks?.length || 0, 'items');
+    console.log('HeaderTicker data:', {
+      currentStocks: currentStocks?.length || 0,
+      effectiveStocks: effectiveStocks?.length || 0,
+      isConnected,
+      apiAvailable: !!(apiStocks as any)?.stocks?.length
+    });
     
-    if (!currentStocks || currentStocks.length === 0) {
+    if (!effectiveStocks || effectiveStocks.length === 0) {
       console.log('No stocks available for ticker');
       return [];
     }
     
-    const filtered = currentStocks
-      .filter(stock => {
+    const filtered = effectiveStocks
+      .filter((stock: StockData) => {
         // Exclude market indices
         if (MARKET_INDICES.includes(stock.symbol)) return false;
         
@@ -81,12 +105,12 @@ export default function HeaderTicker({ stocks: initialStocks }: HeaderTickerProp
         
         return hasProperName;
       })
-      .sort((a, b) => (b.volume || 0) - (a.volume || 0))
+      .sort((a: StockData, b: StockData) => (b.volume || 0) - (a.volume || 0))
       .slice(0, 12); // Show top 12 stocks with proper names
     
     console.log('Filtered ticker stocks:', filtered.length, 'items');
     return filtered;
-  }, [currentStocks]);
+  }, [effectiveStocks]);
 
   if (!tickerStocks.length) {
     return (
@@ -118,7 +142,7 @@ export default function HeaderTicker({ stocks: initialStocks }: HeaderTickerProp
           <div className="flex-1 mx-4 overflow-hidden">
             <div className="animate-ticker whitespace-nowrap">
               <div className="inline-flex space-x-8">
-                {tickerStocks.map((stock) => (
+                {tickerStocks.map((stock: StockData) => (
                   <div key={stock.symbol} className="inline-flex items-center space-x-2 text-sm">
                     <span className="font-semibold text-blue-300">{stock.symbol}</span>
                     <span className="text-white text-xs">{stock.name?.substring(0, 25)}</span>
@@ -138,7 +162,7 @@ export default function HeaderTicker({ stocks: initialStocks }: HeaderTickerProp
                   </div>
                 ))}
                 {/* Repeat for seamless continuous scroll */}
-                {tickerStocks.map((stock) => (
+                {tickerStocks.map((stock: StockData) => (
                   <div key={`${stock.symbol}-dup`} className="inline-flex items-center space-x-2 text-sm">
                     <span className="font-semibold text-blue-300">{stock.symbol}</span>
                     <span className="text-white text-xs">{stock.name?.substring(0, 25)}</span>

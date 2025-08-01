@@ -99,7 +99,7 @@ export class DatabaseStorage implements IStorage {
     // Frontend always gets data from database - cron jobs and APIs update database directly
     try {
       return await Promise.race([
-        this.getMarketDataFromDatabase(),
+        this.fetchFreshMarketData(),
         new Promise<StockData[]>((_, reject) =>
           setTimeout(() => reject(new Error("Database timeout")), 10000),
         ),
@@ -194,7 +194,7 @@ export class DatabaseStorage implements IStorage {
 
     try {
       // Use much smaller batches and faster operations
-      const batchSize = 20; // Reduced from 50 to 20
+      const batchSize = 100; // Reduced from 50 to 20
 
       // Skip delete operation to avoid locks, use upsert instead
       console.log(
