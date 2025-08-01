@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { PSXService } from "./services/psx-service";
 import { CompanyService } from "./services/company-service";
 import { CapitalStakeService } from "./services/capitalstake-service";
+import { ArifHabibService } from "./services/arif-habib-service";
 import type {
   StockData,
   MarketSummary,
@@ -1133,7 +1134,7 @@ source: "Market Analysis",
         stocks.reduce((sum, stock) => sum + stock.changePercent, 0) /
         stocks.length;
       const totalMarketCap = stocks.reduce(
-        (sum, stock) => sum + stock.currentPrice * stock.volume,
+        (sum, stock) => sum + stock.current * stock.volume,
         0,
       );
 

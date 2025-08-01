@@ -193,8 +193,8 @@ export class DatabaseStorage implements IStorage {
         `Starting to upsert ${data.length} stocks in batches of ${batchSize}`,
       );
 
-      // Insert new data in smaller batches with data validation
-      const insertData: LegacyInsertStock[] = data
+      // Insert new data in smaller batches with data validation - only basic fields
+      const insertData = data
         .map((stock) => {
           return {
             symbol: stock.symbol || "",
@@ -209,32 +209,6 @@ export class DatabaseStorage implements IStorage {
             changePercent: stock.changePercent || 0,
             volume: stock.volume || 0,
             isPositive: stock.isPositive ?? false,
-            // Additional Arif Habib fields
-            bidPrice: stock.bidPrice || null,
-            bidVolume: stock.bidVolume || null,
-            askPrice: stock.askPrice || null,
-            askVolume: stock.askVolume || null,
-            high52Week: stock.high52Week || null,
-            low52Week: stock.low52Week || null,
-            marketCap: stock.marketCap || null,
-            shares: stock.shares || null,
-            freeFloat: stock.freeFloat || null,
-            upperCap: stock.upperCap || null,
-            lowerCap: stock.lowerCap || null,
-            haircut: stock.haircut || null,
-            beta: stock.beta || null,
-            listedIn: stock.listedIn || null,
-            pivotPoints: stock.pivotPoints || null,
-            returns: stock.returns || null,
-            lastTradeDate: stock.lastTradeDate || null,
-            type: stock.type || null,
-            status: stock.status || null,
-            lastDayCloseVolume: stock.lastDayCloseVolume || null,
-            etf: stock.etf || null,
-            xb: stock.xb || null,
-            xd: stock.xd || null,
-            xr: stock.xr || null,
-            sd: stock.sd || null,
           };
         })
         .filter((stock) => stock.symbol && stock.name); // Filter out invalid records
@@ -275,9 +249,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  private async insertBatchOptimized(
-    batch: LegacyInsertStock[],
-  ): Promise<void> {
+  private async insertBatchOptimized(batch: any[]): Promise<void> {
     // Use single bulk insert with conflict resolution
     await db
       .insert(stocksTable)
@@ -296,41 +268,16 @@ export class DatabaseStorage implements IStorage {
           changePercent: sql.raw("EXCLUDED.change_percent"),
           volume: sql.raw("EXCLUDED.volume"),
           isPositive: sql.raw("EXCLUDED.is_positive"),
-          bidPrice: sql.raw("EXCLUDED.bid_price"),
-          bidVolume: sql.raw("EXCLUDED.bid_volume"),
-          askPrice: sql.raw("EXCLUDED.ask_price"),
-          askVolume: sql.raw("EXCLUDED.ask_volume"),
-          high52Week: sql.raw("EXCLUDED.high_52_week"),
-          low52Week: sql.raw("EXCLUDED.low_52_week"),
-          marketCap: sql.raw("EXCLUDED.market_cap"),
-          shares: sql.raw("EXCLUDED.shares"),
-          freeFloat: sql.raw("EXCLUDED.free_float"),
-          upperCap: sql.raw("EXCLUDED.upper_cap"),
-          lowerCap: sql.raw("EXCLUDED.lower_cap"),
-          haircut: sql.raw("EXCLUDED.haircut"),
-          beta: sql.raw("EXCLUDED.beta"),
-          listedIn: sql.raw("EXCLUDED.listed_in"),
-          pivotPoints: sql.raw("EXCLUDED.pivot_points"),
-          returns: sql.raw("EXCLUDED.returns"),
-          lastTradeDate: sql.raw("EXCLUDED.last_trade_date"),
-          type: sql.raw("EXCLUDED.type"),
-          status: sql.raw("EXCLUDED.status"),
-          lastDayCloseVolume: sql.raw("EXCLUDED.last_day_close_volume"),
-          etf: sql.raw("EXCLUDED.etf"),
-          xb: sql.raw("EXCLUDED.xb"),
-          xd: sql.raw("EXCLUDED.xd"),
-          xr: sql.raw("EXCLUDED.xr"),
-          sd: sql.raw("EXCLUDED.sd"),
           updatedAt: new Date(),
         },
       });
   }
 
-  private async insertIndividually(batch: LegacyInsertStock[]): Promise<void> {
+  private async insertIndividually(batch: any[]): Promise<void> {
     // Fallback method for failed batches - insert one by one
     for (const stock of batch) {
       try {
-        // Additional validation for individual inserts
+        // Additional validation for individual inserts - only basic fields
         const sanitizedStock = {
           symbol: stock.symbol || "",
           name: stock.name || "",
@@ -344,31 +291,6 @@ export class DatabaseStorage implements IStorage {
           changePercent: stock.changePercent || 0,
           volume: stock.volume || 0,
           isPositive: stock.isPositive ?? false,
-          bidPrice: stock.bidPrice || null,
-          bidVolume: stock.bidVolume || null,
-          askPrice: stock.askPrice || null,
-          askVolume: stock.askVolume || null,
-          high52Week: stock.high52Week || null,
-          low52Week: stock.low52Week || null,
-          marketCap: stock.marketCap || null,
-          shares: stock.shares || null,
-          freeFloat: stock.freeFloat || null,
-          upperCap: stock.upperCap || null,
-          lowerCap: stock.lowerCap || null,
-          haircut: stock.haircut || null,
-          beta: stock.beta || null,
-          listedIn: stock.listedIn || null,
-          pivotPoints: stock.pivotPoints || null,
-          returns: stock.returns || null,
-          lastTradeDate: stock.lastTradeDate || null,
-          type: stock.type || null,
-          status: stock.status || null,
-          lastDayCloseVolume: stock.lastDayCloseVolume || null,
-          etf: stock.etf || null,
-          xb: stock.xb || null,
-          xd: stock.xd || null,
-          xr: stock.xr || null,
-          sd: stock.sd || null,
         };
 
         // Skip stocks with missing essential data
@@ -397,31 +319,6 @@ export class DatabaseStorage implements IStorage {
                 changePercent: sanitizedStock.changePercent,
                 volume: sanitizedStock.volume,
                 isPositive: sanitizedStock.isPositive,
-                bidPrice: sanitizedStock.bidPrice,
-                bidVolume: sanitizedStock.bidVolume,
-                askPrice: sanitizedStock.askPrice,
-                askVolume: sanitizedStock.askVolume,
-                high52Week: sanitizedStock.high52Week,
-                low52Week: sanitizedStock.low52Week,
-                marketCap: sanitizedStock.marketCap,
-                shares: sanitizedStock.shares,
-                freeFloat: sanitizedStock.freeFloat,
-                upperCap: sanitizedStock.upperCap,
-                lowerCap: sanitizedStock.lowerCap,
-                haircut: sanitizedStock.haircut,
-                beta: sanitizedStock.beta,
-                listedIn: sanitizedStock.listedIn,
-                pivotPoints: sanitizedStock.pivotPoints,
-                returns: sanitizedStock.returns,
-                lastTradeDate: sanitizedStock.lastTradeDate,
-                type: sanitizedStock.type,
-                status: sanitizedStock.status,
-                lastDayCloseVolume: sanitizedStock.lastDayCloseVolume,
-                etf: sanitizedStock.etf,
-                xb: sanitizedStock.xb,
-                xd: sanitizedStock.xd,
-                xr: sanitizedStock.xr,
-                sd: sanitizedStock.sd,
                 updatedAt: new Date(),
               },
             }),
