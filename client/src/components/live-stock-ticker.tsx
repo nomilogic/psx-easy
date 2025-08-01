@@ -83,14 +83,14 @@ export default function LiveStockTicker({ stocks: initialStocks }: LiveStockTick
   // Get all available indices from the stock data
   const availableIndices = useMemo(() => {
     if (!Array.isArray(stocks)) return [];
-    
+
     const indicesSet = new Set<string>();
     stocks.forEach(stock => {
       if (stock.listedIn && Array.isArray(stock.listedIn)) {
         stock.listedIn.forEach(index => indicesSet.add(index));
       }
     });
-    
+
     return Array.from(indicesSet).sort();
   }, [stocks]);
 
@@ -99,7 +99,7 @@ export default function LiveStockTicker({ stocks: initialStocks }: LiveStockTick
     if (!Array.isArray(stocks)) {
       return [];
     }
-    
+
     let filtered = stocks;
 
     if (searchTerm.trim()) {
@@ -217,7 +217,7 @@ export default function LiveStockTicker({ stocks: initialStocks }: LiveStockTick
                 </div>
               )}
             </div>
-            
+
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-slate-400" />
               <Select value={indexFilter} onValueChange={setIndexFilter}>
