@@ -1,4 +1,4 @@
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, inArray } from "drizzle-orm";
 import { db, supabase } from "./db";
 import {
   stocks as stocksTable,
@@ -261,10 +261,11 @@ export class DatabaseStorage implements IStorage {
 
   private async insertBatchOptimized(batch: StockData[]): Promise<void> {
     // Separate new stocks from existing ones
+    const symbols = batch.map((s) => s.symbol);
     const existingSymbols = await db
       .select({ symbol: stocksTable.symbol })
       .from(stocksTable)
-      .where(sql`symbol = ANY(${batch.map((s) => s.symbol)})`);
+      .where(inArray(stocksTable.symbol, symbols));
 
     const existingSet = new Set(existingSymbols.map((s) => s.symbol));
     const newStocks = batch.filter((stock) => !existingSet.has(stock.symbol));
