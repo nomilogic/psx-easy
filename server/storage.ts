@@ -252,10 +252,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   private async insertBatchOptimized(batch: any[]): Promise<void> {
-    // Use single bulk insert with conflict resolution
+    // Use single bulk insert with conflict resolution - only basic fields
+    const basicBatch = batch.map(stock => ({
+      symbol: stock.symbol,
+      name: stock.name,
+      sector: stock.sector,
+      ldcp: stock.ldcp,
+      open: stock.open,
+      high: stock.high,
+      low: stock.low,
+      current: stock.current,
+      change: stock.change,
+      changePercent: stock.changePercent,
+      volume: stock.volume,
+      isPositive: stock.isPositive,
+    }));
+
     await db
       .insert(stocksTable)
-      .values(batch)
+      .values(basicBatch)
       .onConflictDoUpdate({
         target: stocksTable.symbol,
         set: {

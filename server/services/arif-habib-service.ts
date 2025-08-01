@@ -204,8 +204,14 @@ export class ArifHabibService {
       sectorCodes.push(sectorCode);
     }
 
-    // You might want to add more logic here to derive sector codes from listedIn
-    // based on some predefined mapping or criteria.
+    // Add indices from listedIn array if they exist
+    if (listedIn && Array.isArray(listedIn)) {
+      listedIn.forEach(index => {
+        if (index && !sectorCodes.includes(index)) {
+          sectorCodes.push(index);
+        }
+      });
+    }
 
     return sectorCodes;
   }
