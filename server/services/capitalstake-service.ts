@@ -1,4 +1,3 @@
-
 import { WebSocket } from "ws";
 import type { StockData, MarketSummary } from "@shared/schema";
 
@@ -51,47 +50,51 @@ export class CapitalStakeService {
   }
 
   connect(): void {
-    if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) {
+    if (
+      this.isConnecting ||
+      (this.ws && this.ws.readyState === WebSocket.OPEN)
+    ) {
       return;
     }
 
     this.isConnecting = true;
-    console.log('Connecting to CapitalStake WebSocket...');
+    console.log("Connecting to CapitalStake WebSocket...");
 
     try {
-      this.ws = new WebSocket('wss://market.capitalstake.com/stream');
+      this.ws = new WebSocket("wss://market.capitalstake.com/stream");
 
       this.ws.onopen = () => {
-        console.log('✅ Connected to CapitalStake WebSocket');
+        console.log("✅ Connected to CapitalStake WebSocket");
         this.reconnectAttempts = 0;
         this.isConnecting = false;
       };
 
       this.ws.onmessage = (event) => {
+        console.log(event, "capitalstake message");
+
         try {
           const message: CapitalStakeTickData = JSON.parse(event.data);
-          if (message.t === 'tick') {
+          if (message.t === "tick") {
             this.processTickData(message);
           }
         } catch (error) {
-          console.error('Error parsing CapitalStake message:', error);
+          console.error("Error parsing CapitalStake message:", error);
         }
       };
 
       this.ws.onclose = () => {
-        console.log('❌ CapitalStake WebSocket disconnected');
+        console.log("❌ CapitalStake WebSocket disconnected");
         this.isConnecting = false;
         this.ws = null;
         this.scheduleReconnect();
       };
 
       this.ws.onerror = (error) => {
-        console.error('CapitalStake WebSocket error:', error);
+        console.error("CapitalStake WebSocket error:", error);
         this.isConnecting = false;
       };
-
     } catch (error) {
-      console.error('Failed to connect to CapitalStake WebSocket:', error);
+      console.error("Failed to connect to CapitalStake WebSocket:", error);
       this.isConnecting = false;
       this.scheduleReconnect();
     }
@@ -99,15 +102,17 @@ export class CapitalStakeService {
 
   private scheduleReconnect(): void {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.log('Max reconnection attempts reached for CapitalStake');
+      console.log("Max reconnection attempts reached for CapitalStake");
       return;
     }
 
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-    
-    console.log(`Attempting to reconnect to CapitalStake in ${delay}ms (attempt ${this.reconnectAttempts})`);
-    
+
+    console.log(
+      `Attempting to reconnect to CapitalStake in ${delay}ms (attempt ${this.reconnectAttempts})`,
+    );
+
     setTimeout(() => {
       this.connect();
     }, delay);
@@ -115,7 +120,7 @@ export class CapitalStakeService {
 
   private processTickData(message: CapitalStakeTickData): void {
     const { d } = message;
-    
+
     // Convert CapitalStake format to our StockData format
     const stockData: StockData = {
       symbol: d.s,
@@ -138,7 +143,7 @@ export class CapitalStakeService {
       askPrice: d.ap,
       askVolume: d.av,
       value: d.val,
-      trades: d.tr
+      trades: d.tr,
     };
 
     // Update our stocks data map
@@ -146,18 +151,18 @@ export class CapitalStakeService {
 
     // Broadcast to all subscribers
     const allStocks = Array.from(this.stocksData.values());
-    this.subscribers.forEach(callback => {
+    this.subscribers.forEach((callback) => {
       try {
         callback(allStocks);
       } catch (error) {
-        console.error('Error in subscriber callback:', error);
+        console.error("Error in subscriber callback:", error);
       }
     });
   }
 
   subscribe(callback: (data: StockData[]) => void): () => void {
     this.subscribers.add(callback);
-    
+
     // Send current data immediately if available
     if (this.stocksData.size > 0) {
       callback(Array.from(this.stocksData.values()));
@@ -175,17 +180,20 @@ export class CapitalStakeService {
 
   calculateMarketSummary(): MarketSummary {
     const stocks = this.getStocksData();
-    const gainers = stocks.filter(stock => stock.change > 0).length;
-    const losers = stocks.filter(stock => stock.change < 0).length;
-    const unchanged = stocks.filter(stock => stock.change === 0).length;
-    const totalVolume = stocks.reduce((sum, stock) => sum + (stock.volume || 0), 0);
+    const gainers = stocks.filter((stock) => stock.change > 0).length;
+    const losers = stocks.filter((stock) => stock.change < 0).length;
+    const unchanged = stocks.filter((stock) => stock.change === 0).length;
+    const totalVolume = stocks.reduce(
+      (sum, stock) => sum + (stock.volume || 0),
+      0,
+    );
 
     return {
       totalStocks: stocks.length,
       gainers,
       losers,
       unchanged,
-      totalVolume
+      totalVolume,
     };
   }
 
