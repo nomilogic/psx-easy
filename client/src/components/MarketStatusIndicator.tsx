@@ -16,6 +16,7 @@ interface MarketStatusIndicatorProps {
 
 export function MarketStatusIndicator({ marketStatus, lastUpdate }: MarketStatusIndicatorProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [fetchedStatus, setFetchedStatus] = useState<MarketStatus | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -24,6 +25,18 @@ export function MarketStatusIndicator({ marketStatus, lastUpdate }: MarketStatus
 
     return () => clearInterval(timer);
   }, []);
+
+  // Fetch market status if not provided via props
+  useEffect(() => {
+    if (!marketStatus) {
+      fetch('/api/market/status')
+        .then(res => res.json())
+        .then(status => {
+          setFetchedStatus(status);
+        })
+        .catch(err => console.warn('Could not fetch market status:', err));
+    }
+  }, [marketStatus]);
 
   const formatTime = (dateString: string) => {
     try {
@@ -90,7 +103,9 @@ export function MarketStatusIndicator({ marketStatus, lastUpdate }: MarketStatus
     day: 'numeric'
   });
 
-  if (!marketStatus) {
+  const statusToShow = marketStatus || fetchedStatus;
+
+  if (!statusToShow) {
     return (
       <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
         <Badge variant="secondary" className="flex items-center gap-1">
@@ -109,7 +124,7 @@ export function MarketStatusIndicator({ marketStatus, lastUpdate }: MarketStatus
       {/* Market Status Badge */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {marketStatus.isOpen ? (
+          {statusToShow.isOpen ? (
             <Badge variant="default" className="flex items-center gap-1 bg-green-600 hover:bg-green-700">
               <TrendingUp className="w-3 h-3" />
               Market Open
@@ -137,20 +152,20 @@ export function MarketStatusIndicator({ marketStatus, lastUpdate }: MarketStatus
       <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
         <div>{currentPakDate}</div>
         
-        {marketStatus.isOpen ? (
-          marketStatus.nextCloseTime && (
+        {statusToShow.isOpen ? (
+          statusToShow.nextCloseTime && (
             <div>
-              Market closes in {getTimeUntil(marketStatus.nextCloseTime)} at 5:00 PM PKT
+              Market closes in {getTimeUntil(statusToShow.nextCloseTime)} at 5:00 PM PKT
             </div>
           )
         ) : (
           <>
             <div>Market Hours: 9:30 AM - 5:00 PM (Monday to Friday)</div>
-            {marketStatus.nextOpenTime && (
+            {statusToShow.nextOpenTime && (
               <div>
-                Next session: {formatDate(marketStatus.nextOpenTime)} at 9:30 AM PKT
-                {getTimeUntil(marketStatus.nextOpenTime) !== 'Now' && 
-                  ` (in ${getTimeUntil(marketStatus.nextOpenTime)})`
+                Next session: {formatDate(statusToShow.nextOpenTime)} at 9:30 AM PKT
+                {getTimeUntil(statusToShow.nextOpenTime) !== 'Now' && 
+                  ` (in ${getTimeUntil(statusToShow.nextOpenTime)})`
                 }
               </div>
             )}
@@ -159,7 +174,7 @@ export function MarketStatusIndicator({ marketStatus, lastUpdate }: MarketStatus
       </div>
 
       {/* Data Status Notice */}
-      {!marketStatus.isOpen && (
+      {!statusToShow.isOpen && (
         <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded border-l-4 border-blue-400">
           <p className="text-xs text-blue-800 dark:text-blue-200">
             Showing last available market data from previous trading session

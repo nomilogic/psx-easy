@@ -69,7 +69,7 @@ import NewsSection from "@/components/news-section";
 import HeaderTicker from "@/components/header-ticker";
 import IndicesTicker from "@/components/indices-ticker";
 import MarketDataTable from "@/components/market-data-table";
-import { MarketStatusIndicator } from "@/components/MarketStatusIndicator";
+import { SimpleMarketStatus } from "@/components/SimpleMarketStatus";
 const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
 
 export default function Homepage() {
@@ -177,10 +177,7 @@ export default function Homepage() {
             {/* Market Status Indicator */}
             <Card className="bg-white/15 backdrop-blur-sm border-white/20 text-white">
               <CardContent className="p-4">
-                <MarketStatusIndicator 
-                  marketStatus={marketStatus}
-                  lastUpdate={lastUpdate}
-                />
+                <SimpleMarketStatus />
                 <div className="grid grid-cols-2 gap-3 text-sm mt-4">
                   <div>
                     <p className="text-blue-200 text-xs">Total Stocks</p>

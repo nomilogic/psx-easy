@@ -3,7 +3,6 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { PSXService } from "./services/psx-service";
 import { CompanyService } from "./services/company-service";
-import { MarketSchedule } from "./market-schedule";
 import type {
   StockData,
   MarketSummary,
@@ -19,8 +18,6 @@ setInterval(() => {
 }, 60000);
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  const marketSchedule = new MarketSchedule();
-  
   // Middleware to track API calls
   app.use("/api", (req, res, next) => {
     apiCallsThisMinute++;
@@ -30,18 +27,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Market status endpoint
   app.get("/api/market/status", async (req, res) => {
     try {
+      // Simple market status without external dependencies
+      const now = new Date();
+      const pakistanTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Karachi"}));
+      const hour = pakistanTime.getHours();
+      const minute = pakistanTime.getMinutes();
+      const day = pakistanTime.getDay(); // 0 = Sunday, 6 = Saturday
+      
+      // Market is closed on weekends (Saturday = 6, Sunday = 0)
+      const isWeekend = day === 0 || day === 6;
+      
+      // Market hours: 9:30 AM to 5:00 PM (17:00)
+      const marketOpenTime = 9 * 60 + 30; // 9:30 AM in minutes
+      const marketCloseTime = 17 * 60; // 5:00 PM in minutes
+      const currentTimeMinutes = hour * 60 + minute;
+      
+      const isMarketHours = currentTimeMinutes >= marketOpenTime && currentTimeMinutes <= marketCloseTime;
+      const isOpen = !isWeekend && isMarketHours;
+      
       const marketStatus = {
-        isOpen: marketSchedule.isMarketOpen(),
-        nextOpenTime: marketSchedule.getNextOpenTime()?.toISOString(),
-        nextCloseTime: marketSchedule.getNextCloseTime()?.toISOString(),
-        currentTime: new Date().toISOString(),
+        isOpen,
+        currentTime: pakistanTime.toISOString(),
+        nextOpenTime: isOpen ? undefined : getNextOpenTime(pakistanTime),
+        nextCloseTime: isOpen ? getTodayCloseTime(pakistanTime) : undefined,
       };
+      
       res.json(marketStatus);
     } catch (error) {
       console.error("Error fetching market status:", error);
       res.status(500).json({ error: "Failed to fetch market status" });
     }
   });
+
+  function getTodayCloseTime(date: Date): string {
+    const closeTime = new Date(date);
+    closeTime.setHours(17, 0, 0, 0);
+    return closeTime.toISOString();
+  }
+
+  function getNextOpenTime(date: Date): string {
+    const nextOpen = new Date(date);
+    nextOpen.setHours(9, 30, 0, 0);
+    
+    // If it's past 5 PM today, move to next day
+    if (date.getHours() >= 17) {
+      nextOpen.setDate(nextOpen.getDate() + 1);
+    }
+    
+    // Skip weekends
+    while (nextOpen.getDay() === 0 || nextOpen.getDay() === 6) {
+      nextOpen.setDate(nextOpen.getDate() + 1);
+    }
+    
+    return nextOpen.toISOString();
+  }
 
   // Market overview endpoint
   app.get("/api/market/overview", async (req, res) => {
@@ -423,7 +462,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add data source status information
       const enhancedStatus = {
         ...updatedStatus,
-        marketOpen: marketSchedule.isMarketOpen(),
         primaryDataSource: "Arif Habib API",
         fallbackDataSource: "PSX Service",
         lastDataFetch: new Date().toISOString(),
