@@ -26,6 +26,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize CapitalStake service
   const capitalStakeService = CapitalStakeService.getInstance();
   
+  // Track last data fetch time for rate limiting
+  let lastDataFetch = 0;
+  const DATA_FETCH_INTERVAL = 30000; // 30 seconds minimum between fetches
+  
   // Middleware to track API calls
   app.use("/api", (req, res, next) => {
     apiCallsThisMinute++;
@@ -270,11 +274,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       const updatedStatus = await storage.getSystemStatus();
       
-      // Add CapitalStake connection status
+      // Add data source status information
       const enhancedStatus = {
         ...updatedStatus,
         capitalStakeConnected: capitalStakeService.isConnected(),
         totalStocksReceived: capitalStakeService.getStocksData().length,
+        primaryDataSource: "Arif Habib API",
+        fallbackDataSource: "PSX Service",
+        lastDataFetch: new Date(lastDataFetch).toISOString(),
       };
       
       res.json(enhancedStatus);
@@ -1468,31 +1475,71 @@ source: "Market Analysis",
   // WebSocket server setup
   const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
 
-  // Set up CapitalStake data subscription
+  // Set up CapitalStake data subscription for real-time updates
   const unsubscribeCapitalStake = capitalStakeService.subscribe((stocksData) => {
-    console.log(`Received ${stocksData.length} stocks from CapitalStake`);
+    console.log(`Received ${stocksData.length} stocks from CapitalStake WebSocket`);
     
-    // Update storage with CapitalStake data
-    storage.setMarketData(stocksData).catch(error => {
-      console.error("Error updating storage with CapitalStake data:", error);
-    });
+    // Only update database if we have a reasonable amount of data
+    if (stocksData.length > 10) {
+      // Update storage with CapitalStake data (non-blocking)
+      storage.setMarketData(stocksData).catch(error => {
+        console.error("Error updating storage with CapitalStake data:", error);
+      });
 
-    // Calculate and store market summary
-    const marketSummary = capitalStakeService.calculateMarketSummary();
-    storage.setMarketSummary(marketSummary).catch(error => {
-      console.error("Error updating market summary:", error);
-    });
+      // Calculate and store market summary
+      const marketSummary = capitalStakeService.calculateMarketSummary();
+      storage.setMarketSummary(marketSummary).catch(error => {
+        console.error("Error updating market summary:", error);
+      });
+    }
 
-    // Broadcast to all WebSocket clients
+    // Always broadcast real-time updates to WebSocket clients
     broadcastToClients({
       type: "market_update",
       timestamp: new Date().toISOString(),
       data: {
         stocks: stocksData,
-        summary: marketSummary,
+        summary: capitalStakeService.calculateMarketSummary(),
       },
     });
   });
+
+  // Periodic data fetching from primary APIs as backup
+  async function fetchPrimaryDataPeriodically() {
+    const now = Date.now();
+    if (now - lastDataFetch < DATA_FETCH_INTERVAL) {
+      return;
+    }
+    
+    lastDataFetch = now;
+    
+    try {
+      console.log("Starting periodic data fetch from primary APIs...");
+      const marketData = await storage.getMarketData();
+      
+      if (marketData && marketData.length > 0) {
+        const marketSummary = ArifHabibService.calculateMarketSummary(marketData);
+        await storage.setMarketSummary(marketSummary);
+        
+        // Broadcast updated data to all clients
+        broadcastToClients({
+          type: "market_update",
+          timestamp: new Date().toISOString(),
+          data: {
+            stocks: marketData,
+            summary: marketSummary,
+          },
+        });
+        
+        console.log(`Periodic fetch completed: ${marketData.length} stocks updated`);
+      }
+    } catch (error) {
+      console.error("Error in periodic data fetch:", error);
+    }
+  }
+
+  // Set up periodic fetching (every 30 seconds)
+  setInterval(fetchPrimaryDataPeriodically, DATA_FETCH_INTERVAL);
 
   wss.on("connection", (ws: WebSocket) => {
     connectedClients++;

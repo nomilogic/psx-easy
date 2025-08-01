@@ -21,6 +21,7 @@ import {
   type stockTimeSeries,
 } from "@shared/schema";
 import { PSXService } from "./services/psx-service";
+import { ArifHabibService } from "./services/arif-habib-service";
 import {
   type StockData as LegacyStockData,
   type SectorData as LegacySectorData,
@@ -91,7 +92,31 @@ export class DatabaseStorage implements IStorage {
 
   async getMarketData(): Promise<StockData[]> {
     try {
-      // First try to get from PSX service with timeout
+      // First try Arif Habib API as primary source
+      const arifHabibData = await Promise.race([
+        ArifHabibService.fetchMarketData(),
+        new Promise<null>((_, reject) =>
+          setTimeout(() => reject(new Error("Arif Habib API timeout")), 15000),
+        ),
+      ]);
+
+      if (arifHabibData && arifHabibData.length > 0) {
+        console.log(`Got ${arifHabibData.length} stocks from Arif Habib API`);
+        // Store in database for caching (non-blocking)
+        this.setMarketData(arifHabibData).catch((err) =>
+          console.warn("Background database update failed:", err),
+        );
+        return arifHabibData;
+      }
+    } catch (error) {
+      console.error(
+        "Arif Habib API failed, trying PSX service:",
+        error,
+      );
+    }
+
+    try {
+      // Fallback to PSX service
       const psxData = await Promise.race([
         PSXService.fetchMarketData(),
         new Promise<null>((_, reject) =>
@@ -100,7 +125,7 @@ export class DatabaseStorage implements IStorage {
       ]);
 
       if (psxData && psxData.length > 0) {
-        console.log(`Got ${psxData.length} stocks from PSX service`);
+        console.log(`Got ${psxData.length} stocks from PSX service (fallback)`);
         // Store in database for caching (non-blocking)
         this.setMarketData(psxData).catch((err) =>
           console.warn("Background database update failed:", err),

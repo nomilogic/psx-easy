@@ -132,7 +132,7 @@ export class CapitalStakeService {
       low: d.l,
       current: d.c,
       change: d.ch,
-      changePercent: d.pch * 100, // Convert to percentage
+      changePercent: d.pch, // Already in percentage format
       volume: d.v,
       isPositive: d.ch >= 0,
       lastTradeTime: new Date(d.lt.t * 1000).toISOString(),
@@ -146,18 +146,27 @@ export class CapitalStakeService {
       trades: d.tr,
     };
 
+    // Check if this is a significant update (price or volume change)
+    const existingStock = this.stocksData.get(d.s);
+    const hasSignificantChange = !existingStock || 
+      existingStock.current !== stockData.current ||
+      existingStock.volume !== stockData.volume ||
+      Math.abs(existingStock.changePercent - stockData.changePercent) > 0.01;
+
     // Update our stocks data map
     this.stocksData.set(d.s, stockData);
 
-    // Broadcast to all subscribers
-    const allStocks = Array.from(this.stocksData.values());
-    this.subscribers.forEach((callback) => {
-      try {
-        callback(allStocks);
-      } catch (error) {
-        console.error("Error in subscriber callback:", error);
-      }
-    });
+    // Only broadcast if there's a significant change to reduce noise
+    if (hasSignificantChange) {
+      const allStocks = Array.from(this.stocksData.values());
+      this.subscribers.forEach((callback) => {
+        try {
+          callback(allStocks);
+        } catch (error) {
+          console.error("Error in subscriber callback:", error);
+        }
+      });
+    }
   }
 
   subscribe(callback: (data: StockData[]) => void): () => void {

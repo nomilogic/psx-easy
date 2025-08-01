@@ -144,22 +144,47 @@ export interface StockData {
   symbol: string;
   name: string;
   sector: string;
-  ldcp: number;
+  ldcp: number; // Last day closing price
   open: number;
   high: number;
   low: number;
-  current: number;
+  current: number; // Current price
   change: number;
   changePercent: number;
   volume: number;
   isPositive: boolean;
-  lastTradeTime?: string;
-  lastTradePrice?: number;
-  lastTradeVolume?: number;
+  // Additional fields from various APIs
   bidPrice?: number;
   bidVolume?: number;
   askPrice?: number;
   askVolume?: number;
+  high52Week?: number;
+  low52Week?: number;
+  marketCap?: number;
+  shares?: number;
+  freeFloat?: number;
+  beta?: number;
+  listedIn?: string[];
+  pivotPoints?: {
+    pp: number;
+    r1: number;
+    r2: number;
+    r3: number;
+    s1: number;
+    s2: number;
+    s3: number;
+  };
+  returns?: {
+    "1m": number;
+    "1w": number;
+    "1y": number;
+    "3m": number;
+    "6m": number;
+  };
+  lastUpdated?: string;
+  lastTradeTime?: string;
+  lastTradePrice?: number;
+  lastTradeVolume?: number;
   value?: number;
   trades?: number;
 }
@@ -340,7 +365,7 @@ export interface CompanyData {
       document?: string;
     }>;
   };
-  
+
   // Payouts (Dividends, Bonus, Rights)
   payouts?: Array<{
     date: string;
