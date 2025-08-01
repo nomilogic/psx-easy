@@ -80,6 +80,20 @@ export default function LiveStockTicker({ stocks: initialStocks }: LiveStockTick
     ).length;
   };
 
+  // Get all available indices from the stock data
+  const availableIndices = useMemo(() => {
+    if (!Array.isArray(stocks)) return [];
+    
+    const indicesSet = new Set<string>();
+    stocks.forEach(stock => {
+      if (stock.listedIn && Array.isArray(stock.listedIn)) {
+        stock.listedIn.forEach(index => indicesSet.add(index));
+      }
+    });
+    
+    return Array.from(indicesSet).sort();
+  }, [stocks]);
+
   const filteredAndSortedStocks = useMemo(() => {
     // Ensure stocks is an array before processing
     if (!Array.isArray(stocks)) {
@@ -207,14 +221,19 @@ export default function LiveStockTicker({ stocks: initialStocks }: LiveStockTick
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-slate-400" />
               <Select value={indexFilter} onValueChange={setIndexFilter}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-48">
                   <SelectValue placeholder="Filter by index" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">All Stocks</SelectItem>
-                  <SelectItem value="KSE100">KSE100 ({getIndexStockCount('KSE100')} stocks)</SelectItem>
-                  <SelectItem value="ALLSHR">All Share ({getIndexStockCount('ALLSHR')} stocks)</SelectItem>
-                  <SelectItem value="KSE30">KSE30 ({getIndexStockCount('KSE30')} stocks)</SelectItem>
+                  <SelectItem value="ALL">All Stocks ({stocks.length})</SelectItem>
+                  {availableIndices.map((index) => {
+                    const count = getIndexStockCount(index);
+                    return count > 0 ? (
+                      <SelectItem key={index} value={index}>
+                        {index} ({count} stocks)
+                      </SelectItem>
+                    ) : null;
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -282,6 +301,20 @@ export default function LiveStockTicker({ stocks: initialStocks }: LiveStockTick
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-slate-900">{stock.name}</div>
                     <div className="text-xs text-slate-500">{stock.sector}</div>
+                    {stock.listedIn && Array.isArray(stock.listedIn) && stock.listedIn.length > 0 && (
+                      <div className="flex gap-1 mt-1">
+                        {stock.listedIn.slice(0, 3).map((index) => (
+                          <Badge key={index} variant="outline" className="text-xs px-1 py-0">
+                            {index}
+                          </Badge>
+                        ))}
+                        {stock.listedIn.length > 3 && (
+                          <Badge variant="outline" className="text-xs px-1 py-0">
+                            +{stock.listedIn.length - 3}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <div className="text-sm font-medium text-slate-900 font-mono">{formatPrice(stock.current)}</div>
