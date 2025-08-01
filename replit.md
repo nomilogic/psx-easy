@@ -142,3 +142,9 @@ The application follows a monorepo structure with clearly separated frontend and
 - **Performance Optimization**: Dashboard loads data instantly from cache, 30-second auto-refresh via WebSocket
 - **Pagination System**: Added pagination controls with 10/25/50/100 records per page options
 - **Financial Data Structure**: Implemented proper parsing of annual and quarterly financial data with structured tables showing Sales, Profit after Taxation, and EPS with proper formatting and negative value highlighting
+- **Market Hours Optimization**: Separated WebSocket server from main API server for better performance and reliability
+- **Intelligent Market Schedule**: WebSocket server only runs during Pakistan market hours (9:30 AM - 5:00 PM GMT+5)
+- **Supabase Real-time Integration**: Added Supabase real-time features for broadcasting database changes
+- **Database Performance Fix**: Resolved SQL array operation errors using proper Drizzle ORM inArray function
+- **Separated Server Architecture**: Main server focuses on REST APIs, separate market-ws-server handles real-time updates
+- **Smart Data Fetching**: Eliminated redundant data fetching - existing database data is used instead of constant API calls

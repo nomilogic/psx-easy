@@ -321,7 +321,7 @@ export type ChartTimeInterval =
   | "1year";
 
 export interface WebSocketMessage {
-  type: "market_update" | "stock_update" | "sector_update";
+  type: "market_update" | "stock_update" | "sector_update" | "live_update" | "database_update" | "initial_data" | "market_status";
   timestamp: string;
   data: any;
 }

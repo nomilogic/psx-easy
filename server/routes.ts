@@ -1,19 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { PSXService } from "./services/psx-service";
 import { CompanyService } from "./services/company-service";
-import { CapitalStakeService } from "./services/capitalstake-service";
-import { ArifHabibService } from "./services/arif-habib-service";
 import type {
   StockData,
   MarketSummary,
-  WebSocketMessage,
   ChartTimeInterval,
 } from "@shared/schema";
-
-let connectedClients = 0;
 let apiCallsThisMinute = 0;
 let lastApiCallReset = Date.now();
 
@@ -24,12 +18,6 @@ setInterval(() => {
 }, 60000);
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Initialize CapitalStake service
-  const capitalStakeService = CapitalStakeService.getInstance();
-  
-  // Track last data fetch time for rate limiting
-  let lastDataFetch = 0;
-  const DATA_FETCH_INTERVAL = 30000; // 30 seconds minimum between fetches
   
   // Middleware to track API calls
   app.use("/api", (req, res, next) => {
@@ -1612,214 +1600,10 @@ source: "Market Analysis",
 
   const httpServer = createServer(app);
 
-  // WebSocket server setup
-  const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
+  // Note: WebSocket functionality moved to separate market-ws-server.ts
+  // This server now focuses only on REST API endpoints
 
-  // **PRIORITY 3: WebSocket for live updates only (no database writes from here)**
-  const unsubscribeCapitalStake = capitalStakeService.subscribe((stocksData) => {
-    console.log(`📡 Received ${stocksData.length} live updates from CapitalStake WebSocket`);
-    
-    // **WebSocket data is broadcast-only - does NOT update database**
-    // Database updates come from cron jobs using Priority 1 & 2 APIs
-    
-    // Always broadcast real-time updates to WebSocket clients
-    broadcastToClients({
-      type: "live_update", // Changed from "market_update" to "live_update"
-      timestamp: new Date().toISOString(),
-      data: {
-        stocks: stocksData,
-        summary: capitalStakeService.calculateMarketSummary(),
-      },
-    });
-  });
-
-  // **CRON JOB: Periodic database updates using priority system**
-  async function updateDatabasePeriodically() {
-    const now = Date.now();
-    if (now - lastDataFetch < DATA_FETCH_INTERVAL) {
-      return;
-    }
-    
-    lastDataFetch = now;
-    
-    try {
-      console.log("🔄 Starting cron job: Priority-based database update...");
-      
-      // Use the priority system to fetch fresh data and update database
-      const freshMarketData = await storage.fetchFreshMarketData();
-      
-      if (freshMarketData && freshMarketData.length > 0) {
-        const marketSummary = ArifHabibService.calculateMarketSummary(freshMarketData);
-        await storage.setMarketSummary(marketSummary);
-        
-        // Broadcast database update to all clients
-        broadcastToClients({
-          type: "database_update", // Distinguish from live updates
-          timestamp: new Date().toISOString(),
-          data: {
-            stocks: freshMarketData,
-            summary: marketSummary,
-          },
-        });
-        
-        console.log(`✅ Cron job completed: ${freshMarketData.length} stocks updated in database`);
-      }
-    } catch (error) {
-      console.error("❌ Error in cron job database update:", error);
-    }
-  }
-
-  // Set up cron job for database updates (every 30 seconds)
-  setInterval(updateDatabasePeriodically, DATA_FETCH_INTERVAL);
-
-  wss.on("connection", (ws: WebSocket) => {
-    connectedClients++;
-    console.log(
-      `WebSocket client connected. Total clients: ${connectedClients}`,
-    );
-
-    ws.on("close", () => {
-      connectedClients--;
-      console.log(
-        `WebSocket client disconnected. Total clients: ${connectedClients}`,
-      );
-    });
-
-    ws.on("error", (error) => {
-      console.error("WebSocket error:", error);
-    });
-
-    // Send initial data to newly connected client
-    sendInitialData(ws);
-  });
-
-  // Function to broadcast data to all connected clients
-  function broadcastToClients(message: WebSocketMessage) {
-    wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify(message));
-      }
-    });
-  }
-
-  // Function to send initial data to a specific client
-  async function sendInitialData(ws: WebSocket) {
-    try {
-      // Add timeout protection for initial data loading
-      const [marketData, marketSummary] = await Promise.allSettled([
-        Promise.race([
-          storage.getMarketData(),
-          new Promise<StockData[]>((_, reject) =>
-            setTimeout(() => reject(new Error("Market data timeout")), 25000),
-          ),
-        ]),
-        Promise.race([
-          storage.getMarketSummary(),
-          new Promise<MarketSummary | null>((_, reject) =>
-            setTimeout(
-              () => reject(new Error("Market summary timeout")),
-              15000,
-            ),
-          ),
-        ]),
-      ]);
-
-      // Send available data even if some operations failed
-      if (ws.readyState === WebSocket.OPEN) {
-        const response = {
-          type: "market_update",
-          timestamp: new Date().toISOString(),
-          data: {
-            stocks: marketData.status === "fulfilled" ? marketData.value : [],
-            summary:
-              marketSummary.status === "fulfilled" ? marketSummary.value : null,
-          },
-        };
-
-        try {
-          ws.send(JSON.stringify(response));
-        } catch (sendError) {
-          console.error("Error sending WebSocket message:", sendError);
-        }
-      }
-    } catch (error) {
-      console.error("Error sending initial data:", error);
-    }
-  }
-
-  // Connect to CapitalStake WebSocket for real-time data
-  console.log("Connecting to CapitalStake WebSocket...");
-  capitalStakeService.connect();
-
-  // Fallback data fetching for sectors and performers (CapitalStake doesn't provide these)
-  async function fetchSupplementaryData() {
-    try {
-      // Fetch sectors data from PSX as fallback
-      try {
-        const sectors = await PSXService.fetchTopSectors();
-        await storage.setSectors(sectors);
-
-        broadcastToClients({
-          type: "sector_update",
-          timestamp: new Date().toISOString(),
-          data: sectors,
-        });
-      } catch (error) {
-        console.warn("Error fetching sectors:", error);
-      }
-
-      // Fetch performers data from PSX as fallback
-      try {
-        const performers = await PSXService.fetchPerformers();
-        await storage.setPerformers(performers);
-      } catch (error) {
-        console.warn("Error fetching performers:", error);
-      }
-    } catch (error) {
-      console.error("Error in fetchSupplementaryData:", error);
-    }
-  }
-
-  // Initial supplementary data fetch
-  fetchSupplementaryData();
-
-  // Set up periodic supplementary data fetching (every 5 minutes)
-  setInterval(fetchSupplementaryData, 300000);
-
-  // Cleanup function to disconnect CapitalStake service
-  process.on('SIGINT', () => {
-    console.log('Disconnecting CapitalStake service...');
-    capitalStakeService.disconnect();
-    unsubscribeCapitalStake();
-    process.exit();
-  });
-
-  process.on('SIGTERM', () => {
-    console.log('Disconnecting CapitalStake service...');
-    capitalStakeService.disconnect();
-    unsubscribeCapitalStake();
-    process.exit();
-  });
-
-  // Periodic company data fetching (once per day)
-  async function fetchAllCompaniesDataPeriodically() {
-    try {
-      console.log("Starting periodic fetch of all companies data...");
-      const companiesData = await CompanyService.fetchAllCompaniesData();
-
-      if (companiesData.length > 0) {
-        await storage.setAllCompanies(companiesData);
-        console.log(
-          `Periodic fetch completed: ${companiesData.length} companies updated`,
-        );
-      }
-    } catch (error) {
-      console.error("Error in periodic companies fetch:", error);
-    }
-  }
-
-  // Schedule to run once per day (24 hours = 24 * 60 * 60 * 1000 ms)
-  setInterval(fetchAllCompaniesDataPeriodically, 24 * 60 * 60 * 1000);
+  // Note: Periodic data fetching moved to market-ws-server.ts
 
   return httpServer;
 }
