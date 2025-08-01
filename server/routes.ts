@@ -4,6 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { PSXService } from "./services/psx-service";
 import { CompanyService } from "./services/company-service";
+import { CapitalStakeService } from "./services/capitalstake-service";
 import type {
   StockData,
   MarketSummary,
@@ -22,6 +23,9 @@ setInterval(() => {
 }, 60000);
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize CapitalStake service
+  const capitalStakeService = CapitalStakeService.getInstance();
+  
   // Middleware to track API calls
   app.use("/api", (req, res, next) => {
     apiCallsThisMinute++;
@@ -265,7 +269,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         connectedClients: connectedClients,
       });
       const updatedStatus = await storage.getSystemStatus();
-      res.json(updatedStatus);
+      
+      // Add CapitalStake connection status
+      const enhancedStatus = {
+        ...updatedStatus,
+        capitalStakeConnected: capitalStakeService.isConnected(),
+        totalStocksReceived: capitalStakeService.getStocksData().length,
+      };
+      
+      res.json(enhancedStatus);
     } catch (error) {
       console.error("Error fetching system status:", error);
       res.status(500).json({ error: "Failed to fetch system status" });
@@ -1456,6 +1468,32 @@ source: "Market Analysis",
   // WebSocket server setup
   const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
 
+  // Set up CapitalStake data subscription
+  const unsubscribeCapitalStake = capitalStakeService.subscribe((stocksData) => {
+    console.log(`Received ${stocksData.length} stocks from CapitalStake`);
+    
+    // Update storage with CapitalStake data
+    storage.setMarketData(stocksData).catch(error => {
+      console.error("Error updating storage with CapitalStake data:", error);
+    });
+
+    // Calculate and store market summary
+    const marketSummary = capitalStakeService.calculateMarketSummary();
+    storage.setMarketSummary(marketSummary).catch(error => {
+      console.error("Error updating market summary:", error);
+    });
+
+    // Broadcast to all WebSocket clients
+    broadcastToClients({
+      type: "market_update",
+      timestamp: new Date().toISOString(),
+      data: {
+        stocks: stocksData,
+        summary: marketSummary,
+      },
+    });
+  });
+
   wss.on("connection", (ws: WebSocket) => {
     connectedClients++;
     console.log(
@@ -1531,38 +1569,14 @@ source: "Market Analysis",
     }
   }
 
-  // Periodic data fetching and broadcasting
-  async function fetchAndBroadcastData() {
+  // Connect to CapitalStake WebSocket for real-time data
+  console.log("Connecting to CapitalStake WebSocket...");
+  capitalStakeService.connect();
+
+  // Fallback data fetching for sectors and performers (CapitalStake doesn't provide these)
+  async function fetchSupplementaryData() {
     try {
-      console.log("Fetching market data from PSX...");
-
-      // Fetch market data
-      const marketData = await PSXService.fetchMarketData();
-
-      if (marketData && marketData.length > 0) {
-        // Update storage
-        await storage.setMarketData(marketData);
-
-        // Calculate and store market summary
-        const marketSummary = PSXService.calculateMarketSummary(marketData);
-        await storage.setMarketSummary(marketSummary);
-
-        // Broadcast market update
-        broadcastToClients({
-          type: "market_update",
-          timestamp: new Date().toISOString(),
-          data: {
-            stocks: marketData,
-            summary: marketSummary,
-          },
-        });
-
-        console.log(
-          `Updated ${marketData.length} stocks and broadcasted to ${connectedClients} clients`,
-        );
-      }
-
-      // Fetch sectors data
+      // Fetch sectors data from PSX as fallback
       try {
         const sectors = await PSXService.fetchTopSectors();
         await storage.setSectors(sectors);
@@ -1576,7 +1590,7 @@ source: "Market Analysis",
         console.warn("Error fetching sectors:", error);
       }
 
-      // Fetch performers data
+      // Fetch performers data from PSX as fallback
       try {
         const performers = await PSXService.fetchPerformers();
         await storage.setPerformers(performers);
@@ -1584,15 +1598,30 @@ source: "Market Analysis",
         console.warn("Error fetching performers:", error);
       }
     } catch (error) {
-      console.error("Error in fetchAndBroadcastData:", error);
+      console.error("Error in fetchSupplementaryData:", error);
     }
   }
 
-  // Initial data fetch
-  fetchAndBroadcastData();
+  // Initial supplementary data fetch
+  fetchSupplementaryData();
 
-  // Set up periodic data fetching (every 30 seconds for live updates)
-  setInterval(fetchAndBroadcastData, 230000);
+  // Set up periodic supplementary data fetching (every 5 minutes)
+  setInterval(fetchSupplementaryData, 300000);
+
+  // Cleanup function to disconnect CapitalStake service
+  process.on('SIGINT', () => {
+    console.log('Disconnecting CapitalStake service...');
+    capitalStakeService.disconnect();
+    unsubscribeCapitalStake();
+    process.exit();
+  });
+
+  process.on('SIGTERM', () => {
+    console.log('Disconnecting CapitalStake service...');
+    capitalStakeService.disconnect();
+    unsubscribeCapitalStake();
+    process.exit();
+  });
 
   // Periodic company data fetching (once per day)
   async function fetchAllCompaniesDataPeriodically() {
