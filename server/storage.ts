@@ -252,7 +252,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   private async insertBatchOptimized(batch: any[]): Promise<void> {
-    // Use single bulk insert with conflict resolution - only basic fields
+    // Use single bulk insert with conflict resolution - include listed_in and sector_codes
     const basicBatch = batch.map(stock => ({
       symbol: stock.symbol,
       name: stock.name,
@@ -266,6 +266,8 @@ export class DatabaseStorage implements IStorage {
       changePercent: stock.changePercent,
       volume: stock.volume,
       isPositive: stock.isPositive,
+      listedIn: stock.listedIn || null,
+      sectorCodes: stock.sectorCodes || null,
     }));
 
     await db
@@ -285,6 +287,8 @@ export class DatabaseStorage implements IStorage {
           changePercent: sql.raw("EXCLUDED.change_percent"),
           volume: sql.raw("EXCLUDED.volume"),
           isPositive: sql.raw("EXCLUDED.is_positive"),
+          listedIn: sql.raw("EXCLUDED.listed_in"),
+          sectorCodes: sql.raw("EXCLUDED.sector_codes"),
           updatedAt: new Date(),
         },
       });
@@ -294,7 +298,7 @@ export class DatabaseStorage implements IStorage {
     // Fallback method for failed batches - insert one by one
     for (const stock of batch) {
       try {
-        // Additional validation for individual inserts - only basic fields
+        // Additional validation for individual inserts - include listed_in and sector_codes
         const sanitizedStock = {
           symbol: stock.symbol || "",
           name: stock.name || "",
@@ -308,6 +312,8 @@ export class DatabaseStorage implements IStorage {
           changePercent: stock.changePercent || 0,
           volume: stock.volume || 0,
           isPositive: stock.isPositive ?? false,
+          listedIn: stock.listedIn || null,
+          sectorCodes: stock.sectorCodes || null,
         };
 
         // Skip stocks with missing essential data
@@ -336,6 +342,8 @@ export class DatabaseStorage implements IStorage {
                 changePercent: sanitizedStock.changePercent,
                 volume: sanitizedStock.volume,
                 isPositive: sanitizedStock.isPositive,
+                listedIn: sanitizedStock.listedIn,
+                sectorCodes: sanitizedStock.sectorCodes,
                 updatedAt: new Date(),
               },
             }),
@@ -425,6 +433,8 @@ export class DatabaseStorage implements IStorage {
       changePercent: stock.changePercent,
       volume: stock.volume,
       isPositive: stock.isPositive,
+      listedIn: stock.listedIn as string[] || undefined,
+      sectorCodes: stock.sectorCodes || undefined,
     };
   }
 

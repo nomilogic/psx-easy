@@ -54,17 +54,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // All stocks endpoint with filtering
   app.get("/api/stocks", async (req, res) => {
     try {
-      const { sector, index, sector_code, limit, offset } = req.query;
+      const { sector, index, sector_code, listed_in, limit, offset, search } = req.query;
       
       let stocks = await storage.getMarketData();
       
-      // Apply filters
+      // Apply search filter first if provided
+      if (search && typeof search === 'string') {
+        const searchTerm = search.toLowerCase();
+        stocks = stocks.filter(stock => 
+          stock.symbol.toLowerCase().includes(searchTerm) ||
+          stock.name.toLowerCase().includes(searchTerm) ||
+          stock.sector.toLowerCase().includes(searchTerm)
+        );
+      }
+      
+      // Apply sector filter
       if (sector && typeof sector === 'string') {
         stocks = stocks.filter(stock => 
           stock.sector.toLowerCase().includes(sector.toLowerCase())
         );
       }
       
+      // Apply index filter (legacy parameter name)
       if (index && typeof index === 'string') {
         stocks = stocks.filter(stock => 
           stock.listedIn && Array.isArray(stock.listedIn) && 
@@ -74,6 +85,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
       
+      // Apply listed_in filter (preferred parameter name)
+      if (listed_in && typeof listed_in === 'string') {
+        stocks = stocks.filter(stock => 
+          stock.listedIn && Array.isArray(stock.listedIn) && 
+          stock.listedIn.some(idx => 
+            idx.toLowerCase().includes(listed_in.toLowerCase())
+          )
+        );
+      }
+      
+      // Apply sector_code filter
       if (sector_code && typeof sector_code === 'string') {
         stocks = stocks.filter(stock => 
           stock.sectorCodes && Array.isArray(stock.sectorCodes) && 
@@ -83,17 +105,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Apply pagination
       const startIndex = offset ? parseInt(offset as string, 10) : 0;
-      const endIndex = limit ? startIndex + parseInt(limit as string, 10) : stocks.length;
+      const limitNum = limit ? parseInt(limit as string, 10) : 50; // Default limit
+      const endIndex = startIndex + limitNum;
       const paginatedStocks = stocks.slice(startIndex, endIndex);
       
       res.json({
         stocks: paginatedStocks,
         total: stocks.length,
         filtered: paginatedStocks.length,
+        pagination: {
+          offset: startIndex,
+          limit: limitNum,
+          hasMore: endIndex < stocks.length
+        },
         filters: {
           sector: sector || null,
           index: index || null,
-          sector_code: sector_code || null
+          listed_in: listed_in || null,
+          sector_code: sector_code || null,
+          search: search || null
+        },
+        availableFilters: {
+          sectors: [...new Set(stocks.map(s => s.sector))].sort(),
+          indices: [...new Set(stocks.flatMap(s => s.listedIn || []))].sort(),
+          sectorCodes: [...new Set(stocks.flatMap(s => s.sectorCodes || []))].sort()
         }
       });
     } catch (error) {
