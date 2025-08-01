@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { TrendingUp, TrendingDown, Activity } from "lucide-react";
 import type { StockData } from "@shared/schema";
 import { useWebSocket } from "@/hooks/use-websocket";
@@ -7,21 +7,43 @@ interface HeaderTickerProps {
   stocks: StockData[];
 }
 
+// Market indices that should not appear in the stock ticker
+const MARKET_INDICES = [
+  "KSE100", "ALLSHR", "KSE30", "KMI30", "BKTI", "OGTI", 
+  "KMIALLSHR", "PSXDIV20", "UPP9", "NITPGI", "NBPPGI", 
+  "MZNPI", "JSMFI", "ACI", "JSGBKTI", "MII30", "HBLTTI", "KSE100PR"
+];
+
 export default function HeaderTicker({ stocks: initialStocks }: HeaderTickerProps) {
-  const [stocks, setStocks] = useState<StockData[]>(initialStocks || []);
+  const [currentStocks, setCurrentStocks] = useState<StockData[]>(initialStocks || []);
   const { isConnected, lastMessage } = useWebSocket();
 
-  // Update stocks when WebSocket data changes
+  // Update stocks when WebSocket data changes, but prevent animation restart
   useEffect(() => {
     if (lastMessage && lastMessage.type === 'stock_update' && lastMessage.data) {
-      setStocks(lastMessage.data);
+      setCurrentStocks(prevStocks => {
+        // Merge new data with existing, maintaining order to prevent animation restart
+        const newStocks = lastMessage.data;
+        const existingSymbols = new Set(prevStocks.map(s => s.symbol));
+        
+        // Update existing stocks and add new ones
+        const updated = prevStocks.map((stock: StockData) => {
+          const newStock = newStocks.find((s: StockData) => s.symbol === stock.symbol);
+          return newStock || stock;
+        });
+        
+        // Add completely new stocks
+        const newUniqueStocks = newStocks.filter((stock: StockData) => !existingSymbols.has(stock.symbol));
+        
+        return [...updated, ...newUniqueStocks];
+      });
     }
   }, [lastMessage]);
 
   // Initialize stocks with props data
   useEffect(() => {
     if (initialStocks && initialStocks.length > 0) {
-      setStocks(initialStocks);
+      setCurrentStocks(initialStocks);
     }
   }, [initialStocks]);
 
@@ -34,11 +56,27 @@ export default function HeaderTicker({ stocks: initialStocks }: HeaderTickerProp
     return `${sign}${change.toFixed(2)} (${sign}${changePercent.toFixed(1)}%)`;
   };
 
-  // Get top 10 stocks by volume for ticker
-  const tickerStocks = stocks
-    .filter(stock => stock.volume > 0)
-    .sort((a, b) => (b.volume || 0) - (a.volume || 0))
-    .slice(0, 10);
+  // Filter stocks with proper company names and exclude market indices
+  const tickerStocks = useMemo(() => {
+    return currentStocks
+      .filter(stock => {
+        // Exclude market indices
+        if (MARKET_INDICES.includes(stock.symbol)) return false;
+        
+        // Only include stocks with proper company names (not just symbol or generic names)
+        const hasProperName = stock.name && 
+          stock.name !== stock.symbol && 
+          stock.name.length > 5 && 
+          !stock.name.includes('Unknown') &&
+          !stock.name.includes('index') &&
+          !stock.name.includes('Index') &&
+          stock.volume > 1000; // Minimum volume filter
+        
+        return hasProperName;
+      })
+      .sort((a, b) => (b.volume || 0) - (a.volume || 0))
+      .slice(0, 12); // Show top 12 stocks with proper names
+  }, [currentStocks]);
 
   if (!tickerStocks.length) {
     return (
@@ -66,13 +104,14 @@ export default function HeaderTicker({ stocks: initialStocks }: HeaderTickerProp
             <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`}></div>
           </div>
           
-          {/* Scrolling Ticker */}
+          {/* Scrolling Ticker - Stocks */}
           <div className="flex-1 mx-4 overflow-hidden">
             <div className="animate-ticker whitespace-nowrap">
               <div className="inline-flex space-x-8">
-                {tickerStocks.map((stock, index) => (
-                  <div key={`${stock.symbol}-${index}`} className="inline-flex items-center space-x-2 text-sm">
+                {tickerStocks.map((stock) => (
+                  <div key={stock.symbol} className="inline-flex items-center space-x-2 text-sm">
                     <span className="font-semibold text-blue-300">{stock.symbol}</span>
+                    <span className="text-white text-xs">{stock.name?.substring(0, 25)}</span>
                     <span className="text-white">{formatPrice(stock.current || 0)}</span>
                     <div className={`flex items-center ${
                       (stock.change || 0) >= 0 ? 'text-green-400' : 'text-red-400'
@@ -88,10 +127,11 @@ export default function HeaderTicker({ stocks: initialStocks }: HeaderTickerProp
                     </div>
                   </div>
                 ))}
-                {/* Repeat for continuous scroll */}
-                {tickerStocks.map((stock, index) => (
-                  <div key={`${stock.symbol}-repeat-${index}`} className="inline-flex items-center space-x-2 text-sm">
+                {/* Repeat for seamless continuous scroll */}
+                {tickerStocks.map((stock) => (
+                  <div key={`${stock.symbol}-dup`} className="inline-flex items-center space-x-2 text-sm">
                     <span className="font-semibold text-blue-300">{stock.symbol}</span>
+                    <span className="text-white text-xs">{stock.name?.substring(0, 25)}</span>
                     <span className="text-white">{formatPrice(stock.current || 0)}</span>
                     <div className={`flex items-center ${
                       (stock.change || 0) >= 0 ? 'text-green-400' : 'text-red-400'

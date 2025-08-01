@@ -46,6 +46,7 @@ import { Link } from "wouter";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { ResponsiveContainer, PieChart as RechartsPieChart, Cell, BarChart, Bar, XAxis, YAxis, LineChart as RechartsLineChart, Line, AreaChart, Area } from 'recharts';
 import HeaderTicker from "@/components/header-ticker";
+import IndicesTicker from "@/components/indices-ticker";
 import { useWebSocket } from "@/hooks/use-websocket";
 
 interface Stock {

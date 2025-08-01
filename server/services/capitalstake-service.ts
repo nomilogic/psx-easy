@@ -70,11 +70,10 @@ export class CapitalStakeService {
       };
 
       this.ws.onmessage = (event) => {
-        console.log(event, "capitalstake message");
-
         try {
-          const message: CapitalStakeTickData = JSON.parse(event.data);
-          if (message.t === "tick") {
+          const messageStr = typeof event.data === 'string' ? event.data : event.data.toString();
+          const message: CapitalStakeTickData = JSON.parse(messageStr);
+          if (message.t === "tick" && message.d) {
             this.processTickData(message);
           }
         } catch (error) {
@@ -135,9 +134,9 @@ export class CapitalStakeService {
       changePercent: d.pch, // Already in percentage format
       volume: d.v,
       isPositive: d.ch >= 0,
-      lastTradeTime: new Date(d.lt.t * 1000).toISOString(),
-      lastTradePrice: d.lt.x,
-      lastTradeVolume: d.lt.v,
+      lastTradeTime: d.lt ? new Date(d.lt.t * 1000).toISOString() : new Date().toISOString(),
+      lastTradePrice: d.lt?.x || 0,
+      lastTradeVolume: d.lt?.v || 0,
       bidPrice: d.bp,
       bidVolume: d.bv,
       askPrice: d.ap,
