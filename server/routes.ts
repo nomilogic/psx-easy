@@ -1014,6 +1014,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Stock Analysis Data endpoint
+  app.get("/api/stock-analysis-data", async (req, res) => {
+    try {
+      // Read the stock analysis JSON file
+      const fs = await import('fs');
+      const path = await import('path');
+      const filePath = path.join(process.cwd(), 'server', 'stockAnalysis.json');
+      
+      if (fs.existsSync(filePath)) {
+        const data = fs.readFileSync(filePath, 'utf8');
+        const stockAnalysis = JSON.parse(data);
+        res.json(stockAnalysis);
+      } else {
+        // Return sample structure if file doesn't exist
+        res.json({
+          stocks: [
+            {
+              ticker: "SAMPLE",
+              company_name: "Sample Company Limited",
+              exchange: "PSX",
+              sector: "Technology",
+              country: "Pakistan",
+              currency: "PKR",
+              historical: {
+                price: {
+                  start_price: 100,
+                  end_price: 150,
+                  change_percent: 50,
+                  "52_week_high": 160,
+                  "52_week_low": 90,
+                  volatility_weekly_percent: "3.2"
+                }
+              },
+              ai_insights: {
+                ai_rating: "A (Buy)",
+                trend_summary: "Sample analysis data - please ensure stockAnalysis.json is available",
+                investment_type: "Growth"
+              }
+            }
+          ]
+        });
+      }
+    } catch (error) {
+      console.error("Error loading stock analysis data:", error);
+      res.status(500).json({ error: "Failed to load stock analysis data" });
+    }
+  });
+
   // AI Portfolio Recommendations endpoint
   app.post("/api/ai-portfolio", async (req, res) => {
     try {
