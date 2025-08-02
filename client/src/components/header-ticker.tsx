@@ -27,7 +27,8 @@ export default function HeaderTicker({ stocks: initialStocks }: HeaderTickerProp
       if (!response.ok) {
         throw new Error('Failed to fetch stocks');
       }
-      return response.json();
+      const data = await response.json();
+      return data;
     },
     enabled: true, // Always try to fetch data
     refetchInterval: isConnected ? 60000 : 30000, // Slower refresh when WebSocket is active
@@ -37,12 +38,15 @@ export default function HeaderTicker({ stocks: initialStocks }: HeaderTickerProp
   
   // Use WebSocket data if available, otherwise fall back to API
   const effectiveStocks = useMemo(() => {
-    if (currentStocks && currentStocks.length > 0 && isConnected) {
+    // Prefer WebSocket data when connected and available
+    if (isConnected && currentStocks && currentStocks.length > 0) {
       return currentStocks;
     }
-    if ((!isConnected || currentStocks.length === 0) && apiStocks?.stocks && Array.isArray(apiStocks.stocks)) {
+    // Fall back to API data
+    if (apiStocks && apiStocks.stocks && Array.isArray(apiStocks.stocks)) {
       return apiStocks.stocks;
     }
+    // Use initial props as last resort
     if (initialStocks && initialStocks.length > 0) {
       return initialStocks;
     }

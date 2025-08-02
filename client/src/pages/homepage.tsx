@@ -71,12 +71,26 @@ export default function Homepage() {
   // Always fetch data from API as fallback, regardless of WebSocket status
   const { data: apiStocks, isLoading: stocksLoading } = useQuery({
     queryKey: ['/api/stocks'],
+    queryFn: async () => {
+      const response = await fetch('/api/stocks');
+      if (!response.ok) {
+        throw new Error('Failed to fetch stocks');
+      }
+      return response.json();
+    },
     refetchInterval: 30000, // Refresh every 30 seconds
     staleTime: 10000, // Consider data stale after 10 seconds
   });
 
   const { data: apiOverview, isLoading: overviewLoading } = useQuery({
     queryKey: ['/api/overview'],
+    queryFn: async () => {
+      const response = await fetch('/api/overview');
+      if (!response.ok) {
+        throw new Error('Failed to fetch overview');
+      }
+      return response.json();
+    },
     refetchInterval: 30000,
     staleTime: 10000,
   });

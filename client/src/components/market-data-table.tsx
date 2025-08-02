@@ -37,7 +37,8 @@ export default function MarketDataTable({ stocks: initialStocks }: MarketDataTab
       if (!response.ok) {
         throw new Error('Failed to fetch stocks');
       }
-      return response.json();
+      const data = await response.json();
+      return data;
     },
     enabled: true, // Always try to fetch data
     refetchInterval: isConnected ? 60000 : 30000, // Slower refresh when WebSocket is active
@@ -54,10 +55,13 @@ export default function MarketDataTable({ stocks: initialStocks }: MarketDataTab
 
   // Use API data when WebSocket is not connected or no stocks available
   useEffect(() => {
-    if ((!isConnected || stocks.length === 0) && apiData?.stocks && Array.isArray(apiData.stocks)) {
-      setStocks(apiData.stocks);
+    if (apiData && apiData.stocks && Array.isArray(apiData.stocks)) {
+      // If WebSocket is not connected or we have no stocks, use API data
+      if (!isConnected || stocks.length === 0) {
+        setStocks(apiData.stocks);
+      }
     }
-  }, [isConnected, apiData, stocks.length]);
+  }, [isConnected, apiData]);
   const formatPrice = (price: number) => {
     return `₨${price.toFixed(2)}`;
   };
