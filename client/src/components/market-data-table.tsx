@@ -30,11 +30,19 @@ export default function MarketDataTable({ stocks: initialStocks }: MarketDataTab
   const { isConnected, lastMessage } = useWebSocket();
 
   // API fallback when WebSocket is not working
-  const { data: apiData } = useQuery({
+  const { data: apiData, isLoading: apiLoading } = useQuery({
     queryKey: ['/api/stocks'],
-    enabled: !isConnected, // Only fetch when WebSocket is not connected
-    refetchInterval: 30000, // Refetch every 30 seconds
+    queryFn: async () => {
+      const response = await fetch('/api/stocks');
+      if (!response.ok) {
+        throw new Error('Failed to fetch stocks');
+      }
+      return response.json();
+    },
+    enabled: true, // Always try to fetch data
+    refetchInterval: isConnected ? 60000 : 30000, // Slower refresh when WebSocket is active
     staleTime: 10000,
+    retry: 3,
   });
 
   // Initialize stocks with props data or empty array
@@ -44,12 +52,12 @@ export default function MarketDataTable({ stocks: initialStocks }: MarketDataTab
     }
   }, [initialStocks]);
 
-  // Use API data when WebSocket is not connected
+  // Use API data when WebSocket is not connected or no stocks available
   useEffect(() => {
-    if (!isConnected && apiData?.stocks && Array.isArray(apiData.stocks)) {
+    if ((!isConnected || stocks.length === 0) && apiData?.stocks && Array.isArray(apiData.stocks)) {
       setStocks(apiData.stocks);
     }
-  }, [isConnected, apiData]);
+  }, [isConnected, apiData, stocks.length]);
   const formatPrice = (price: number) => {
     return `₨${price.toFixed(2)}`;
   };
@@ -175,18 +183,44 @@ export default function MarketDataTable({ stocks: initialStocks }: MarketDataTab
     }
   }, [lastMessage]);
 
+  if ((!Array.isArray(stocks) || stocks.length === 0) && apiLoading) {
+    return (
+      <section id="stocks" className="mb-8">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+            <h3 className="text-lg font-semibold text-slate-900">Market Data Table</h3>
+            <p className="text-sm text-slate-600">
+              {isConnected ? "Live via WebSocket" : "Loading from API..."}
+            </p>
+          </div>
+
+          <div className="p-8 text-center">
+            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-slate-600">Loading stock data...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Show empty state if no data after loading
   if (!Array.isArray(stocks) || stocks.length === 0) {
     return (
       <section id="stocks" className="mb-8">
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
             <h3 className="text-lg font-semibold text-slate-900">Market Data Table</h3>
-            <p className="text-sm text-slate-600">Real-time updates via WebSocket</p>
+            <p className="text-sm text-slate-600">No market data available</p>
           </div>
 
           <div className="p-8 text-center">
-            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-slate-600">Loading stock data...</p>
+            <p className="text-slate-600">Unable to load stock data. Please try refreshing the page.</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Refresh Page
+            </button>
           </div>
         </div>
       </section>

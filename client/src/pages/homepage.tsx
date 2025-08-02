@@ -45,7 +45,6 @@ import {
   LineChart,
 } from "lucide-react";
 import { useWebSocket } from "@/hooks/use-websocket";
-import { useMarketWebSocket } from "@/hooks/useMarketWebSocket";
 import type { StockData, MarketSummary } from "@shared/schema";
 import {
   ChartContainer,
@@ -74,24 +73,24 @@ const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#0
 
 export default function Homepage() {
   const { marketData: stocks, marketSummary, isConnected } = useWebSocket();
-  
+
   // Always fetch data from API as fallback, regardless of WebSocket status
   const { data: apiStocks, isLoading: stocksLoading } = useQuery({
     queryKey: ['/api/stocks'],
     refetchInterval: 30000, // Refresh every 30 seconds
     staleTime: 10000, // Consider data stale after 10 seconds
   });
-  
+
   const { data: apiOverview, isLoading: overviewLoading } = useQuery({
     queryKey: ['/api/overview'],
     refetchInterval: 30000,
     staleTime: 10000,
   });
-  
+
   // Prefer WebSocket data when available and fresh, otherwise use API data
   const displayStocks = (stocks && stocks.length > 0 && isConnected) ? stocks : (apiStocks as any)?.stocks || [];
   const displaySummary = (marketSummary && isConnected) ? marketSummary : apiOverview;
-  
+
   console.log('Homepage data source:', {
     wsConnected: isConnected,
     wsStocks: stocks?.length || 0,
