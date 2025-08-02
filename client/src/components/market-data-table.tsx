@@ -17,51 +17,68 @@ interface MarketDataTableProps {
 type SortKey = 'symbol' | 'name' | 'current' | 'high' | 'low' | 'change' | 'volume';
 type SortDirection = 'asc' | 'desc';
 
+const MAJOR_INDICES = [
+  "KSE100", "ALLSHR", "KSE30", "KMI30", "BKTI", "OGTI", 
+  "KMIALLSHR", "PSXDIV20", "UPP9", "NITPGI", "NBPPGI", 
+  "MZNPI", "JSMFI", "ACI", "JSGBKTI", "MII30", "HBLTTI", "KSE100PR"
+];
+
 export default function MarketDataTable({ stocks: initialStocks }: MarketDataTableProps) {
-  const [stocks, setStocks] = useState<StockData[]>(initialStocks || []);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>('volume');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [indexFilter, setIndexFilter] = useState<string>("ALL");
+  const [sectorFilter, setSectorFilter] = useState<string>("ALL");
   const [, setLocation] = useLocation();
 
   const { isConnected, lastMessage } = useWebSocket();
 
-  // API fallback when WebSocket is not working
-  const { data: apiData, isLoading: apiLoading } = useQuery({
-    queryKey: ['/api/stocks'],
+  // Fetch filtered stocks from API based on current filters
+  const { data: filteredData, isLoading: apiLoading, refetch } = useQuery({
+    queryKey: ['/api/stocks', indexFilter, sectorFilter, searchTerm, currentPage, pageSize, sortKey, sortDirection],
     queryFn: async () => {
-      const response = await fetch('/api/stocks');
-      if (!response.ok) {
-        throw new Error('Failed to fetch stocks');
+      const params = new URLSearchParams();
+      
+      if (indexFilter !== "ALL") {
+        // Use the index-specific API endpoint
+        const response = await fetch(`/api/stocks/${indexFilter}?limit=${pageSize}&offset=${(currentPage - 1) * pageSize}`);
+        if (!response.ok) throw new Error('Failed to fetch index stocks');
+        return response.json();
+      } else {
+        // Use the general stocks API with filters
+        params.set('page', currentPage.toString());
+        params.set('limit', pageSize.toString());
+        if (sectorFilter !== "ALL") params.set('sector', sectorFilter);
+        if (searchTerm.trim()) params.set('search', searchTerm.trim());
+        
+        const response = await fetch(`/api/stocks?${params.toString()}`);
+        if (!response.ok) throw new Error('Failed to fetch stocks');
+        return response.json();
       }
-      const data = await response.json();
-      return data;
     },
-    enabled: true, // Always try to fetch data
-    refetchInterval: isConnected ? 60000 : 30000, // Slower refresh when WebSocket is active
+    enabled: true,
+    refetchInterval: isConnected ? 60000 : 30000,
     staleTime: 10000,
     retry: 3,
   });
 
-  // Initialize stocks with props data or empty array
-  useEffect(() => {
-    if (initialStocks && initialStocks.length > 0) {
-      setStocks(initialStocks);
-    }
-  }, [initialStocks]);
+  // Fetch available sectors for the dropdown
+  const { data: sectorsData } = useQuery({
+    queryKey: ["/api/sectors"],
+    queryFn: async () => {
+      const response = await fetch('/api/sectors');
+      if (!response.ok) throw new Error('Failed to fetch sectors');
+      return response.json();
+    },
+    refetchInterval: 300000, // Refresh every 5 minutes
+  });
 
-  // Use API data when WebSocket is not connected or no stocks available
-  useEffect(() => {
-    if (apiData && apiData.stocks && Array.isArray(apiData.stocks)) {
-      // If WebSocket is not connected or we have no stocks, use API data
-      if (!isConnected || stocks.length === 0) {
-        setStocks(apiData.stocks);
-      }
-    }
-  }, [isConnected, apiData]);
+  const stocks = filteredData?.stocks || [];
+  const totalStocks = filteredData?.total || 0;
+  const totalPages = Math.ceil(totalStocks / pageSize);
+
   const formatPrice = (price: number) => {
     return `₨${price.toFixed(2)}`;
   };
@@ -103,130 +120,28 @@ export default function MarketDataTable({ stocks: initialStocks }: MarketDataTab
       <ChevronDown className="w-4 h-4 inline-block ml-1" />;
   };
 
-  // Get the count of available stocks for each index
-  const getIndexStockCount = (indexName: string) => {
-    if (!Array.isArray(stocks)) return 0;
-    return stocks.filter(stock => 
-      stock.listedIn && Array.isArray(stock.listedIn) && stock.listedIn.includes(indexName)
-    ).length;
-  };
-
-  // Get all available indices from the stock data
-  const availableIndices = useMemo(() => {
-    if (!Array.isArray(stocks)) return [];
-
-    const indicesSet = new Set<string>();
-    stocks.forEach(stock => {
-      if (stock.listedIn && Array.isArray(stock.listedIn)) {
-        stock.listedIn.forEach(index => indicesSet.add(index));
-      }
-    });
-
-    return Array.from(indicesSet).sort();
-  }, [stocks]);
-
-  const filteredAndSortedStocks = useMemo(() => {
-    // Ensure stocks is an array before processing
-    if (!Array.isArray(stocks)) {
-      return [];
-    }
-
-    let filtered = stocks;
-
-    if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase().trim();
-      filtered = stocks.filter(stock => 
-        stock.symbol.toLowerCase().includes(searchLower) ||
-        stock.name.toLowerCase().includes(searchLower) ||
-        stock.sector.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // Apply index filter based on listed_in data from Arif Habib API
-    if (indexFilter !== "ALL") {
-      filtered = filtered.filter(stock => 
-        stock.listedIn && Array.isArray(stock.listedIn) && stock.listedIn.includes(indexFilter)
-      );
-    }
-
-    return filtered.sort((a, b) => {
-      let aValue: any = a[sortKey];
-      let bValue: any = b[sortKey];
-
-      if (sortKey === 'symbol' || sortKey === 'name') {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
-      }
-
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }, [stocks, searchTerm, sortKey, sortDirection, indexFilter]);
-
-  const paginatedStocks = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    return filteredAndSortedStocks.slice(startIndex, startIndex + pageSize);
-  }, [filteredAndSortedStocks, currentPage, pageSize]);
-
-  const totalPages = Math.ceil(filteredAndSortedStocks.length / pageSize);
-
-  // Reset to first page when search term changes
-  useMemo(() => {
-    setCurrentPage(1);
-  }, [searchTerm, pageSize]);
-
+  // Reset to first page when filters change
   useEffect(() => {
-    if (lastMessage && lastMessage.type === 'stock_update' && lastMessage.data) {
-      try {
-        const data = lastMessage.data;
-        if (data.type === 'stocks' && Array.isArray(data.data)) {
-          setStocks(data.data);
-        }
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
-      }
-    }
-  }, [lastMessage]);
+    setCurrentPage(1);
+  }, [searchTerm, indexFilter, sectorFilter]);
 
-  if ((!Array.isArray(stocks) || stocks.length === 0) && apiLoading) {
+  // Trigger refetch when filters change
+  useEffect(() => {
+    refetch();
+  }, [indexFilter, sectorFilter, searchTerm, currentPage, pageSize, sortKey, sortDirection, refetch]);
+
+  if (apiLoading && stocks.length === 0) {
     return (
       <section id="stocks" className="mb-8">
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
             <h3 className="text-lg font-semibold text-slate-900">Market Data Table</h3>
-            <p className="text-sm text-slate-600">
-              {isConnected ? "Live via WebSocket" : "Loading from API..."}
-            </p>
+            <p className="text-sm text-slate-600">Loading filtered data...</p>
           </div>
 
           <div className="p-8 text-center">
             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-slate-600">Loading stock data...</p>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  // Show empty state if no data after loading
-  if (!Array.isArray(stocks) || stocks.length === 0) {
-    return (
-      <section id="stocks" className="mb-8">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
-            <h3 className="text-lg font-semibold text-slate-900">Market Data Table</h3>
-            <p className="text-sm text-slate-600">No market data available</p>
-          </div>
-
-          <div className="p-8 text-center">
-            <p className="text-slate-600">Unable to load stock data. Please try refreshing the page.</p>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Refresh Page
-            </button>
           </div>
         </div>
       </section>
@@ -241,21 +156,24 @@ export default function MarketDataTable({ stocks: initialStocks }: MarketDataTab
             <div>
               <h3 className="text-lg font-semibold text-slate-900">Market Data Table</h3>
               <p className="text-sm text-slate-600">
-                {isConnected ? "Live via WebSocket" : "API fallback"} • Auto-refreshing every 30 seconds • {searchTerm ? `${filteredAndSortedStocks.length} of ${stocks.length}` : stocks.length} stocks
+                {indexFilter !== "ALL" ? `${indexFilter} Stocks` : sectorFilter !== "ALL" ? `${sectorFilter} Sector` : "All Stocks"} • 
+                {searchTerm ? ` Search: "${searchTerm}" • ` : " "}
+                {totalStocks} total stocks • Page {currentPage} of {totalPages}
               </p>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-slate-600">Show:</span>
-              <select 
-                value={pageSize} 
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                className="border border-slate-300 rounded-md px-2 py-1 text-sm"
-              >
-                <option value={10}>10</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-              </select>
+              <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(Number(value))}>
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -271,30 +189,62 @@ export default function MarketDataTable({ stocks: initialStocks }: MarketDataTab
                 autoComplete="off"
               />
               {searchTerm && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-slate-500">
-                  {filteredAndSortedStocks.length} results
-                </div>
+                <button 
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  ×
+                </button>
               )}
             </div>
 
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-slate-400" />
+              
+              {/* Index Filter */}
               <Select value={indexFilter} onValueChange={setIndexFilter}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Filter by index" />
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Index" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">All Stocks ({stocks.length})</SelectItem>
-                  {availableIndices.map((index) => {
-                    const count = getIndexStockCount(index);
-                    return count > 0 ? (
-                      <SelectItem key={index} value={index}>
-                        {index} ({count} stocks)
-                      </SelectItem>
-                    ) : null;
-                  })}
+                  <SelectItem value="ALL">All Indices</SelectItem>
+                  {MAJOR_INDICES.map((index) => (
+                    <SelectItem key={index} value={index}>
+                      {index}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+
+              {/* Sector Filter */}
+              <Select value={sectorFilter} onValueChange={setSectorFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Sector" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All Sectors</SelectItem>
+                  {sectorsData?.map((sector: any) => (
+                    <SelectItem key={sector.name} value={sector.name}>
+                      {sector.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Clear Filters */}
+              {(indexFilter !== "ALL" || sectorFilter !== "ALL" || searchTerm) && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setIndexFilter("ALL");
+                    setSectorFilter("ALL");
+                    setSearchTerm("");
+                  }}
+                >
+                  Clear
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -348,7 +298,7 @@ export default function MarketDataTable({ stocks: initialStocks }: MarketDataTab
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-200">
-              {paginatedStocks.map((stock) => (
+              {stocks.map((stock: any) => (
                 <tr 
                   key={stock.symbol} 
                   className="hover:bg-slate-50 transition-colors cursor-pointer"
@@ -368,7 +318,7 @@ export default function MarketDataTable({ stocks: initialStocks }: MarketDataTab
                       )}
                       {stock.listedIn && Array.isArray(stock.listedIn) && stock.listedIn.length > 0 && (
                         <>
-                          {stock.listedIn.slice(0, 2).map((index) => (
+                          {stock.listedIn.slice(0, 2).map((index: string) => (
                             <Badge key={index} variant="outline" className="text-xs px-1 py-0">
                               {index}
                             </Badge>
@@ -418,7 +368,7 @@ export default function MarketDataTable({ stocks: initialStocks }: MarketDataTab
         {totalPages > 1 && (
           <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
             <div className="text-sm text-slate-700">
-              Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, filteredAndSortedStocks.length)} of {filteredAndSortedStocks.length} stocks
+              Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalStocks)} of {totalStocks} stocks
             </div>
             <div className="flex items-center space-x-2">
               <Button

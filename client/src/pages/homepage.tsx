@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -58,11 +59,10 @@ import {
   Cell,
 } from "recharts";
 import NewsSection from "@/components/news-section";
-import HeaderTicker from "@/components/header-ticker";
-import IndicesTicker from "@/components/indices-ticker";
 import MarketDataTable from "@/components/market-data-table";
 import { SimpleMarketStatus } from "@/components/SimpleMarketStatus";
 import { useMarketWebSocket } from "@/hooks/useMarketWebSocket";
+
 const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
 
 export default function Homepage() {
@@ -173,13 +173,8 @@ export default function Homepage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Market Indices Ticker */}
-      <IndicesTicker />
-      {/* Stock Ticker */}
-      <HeaderTicker stocks={displayStocks} />
-
       {/* Compact Hero Section */}
-      <section className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 text-white py-12">
+      <section className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 text-white py-12 mt-[120px]">
         <div className="absolute inset-0 bg-black/10"></div>
         <div className="relative max-w-7xl mx-auto px-4">
           <div className="grid lg:grid-cols-3 gap-8 items-center">

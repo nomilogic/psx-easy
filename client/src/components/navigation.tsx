@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -14,10 +15,14 @@ import {
   Bot,
 } from "lucide-react";
 import GlobalHeaderTicker from "./global-header-ticker";
+import HeaderTicker from "./header-ticker";
+import IndicesTicker from "./indices-ticker";
+import { useWebSocket } from "@/hooks/use-websocket";
 
 export default function Navigation() {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { marketData: stocks } = useWebSocket();
 
   const navItems = [
     { path: "/", label: "Home", icon: Home },
@@ -33,10 +38,21 @@ export default function Navigation() {
 
   return (
     <>
-      <nav className="bg-white shadow-sm border-b border-slate-200 sticky top-10 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <GlobalHeaderTicker />
+      {/* Sticky Header Tickers at the very top */}
+      <div className="sticky top-0 z-50 bg-white shadow-sm">
+        {/* Market Indices Ticker */}
+        <IndicesTicker />
+        
+        {/* Stock Ticker */}
+        <HeaderTicker stocks={stocks || []} />
+        
+        {/* Global Header Ticker */}
+        <GlobalHeaderTicker />
+      </div>
 
+      {/* Main Navigation */}
+      <nav className="bg-white shadow-sm border-b border-slate-200 sticky top-[120px] z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-3">
