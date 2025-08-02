@@ -33,7 +33,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Simple market status without external dependencies
       const now = new Date();
-      const pakistanTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Karachi"}));
+      const pakistanTime = new Date(
+        now.toLocaleString("en-US", { timeZone: "Asia/Karachi" }),
+      );
       const hour = pakistanTime.getHours();
       const minute = pakistanTime.getMinutes();
       const day = pakistanTime.getDay(); // 0 = Sunday, 6 = Saturday
@@ -46,7 +48,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const marketCloseTime = 17 * 60; // 5:00 PM in minutes
       const currentTimeMinutes = hour * 60 + minute;
 
-      const isMarketHours = currentTimeMinutes >= marketOpenTime && currentTimeMinutes <= marketCloseTime;
+      const isMarketHours =
+        currentTimeMinutes >= marketOpenTime &&
+        currentTimeMinutes <= marketCloseTime;
       const isOpen = !isWeekend && isMarketHours;
 
       const marketStatus = {
@@ -113,7 +117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({
           message: `Market data initialized with ${freshData.length} stocks`,
           count: freshData.length,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       } else {
         res.status(500).json({ error: "Failed to initialize market data" });
@@ -125,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update market data - Incremental updates only
-  app.post("/api/market/update", async (req, res) => {
+  app.get("/api/market/update", async (req, res) => {
     try {
       console.log("Starting market data update...");
 
@@ -137,11 +141,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Update only changed fields
         let updatedCount = 0;
         for (const stock of freshData) {
-          const existing = currentData.find(s => s.symbol === stock.symbol);
-          if (!existing || 
-              existing.current !== stock.current || 
-              existing.volume !== stock.volume ||
-              existing.change !== stock.change) {
+          const existing = currentData.find((s) => s.symbol === stock.symbol);
+          if (
+            !existing ||
+            existing.current !== stock.current ||
+            existing.volume !== stock.volume ||
+            existing.change !== stock.change
+          ) {
             updatedCount++;
           }
         }
@@ -153,7 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: `Market data updated - ${updatedCount} stocks changed`,
           totalStocks: freshData.length,
           updatedCount: updatedCount,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       } else {
         res.status(500).json({ error: "Failed to update market data" });
@@ -167,18 +173,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Stocks API with filtering
   app.get("/api/stocks", async (req, res) => {
     try {
-      const { 
-        sector, 
-        sectorCode, 
-        search, 
-        page = "1", 
-        limit = "50",
-        sortBy = "volume",
-        sortOrder = "desc"
+      const {
+        sector,
+        sectorCode,
+        search,
+        page = "1",
+        limit = "1000",
+        sortBy = "symbol",
+        sortOrder = "desc",
+        listedIn = "KSE100",
       } = req.query;
 
       const pageNum = Math.max(1, parseInt(page as string, 10));
-      const limitNum = Math.min(500, Math.max(1, parseInt(limit as string, 10))); // Cap at 500
+      const limitNum = Math.min(
+        500,
+        Math.max(1, parseInt(limit as string, 10)),
+      ); // Cap at 500
       const offset = (pageNum - 1) * limitNum;
 
       const filters = {
@@ -186,12 +196,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sectorCode: sectorCode as string,
         search: search as string,
         limit: limitNum,
-        offset
+        sortBy: sortBy as string,
+        sortOrder: sortOrder as string,
+        listedIn: listedIn as string,
+        offset,
       };
 
       // Remove undefined/empty filters
-      Object.keys(filters).forEach(key => {
-        if (filters[key as keyof typeof filters] === undefined || filters[key as keyof typeof filters] === '') {
+      Object.keys(filters).forEach((key) => {
+        if (
+          filters[key as keyof typeof filters] === undefined ||
+          filters[key as keyof typeof filters] === ""
+        ) {
           delete filters[key as keyof typeof filters];
         }
       });
@@ -200,30 +216,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get filtered stocks and total count with timeout protection
       const stocksPromise = storage.getFilteredStocks(filters);
-      const countPromise = storage.getStocksCount({ 
-        sector: sector as string, 
-        sectorCode: sectorCode as string, 
-        search: search as string 
+      const countPromise = storage.getStocksCount({
+        sector: sector as string,
+        sectorCode: sectorCode as string,
+        search: search as string,
       });
 
       const [stocks, totalCount] = await Promise.all([
         Promise.race([
           stocksPromise,
-          new Promise<StockData[]>((_, reject) => 
-            setTimeout(() => reject(new Error("Stocks query timeout")), 8000)
-          )
+          new Promise<StockData[]>((_, reject) =>
+            setTimeout(() => reject(new Error("Stocks query timeout")), 8000),
+          ),
         ]),
         Promise.race([
           countPromise,
-          new Promise<number>((_, reject) => 
-            setTimeout(() => reject(new Error("Count query timeout")), 5000)
-          )
-        ])
+          new Promise<number>((_, reject) =>
+            setTimeout(() => reject(new Error("Count query timeout")), 5000),
+          ),
+        ]),
       ]);
 
       const totalPages = Math.ceil(totalCount / limitNum);
 
-      console.log(`📊 Returning ${stocks.length} stocks (page ${pageNum}/${totalPages})`);
+      console.log(
+        `📊 Returning ${stocks.length} stocks (page ${pageNum}/${totalPages})`,
+      );
 
       res.json({
         stocks,
@@ -232,9 +250,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalPages,
           totalItems: totalCount,
           hasNextPage: pageNum < totalPages,
-          hasPrevPage: pageNum > 1
+          hasPrevPage: pageNum > 1,
         },
-        filters: filters
+        filters: filters,
       });
     } catch (error) {
       console.error("❌ Error in stocks API:", error);
@@ -254,9 +272,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             totalPages: Math.ceil(fallbackStocks.length / limitNum),
             totalItems: fallbackStocks.length,
             hasNextPage: offset + limitNum < fallbackStocks.length,
-            hasPrevPage: offset > 0
+            hasPrevPage: offset > 0,
           },
-          fallback: true
+          fallback: true,
         });
       } catch (fallbackError) {
         console.error("❌ Fallback also failed:", fallbackError);
@@ -277,7 +295,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stock = await storage.getStock(symbol.toUpperCase());
 
       if (!stock) {
-        return res.status(404).json({ error: `Stock with symbol ${symbol} not found` });
+        return res
+          .status(404)
+          .json({ error: `Stock with symbol ${symbol} not found` });
       }
 
       res.json(stock);
@@ -337,7 +357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const stocks = await storage.getFilteredStocksByIndex("KSE100", {
         limit: limit ? parseInt(limit as string, 10) : 100,
-        offset: offset ? parseInt(offset as string, 10) : 0
+        offset: offset ? parseInt(offset as string, 10) : 0,
       });
 
       const total = await storage.getStocksCountByIndex("KSE100");
@@ -349,8 +369,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pagination: {
           offset: offset ? parseInt(offset as string, 10) : 0,
           limit: limit ? parseInt(limit as string, 10) : 100,
-          hasMore: (offset ? parseInt(offset as string, 10) : 0) + stocks.length < total
-        }
+          hasMore:
+            (offset ? parseInt(offset as string, 10) : 0) + stocks.length <
+            total,
+        },
       });
     } catch (error) {
       console.error("Error fetching KSE100 stocks:", error);
@@ -375,18 +397,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stocks = await storage.getMarketData();
       const allSectorCodes = new Set<string>();
 
-      stocks.forEach(stock => {
+      stocks.forEach((stock) => {
         if (stock.sectorCode) {
           allSectorCodes.add(stock.sectorCode);
         }
       });
 
       const sectorCode = await Promise.all(
-        Array.from(allSectorCodes).sort().map(async code => ({
-          code: code,
-          name: await mapSectorCodeToName(code),
-          stockCount: stocks.filter(s => s.sectorCode === code).length
-        }))
+        Array.from(allSectorCodes)
+          .sort()
+          .map(async (code) => ({
+            code: code,
+            name: await mapSectorCodeToName(code),
+            stockCount: stocks.filter((s) => s.sectorCode === code).length,
+          })),
       );
 
       res.json(sectorCode);
@@ -400,7 +424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   async function mapSectorCodeToName(code: string): Promise<string> {
     try {
       const sectors = await storage.getSectors();
-      const sector = sectors.find(s => s.code === code);
+      const sector = sectors.find((s) => s.code === code);
       return sector ? sector.name : code;
     } catch (error) {
       console.error("Error fetching sector name:", error);
@@ -830,9 +854,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Call Gemini API with proper error handling
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: "Gemini API key not configured",
-          message: "Please set GEMINI_API_KEY environment variable" 
+          message: "Please set GEMINI_API_KEY environment variable",
         });
       }
 
@@ -902,7 +926,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               analysis:
                 aiText.length > 300 ? aiText.substring(0, 300) + "..." : aiText,
               recommendation:
-                sentiment === "Bullish"                  ? `Buy - ${stock.symbol} shows strong upward momentum`
+                sentiment === "Bullish"
+                  ? `Buy - ${stock.symbol} shows strong upward momentum`
                   : sentiment === "Bearish"
                     ? `Sell - ${stock.symbol} facing downward pressure`
                     : `Hold - ${stock.symbol} in consolidation phase`,
@@ -1181,7 +1206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             title: `Banking Sector Shows Mixed Performance Amid Policy Changes`,
             description: `Commercial banks trading with varied performance as investors react to monetary policy signals and credit growth data.`,
             url: "/sectors/banking",
-source: "Market Analysis",
+            source: "Market Analysis",
             publishedAt: new Date().toISOString(),
             category: "economy",
             impact: "medium",
@@ -1331,7 +1356,11 @@ source: "Market Analysis",
             : [Math.floor(timestamp / 1000), basePrice, volume];
         }),
       };
-      res.json({ symbol: req.params.symbol.toUpperCase(), interval: req.query.interval, ...mockData });
+      res.json({
+        symbol: req.params.symbol.toUpperCase(),
+        interval: req.query.interval,
+        ...mockData,
+      });
     }
   });
 
@@ -1340,10 +1369,10 @@ source: "Market Analysis",
     try {
       // Get symbols from storage first (most reliable)
       const stocks = await storage.getMarketData();
-      const symbols = stocks.map(stock => ({
+      const symbols = stocks.map((stock) => ({
         symbol: stock.symbol,
         name: stock.name || stock.symbol,
-        sector: stock.sector || "Other"
+        sector: stock.sector || "Other",
       }));
 
       res.json(symbols);
@@ -1352,11 +1381,31 @@ source: "Market Analysis",
 
       // Fallback symbols response
       const fallbackSymbols = [
-        { symbol: "HBL", name: "Habib Bank Limited", sector: "COMMERCIAL BANKS" },
-        { symbol: "UBL", name: "United Bank Limited", sector: "COMMERCIAL BANKS" },
-        { symbol: "MEBL", name: "MCB Bank Limited", sector: "COMMERCIAL BANKS" },
-        { symbol: "UNITY", name: "Unity Foods Limited", sector: "FOOD & PERSONAL CARE PRODUCTS" },
-        { symbol: "PSO", name: "Pakistan State Oil Company Limited", sector: "OIL & GAS MARKETING COMPANIES" }
+        {
+          symbol: "HBL",
+          name: "Habib Bank Limited",
+          sector: "COMMERCIAL BANKS",
+        },
+        {
+          symbol: "UBL",
+          name: "United Bank Limited",
+          sector: "COMMERCIAL BANKS",
+        },
+        {
+          symbol: "MEBL",
+          name: "MCB Bank Limited",
+          sector: "COMMERCIAL BANKS",
+        },
+        {
+          symbol: "UNITY",
+          name: "Unity Foods Limited",
+          sector: "FOOD & PERSONAL CARE PRODUCTS",
+        },
+        {
+          symbol: "PSO",
+          name: "Pakistan State Oil Company Limited",
+          sector: "OIL & GAS MARKETING COMPANIES",
+        },
       ];
 
       res.json(fallbackSymbols);

@@ -42,7 +42,7 @@ function AppContent() {
   const stockSymbol = getStockSymbol();
 
   return (
-    <div className="pt-12">
+    <div className="pt-0">
       {" "}
       {/* Add padding for fixed header ticker */}
       <Navigation />

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -42,16 +41,15 @@ export default function Navigation() {
       <div className="sticky top-0 z-50 bg-white shadow-sm">
         {/* Market Indices Ticker */}
         <IndicesTicker />
-        
+
         {/* Stock Ticker */}
         <HeaderTicker stocks={stocks || []} />
-        
+
         {/* Global Header Ticker */}
-        <GlobalHeaderTicker />
       </div>
 
       {/* Main Navigation */}
-      <nav className="bg-white shadow-sm border-b border-slate-200 sticky top-[120px] z-40">
+      <nav className="bg-white shadow-sm border-b border-slate-100 sticky top-[80px] z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}

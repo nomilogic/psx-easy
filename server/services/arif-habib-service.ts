@@ -62,7 +62,8 @@ interface ArifHabibResponse {
 }
 
 export class ArifHabibService {
-  private static readonly API_URL = "https://www.arifhabibltd.com/api/market/stocks";
+  private static readonly API_URL =
+    "https://www.arifhabibltd.com/api/market/stocks";
 
   static async fetchMarketData(): Promise<StockData[] | undefined> {
     try {
@@ -70,8 +71,9 @@ export class ArifHabibService {
 
       const response = await fetch(this.API_URL, {
         headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-          "Accept": "application/json",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+          Accept: "application/json",
           "Accept-Language": "en-US,en;q=0.9",
         },
       });
@@ -82,11 +84,17 @@ export class ArifHabibService {
 
       const jsonData: ArifHabibResponse = await response.json();
 
-      if (jsonData.status !== "ok" || !jsonData.data || !Array.isArray(jsonData.data)) {
+      if (
+        jsonData.status !== "ok" ||
+        !jsonData.data ||
+        !Array.isArray(jsonData.data)
+      ) {
         throw new Error("Invalid response format from Arif Habib API");
       }
 
-      console.log(`Successfully fetched ${jsonData.data.length} stocks from Arif Habib API`);
+      console.log(
+        `Successfully fetched ${jsonData.data.length} stocks from Arif Habib API`,
+      );
 
       // Convert Arif Habib format to our StockData format
       const stockData: StockData[] = jsonData.data.map((stock) => ({
@@ -156,46 +164,46 @@ export class ArifHabibService {
 
   private static mapSectorCode(sectorCode: string): string {
     const sectorMap: { [key: string]: string } = {
-      "801": "AUTOMOBILE ASSEMBLER",
-      "802": "AUTOMOBILE PARTS & ACCESSORIES", 
-      "803": "CABLE & ELECTRICAL GOODS",
-      "804": "CEMENT",
-      "805": "CHEMICAL",
-      "806": "CLOSE - END MUTUAL FUND",
-      "807": "COMMERCIAL BANKS",
-      "808": "ENGINEERING",
-      "809": "FERTILIZER",
-      "810": "FOOD & PERSONAL CARE PRODUCTS",
-      "811": "GLASS & CERAMICS",
-      "812": "INSURANCE",
-      "813": "INV. BANKS / INV. COS. / SECURITIES COS.",
-      "814": "JUTE",
-      "815": "LEASING COMPANIES",
-      "816": "LEATHER & TANNERIES",
-      "818": "MISCELLANEOUS",
-      "819": "MODARABAS",
-      "820": "OIL & GAS EXPLORATION COMPANIES",
-      "821": "OIL & GAS MARKETING COMPANIES",
-      "822": "PAPER & BOARD",
-      "823": "PHARMACEUTICALS",
-      "824": "POWER GENERATION & DISTRIBUTION",
-      "825": "REFINERY",
-      "826": "SUGAR & ALLIED INDUSTRIES",
-      "827": "SYNTHETIC & RAYON",
-      "828": "TECHNOLOGY & COMMUNICATION",
-      "829": "TEXTILE COMPOSITE",
-      "830": "TEXTILE SPINNING",
-      "831": "TEXTILE WEAVING",
-      "832": "TOBACCO",
-      "833": "TRANSPORT",
-      "834": "VANASPATI & ALLIED INDUSTRIES",
-      "835": "WOOLLEN",
-      "836": "REAL ESTATE INVESTMENT TRUST",
-      "837": "EXCHANGE TRADED FUNDS",
-      "838": "PROPERTY",
-      "36": "BILL AND BONDS",
-      "40": "FUTURE CONTRACTS", 
-      "41": "STOCK INDEX FUTURE CONTRACTS",
+      "0801": "AUTOMOBILE ASSEMBLER",
+      "0802": "AUTOMOBILE PARTS & ACCESSORIES",
+      "0803": "CABLE & ELECTRICAL GOODS",
+      "0804": "CEMENT",
+      "0805": "CHEMICAL",
+      "0806": "CLOSE - END MUTUAL FUND",
+      "0807": "COMMERCIAL BANKS",
+      "0808": "ENGINEERING",
+      "0809": "FERTILIZER",
+      "0810": "FOOD & PERSONAL CARE PRODUCTS",
+      "0811": "GLASS & CERAMICS",
+      "0812": "INSURANCE",
+      "0813": "INV. BANKS / INV. COS. / SECURITIES COS.",
+      "0814": "JUTE",
+      "0815": "LEASING COMPANIES",
+      "0816": "LEATHER & TANNERIES",
+      "0818": "MISCELLANEOUS",
+      "0819": "MODARABAS",
+      "0820": "OIL & GAS EXPLORATION COMPANIES",
+      "0821": "OIL & GAS MARKETING COMPANIES",
+      "0822": "PAPER & BOARD",
+      "0823": "PHARMACEUTICALS",
+      "0824": "POWER GENERATION & DISTRIBUTION",
+      "0825": "REFINERY",
+      "0826": "SUGAR & ALLIED INDUSTRIES",
+      "0827": "SYNTHETIC & RAYON",
+      "0828": "TECHNOLOGY & COMMUNICATION",
+      "0829": "TEXTILE COMPOSITE",
+      "0830": "TEXTILE SPINNING",
+      "0831": "TEXTILE WEAVING",
+      "0832": "TOBACCO",
+      "0833": "TRANSPORT",
+      "0834": "VANASPATI & ALLIED INDUSTRIES",
+      "0835": "WOOLLEN",
+      "0836": "REAL ESTATE INVESTMENT TRUST",
+      "0837": "EXCHANGE TRADED FUNDS",
+      "0838": "PROPERTY",
+      "0036": "BILL AND BONDS",
+      "0040": "FUTURE CONTRACTS",
+      "0041": "STOCK INDEX FUTURE CONTRACTS",
     };
 
     return sectorMap[sectorCode] || sectorCode;
@@ -204,6 +212,4 @@ export class ArifHabibService {
   private static parseListedIn(listedIn: string[]): string[] {
     return listedIn || [];
   }
-
-  
 }

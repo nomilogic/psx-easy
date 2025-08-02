@@ -1,31 +1,38 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LiveStockTicker from "@/components/live-stock-ticker";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
-import { TrendingUp, Search, BarChart3, Users, Server, Globe, ArrowLeft } from "lucide-react";
+import {
+  TrendingUp,
+  Search,
+  BarChart3,
+  Users,
+  Server,
+  Globe,
+  ArrowLeft,
+} from "lucide-react";
 import { Link } from "wouter";
 import { useWebSocket } from "@/hooks/use-websocket";
 import MarketOverview from "@/components/market-overview";
 import ApiDocumentation from "@/components/api-documentation";
 import SystemStatus from "@/components/system-status";
 import WebSocketInfo from "@/components/websocket-info";
+import MarketDataTable from "@/components/market-data-table";
+import { StockData } from "@shared/schema";
 
-interface Stock {
-  symbol: string;
-  name: string;
-  current: number;
-  change: number;
-  changePercent: number;
-  volume: number;
-  sector: string;
-  high: number;
-  low: number;
-  isPositive: boolean;
-}
+// interface Stocks {
+//   stocks?: StockData[];
+// }
 
 interface MarketData {
   totalMarketCap: number;
@@ -43,19 +50,28 @@ function ApiDashboard() {
     queryKey: ["/api/market-overview"],
   });
 
-  const { data: stocks } = useQuery<Stock[]>({
-    queryKey: ["/api/stocks"],
+  const { data: stocks } = useQuery({
+    queryKey: ["/api/stocks/ALLSHR"],
+    queryFn: async () => {
+      const response = await fetch("/api/stocks/ALLSHR");
+      console.log(response, "response");
+      if (!response.ok) {
+        throw new Error("Failed to fetch stocks");
+      }
+      return response.json();
+    },
+    refetchInterval: 30000, // Refresh every 30 seconds
+    staleTime: 10000, // Consider data stale after 10 seconds
   });
 
-  const filteredStocks = stocks?.filter(stock =>
-    stock.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    stock.name.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  // const filteredStocks = stocks?.filter(stock =>
+  //   stock.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //   stock.name.toLowerCase().includes(searchQuery.toLowerCase())
+  // ) || [];
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header */}
         <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white shadow-md">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-14">
@@ -72,7 +88,9 @@ function ApiDashboard() {
                   <span className="font-bold text-lg">PAISX API Dashboard</span>
                 </div>
               </div>
-              <div className="text-sm font-medium">Pakistan AI Stock Exchange API</div>
+              <div className="text-sm font-medium">
+                Pakistan AI Stock Exchange API
+              </div>
             </div>
           </div>
         </div>
@@ -84,7 +102,8 @@ function ApiDashboard() {
               PAISX API Dashboard
             </h1>
             <p className="text-gray-600 text-lg">
-              Pakistan AI Stock Exchange - Real-time market data, AI-powered insights, and comprehensive APIs for developers and traders.
+              Pakistan AI Stock Exchange - Real-time market data, AI-powered
+              insights, and comprehensive APIs for developers and traders.
             </p>
           </div>
 
@@ -95,7 +114,9 @@ function ApiDashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Total Stocks</p>
-                    <p className="text-2xl font-bold text-green-600">{stocks?.length || 0}</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {stocks?.stocks?.length || 0}
+                    </p>
                   </div>
                   <BarChart3 className="w-8 h-8 text-green-600" />
                 </div>
@@ -108,7 +129,10 @@ function ApiDashboard() {
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Market Cap</p>
                     <p className="text-2xl font-bold text-blue-600">
-                      Rs. {marketData?.totalMarketCap ? (marketData.totalMarketCap / 1000000).toFixed(1) + 'B' : 'N/A'}
+                      Rs.{" "}
+                      {marketData?.totalMarketCap
+                        ? (marketData.totalMarketCap / 1000000).toFixed(1) + "B"
+                        : "N/A"}
                     </p>
                   </div>
                   <TrendingUp className="w-8 h-8 text-blue-600" />
@@ -177,7 +201,7 @@ function ApiDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <LiveStockTicker stocks={liveStocks || []} />
+                  <MarketDataTable stocks={stocks?.stocks} />
                 </CardContent>
               </Card>
             </TabsContent>

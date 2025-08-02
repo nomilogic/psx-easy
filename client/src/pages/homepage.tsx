@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -63,18 +62,28 @@ import MarketDataTable from "@/components/market-data-table";
 import { SimpleMarketStatus } from "@/components/SimpleMarketStatus";
 import { useMarketWebSocket } from "@/hooks/useMarketWebSocket";
 
-const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
+const formatCurrency = (amount: number) => `Rs. ${amount.toLocaleString()}`;
+const formatPercent = (percent: number) =>
+  `${percent >= 0 ? "+" : ""}${percent.toFixed(2)}%`;
+const CHART_COLORS = [
+  "#3B82F6",
+  "#10B981",
+  "#F59E0B",
+  "#EF4444",
+  "#8B5CF6",
+  "#06B6D4",
+];
 
 export default function Homepage() {
   const { marketData: stocks, marketSummary, isConnected } = useWebSocket();
 
   // Always fetch data from API as fallback, regardless of WebSocket status
   const { data: apiStocks, isLoading: stocksLoading } = useQuery({
-    queryKey: ['/api/stocks'],
+    queryKey: ["/api/stocks"],
     queryFn: async () => {
-      const response = await fetch('/api/stocks');
+      const response = await fetch("/api/stocks");
       if (!response.ok) {
-        throw new Error('Failed to fetch stocks');
+        throw new Error("Failed to fetch stocks");
       }
       return response.json();
     },
@@ -83,11 +92,11 @@ export default function Homepage() {
   });
 
   const { data: apiOverview, isLoading: overviewLoading } = useQuery({
-    queryKey: ['/api/overview'],
+    queryKey: ["/api/overview"],
     queryFn: async () => {
-      const response = await fetch('/api/overview');
+      const response = await fetch("/api/overview");
       if (!response.ok) {
-        throw new Error('Failed to fetch overview');
+        throw new Error("Failed to fetch overview");
       }
       return response.json();
     },
@@ -96,17 +105,25 @@ export default function Homepage() {
   });
 
   // Prefer WebSocket data when available and fresh, otherwise use API data
-  const displayStocks = (stocks && stocks.length > 0 && isConnected) ? stocks : (apiStocks as any)?.stocks || [];
-  const displaySummary = (marketSummary && isConnected) ? marketSummary : apiOverview;
+  const displayStocks =
+    stocks && stocks.length > 0 && isConnected
+      ? stocks
+      : (apiStocks as any)?.stocks || [];
+  const displaySummary =
+    marketSummary && isConnected ? marketSummary : apiOverview;
 
-  console.log('Homepage data source:', {
+  console.log("Homepage data source:", {
     wsConnected: isConnected,
     wsStocks: stocks?.length || 0,
     apiStocks: (apiStocks as any)?.stocks?.length || 0,
     usingWS: stocks && stocks.length > 0 && isConnected,
-    finalStocks: displayStocks.length
+    finalStocks: displayStocks.length,
   });
-  const { marketStatus, lastUpdate, isConnected: marketConnected } = useMarketWebSocket();
+  const {
+    marketStatus,
+    lastUpdate,
+    isConnected: marketConnected,
+  } = useMarketWebSocket();
 
   const { data: performersData } = useQuery({
     queryKey: ["/api/performers"],
@@ -155,7 +172,7 @@ export default function Homepage() {
       (sectorsData as any[])?.slice(0, 6).map((sector: any) => ({
         name: sector.name.split(" ")[0],
         volume: sector.volume,
-        percentage: Math.random() * 100,
+        percentage: formatPercent(Math.random() * 100),
         code: sector.code,
       })) || [
         { name: "BANKS", volume: 45000000, percentage: 24, code: "0807" },
@@ -168,13 +185,10 @@ export default function Homepage() {
     );
   }, [sectorsData]);
 
-  const formatCurrency = (amount: number) => `Rs. ${amount.toLocaleString()}`;
-  const formatPercent = (percent: number) => `${percent >= 0 ? '+' : ''}${percent.toFixed(2)}%`;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Compact Hero Section */}
-      <section className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 text-white py-12 mt-[120px]">
+      <section className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 text-white py-12 mt-[0px]">
         <div className="absolute inset-0 bg-black/10"></div>
         <div className="relative max-w-7xl mx-auto px-4">
           <div className="grid lg:grid-cols-3 gap-8 items-center">
@@ -183,18 +197,28 @@ export default function Homepage() {
                 <Brain className="w-12 h-12 mr-3 text-white" />
                 <div>
                   <h1 className="text-4xl font-bold mb-1">PAISX</h1>
-                  <p className="text-blue-200 text-lg">Pakistan AI Stock Exchange</p>
+                  <p className="text-blue-200 text-lg">
+                    Pakistan AI Stock Exchange
+                  </p>
                 </div>
               </div>
               <p className="text-lg mb-6 opacity-95 leading-relaxed">
-                AI-powered trading platform with real-time analysis and intelligent insights for Pakistan Stock Exchange
+                AI-powered trading platform with real-time analysis and
+                intelligent insights for Pakistan Stock Exchange
               </p>
               <div className="flex gap-3">
-                <Button size="sm" className="bg-white text-blue-600 hover:bg-blue-50">
+                <Button
+                  size="sm"
+                  className="bg-white text-blue-600 hover:bg-blue-50"
+                >
                   <Play className="w-4 h-4 mr-2" />
                   Start Trading
                 </Button>
-                <Button size="sm" variant="outline" className="border-white text-white hover:bg-white/10">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-white text-white hover:bg-white/10"
+                >
                   <Brain className="w-4 h-4 mr-2" />
                   AI Analysis
                 </Button>
@@ -208,21 +232,33 @@ export default function Homepage() {
                 <div className="grid grid-cols-2 gap-3 text-sm mt-4">
                   <div>
                     <p className="text-blue-200 text-xs">Total Stocks</p>
-                    <p className="text-xl font-bold">{(displaySummary as any)?.totalStocks || displayStocks?.length || "476"}</p>
+                    <p className="text-xl font-bold">
+                      {(displaySummary as any)?.totalStocks ||
+                        displayStocks?.length ||
+                        "476"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-blue-200 text-xs">Volume</p>
                     <p className="text-xl font-bold">
-                      {(displaySummary as any)?.totalVolume ? ((displaySummary as any).totalVolume / 1000000).toFixed(1) + "M" : "245M"}
+                      {(displaySummary as any)?.totalVolume
+                        ? (
+                            (displaySummary as any).totalVolume / 1000000
+                          ).toFixed(1) + "M"
+                        : "245M"}
                     </p>
                   </div>
                   <div>
                     <p className="text-blue-200 text-xs">Gainers</p>
-                    <p className="text-lg font-bold text-green-300">{(displaySummary as any)?.totalAdvances || "156"}</p>
+                    <p className="text-lg font-bold text-green-300">
+                      {(displaySummary as any)?.totalAdvances || "156"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-blue-200 text-xs">Decliners</p>
-                    <p className="text-lg font-bold text-red-300">{(displaySummary as any)?.totalDeclines || "142"}</p>
+                    <p className="text-lg font-bold text-red-300">
+                      {(displaySummary as any)?.totalDeclines || "142"}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -235,7 +271,6 @@ export default function Homepage() {
       <section className="py-8 bg-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-
             {/* KSE-100 Index Card - Compact */}
             <Card className="lg:col-span-2 border-l-4 border-l-blue-500 hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
@@ -247,7 +282,9 @@ export default function Homepage() {
                     </CardTitle>
                     <div className="flex items-center gap-4 mt-2">
                       <span className="text-2xl font-bold">52,847.32</span>
-                      <Badge className="bg-green-100 text-green-800">+2.3%</Badge>
+                      <Badge className="bg-green-100 text-green-800">
+                        +2.3%
+                      </Badge>
                     </div>
                   </div>
                   <div className="text-right text-sm text-gray-500">
@@ -258,8 +295,19 @@ export default function Homepage() {
               </CardHeader>
               <CardContent>
                 <div className="h-24">
-                  <AreaChart width={400} height={96} data={compactChartData.slice(0, 8)}>
-                    <Area type="monotone" dataKey="value" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.1} strokeWidth={2} />
+                  <AreaChart
+                    width={400}
+                    height={96}
+                    data={compactChartData.slice(0, 8)}
+                  >
+                    <Area
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#3B82F6"
+                      fill="#3B82F6"
+                      fillOpacity={0.1}
+                      strokeWidth={2}
+                    />
                   </AreaChart>
                 </div>
               </CardContent>
@@ -272,7 +320,9 @@ export default function Homepage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-600">Active Stocks</p>
-                      <p className="text-xl font-bold">{stocks?.length || 483}</p>
+                      <p className="text-xl font-bold">
+                        {stocks?.length || 483}
+                      </p>
                     </div>
                     <Activity className="w-6 h-6 text-green-500" />
                   </div>
@@ -303,16 +353,23 @@ export default function Homepage() {
               <CardContent>
                 <div className="space-y-2">
                   {sectorChartData.slice(0, 4).map((sector, idx) => (
-                    <div key={sector.name} className="flex items-center justify-between">
+                    <div
+                      key={sector.name}
+                      className="flex items-center justify-between"
+                    >
                       <div className="flex items-center">
-                        <div 
-                          className="w-3 h-3 rounded-full mr-2" 
+                        <div
+                          className="w-3 h-3 rounded-full mr-2"
                           style={{ backgroundColor: CHART_COLORS[idx] }}
                         />
-                        <span className="text-sm font-medium">{sector.name}</span>
+                        <span className="text-sm font-medium">
+                          {sector.name}
+                        </span>
                       </div>
                       <div className="text-right">
-                        <span className="text-sm font-bold">{sector.percentage}%</span>
+                        <span className="text-sm font-bold">
+                          {sector.percentage}%
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -338,24 +395,32 @@ export default function Homepage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {stocks?.filter(s => s.isPositive).slice(0, 6).map((stock, idx) => (
-                    <div key={stock.symbol} className="flex items-center justify-between p-2 hover:bg-green-50 rounded transition-colors">
-                      <div className="flex items-center">
-                        <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">
-                          {idx + 1}
+                  {stocks
+                    ?.filter((s) => s.isPositive)
+                    .slice(0, 6)
+                    .map((stock, idx) => (
+                      <div
+                        key={stock.symbol}
+                        className="flex items-center justify-between p-2 hover:bg-green-50 rounded transition-colors"
+                      >
+                        <div className="flex items-center">
+                          <div className="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">
+                            {idx + 1}
+                          </div>
+                          <div>
+                            <p className="font-bold text-sm">{stock.symbol}</p>
+                            <p className="text-xs text-gray-500">
+                              {formatCurrency(stock.current)}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-sm">{stock.symbol}</p>
-                          <p className="text-xs text-gray-500">{formatCurrency(stock.current)}</p>
+                        <div className="text-right">
+                          <Badge className="bg-green-100 text-green-800 text-xs">
+                            {formatPercent(stock.changePercent)}
+                          </Badge>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <Badge className="bg-green-100 text-green-800 text-xs">
-                          {formatPercent(stock.changePercent)}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </CardContent>
             </Card>
@@ -375,24 +440,32 @@ export default function Homepage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {stocks?.filter(s => !s.isPositive).slice(0, 6).map((stock, idx) => (
-                    <div key={stock.symbol} className="flex items-center justify-between p-2 hover:bg-red-50 rounded transition-colors">
-                      <div className="flex items-center">
-                        <div className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">
-                          {idx + 1}
+                  {stocks
+                    ?.filter((s) => !s.isPositive)
+                    .slice(0, 6)
+                    .map((stock, idx) => (
+                      <div
+                        key={stock.symbol}
+                        className="flex items-center justify-between p-2 hover:bg-red-50 rounded transition-colors"
+                      >
+                        <div className="flex items-center">
+                          <div className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">
+                            {idx + 1}
+                          </div>
+                          <div>
+                            <p className="font-bold text-sm">{stock.symbol}</p>
+                            <p className="text-xs text-gray-500">
+                              {formatCurrency(stock.current)}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-sm">{stock.symbol}</p>
-                          <p className="text-xs text-gray-500">{formatCurrency(stock.current)}</p>
+                        <div className="text-right">
+                          <Badge className="bg-red-100 text-red-800 text-xs">
+                            {formatPercent(stock.changePercent)}
+                          </Badge>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <Badge className="bg-red-100 text-red-800 text-xs">
-                          {formatPercent(stock.changePercent)}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </CardContent>
             </Card>
@@ -405,12 +478,20 @@ export default function Homepage() {
                 <div className="flex items-center">
                   <Brain className="w-6 h-6 mr-3 text-blue-600" />
                   <div>
-                    <CardTitle className="text-xl">AI Market Intelligence</CardTitle>
-                    <CardDescription>Real-time analysis powered by machine learning</CardDescription>
+                    <CardTitle className="text-xl">
+                      AI Market Intelligence
+                    </CardTitle>
+                    <CardDescription>
+                      Real-time analysis powered by machine learning
+                    </CardDescription>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={() => refetchInsights()} variant="outline" size="sm">
+                  <Button
+                    onClick={() => refetchInsights()}
+                    variant="outline"
+                    size="sm"
+                  >
                     <RefreshCw className="w-4 h-4 mr-2" />
                     Refresh
                   </Button>
@@ -428,9 +509,15 @@ export default function Homepage() {
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-medium text-green-800">Market Sentiment</p>
-                          <p className="text-xl font-bold text-green-900">Bullish</p>
-                          <p className="text-xs text-green-600">+2.3% avg change</p>
+                          <p className="text-sm font-medium text-green-800">
+                            Market Sentiment
+                          </p>
+                          <p className="text-xl font-bold text-green-900">
+                            Bullish
+                          </p>
+                          <p className="text-xs text-green-600">
+                            +2.3% avg change
+                          </p>
                         </div>
                         <TrendingUp className="w-8 h-8 text-green-600" />
                       </div>
@@ -460,8 +547,13 @@ export default function Homepage() {
               ) : (
                 <div className="text-center py-8">
                   <Brain className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-4">AI analysis ready to generate insights</p>
-                  <Button onClick={() => refetchInsights()} className="bg-blue-600 hover:bg-blue-700">
+                  <p className="text-gray-600 mb-4">
+                    AI analysis ready to generate insights
+                  </p>
+                  <Button
+                    onClick={() => refetchInsights()}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
                     <Bot className="w-4 h-4 mr-2" />
                     Generate Analysis
                   </Button>
@@ -488,7 +580,11 @@ export default function Homepage() {
                     <p className="text-xs text-gray-600">AI-powered insights</p>
                   </div>
                 </div>
-                <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700" asChild>
+                <Button
+                  size="sm"
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  asChild
+                >
                   <a href="/ai-analysis">
                     <Lightbulb className="w-4 h-4 mr-2" />
                     Try Now
@@ -505,10 +601,15 @@ export default function Homepage() {
                   </div>
                   <div>
                     <h3 className="font-bold text-gray-900">Auto Trading</h3>
-                    <p className="text-xs text-gray-600">Intelligent algorithms</p>
+                    <p className="text-xs text-gray-600">
+                      Intelligent algorithms
+                    </p>
                   </div>
                 </div>
-                <Button size="sm" className="w-full bg-purple-600 hover:bg-purple-700">
+                <Button
+                  size="sm"
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                >
                   <Zap className="w-4 h-4 mr-2" />
                   Coming Soon
                 </Button>
@@ -522,11 +623,16 @@ export default function Homepage() {
                     <Target className="w-5 h-5 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-900">Portfolio Builder</h3>
+                    <h3 className="font-bold text-gray-900">
+                      Portfolio Builder
+                    </h3>
                     <p className="text-xs text-gray-600">Risk optimization</p>
                   </div>
                 </div>
-                <Button size="sm" className="w-full bg-green-600 hover:bg-green-700">
+                <Button
+                  size="sm"
+                  className="w-full bg-green-600 hover:bg-green-700"
+                >
                   <BarChart3 className="w-4 h-4 mr-2" />
                   Optimize
                 </Button>

@@ -299,6 +299,7 @@ export class DatabaseStorage implements IStorage {
             bidVolume: stock.bidVolume,
             askPrice: stock.askPrice,
             askVolume: stock.askVolume,
+            sector:stock.sector,
             updatedAt: new Date(),
           })
           .where(eq(stocksTable.symbol, stock.symbol));

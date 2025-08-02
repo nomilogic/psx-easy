@@ -68,19 +68,30 @@ export default function StockDetail() {
   const ITEMS_PER_PAGE = 10;
 
   // Fetch all stocks data
-  const { data: allStocks, isLoading: stockLoading } = useQuery({
-    queryKey: ["/api/stocks"],
+  // const { data: allStocks, isLoading: stockLoading } = useQuery({
+  //   queryKey: ["/api/stocks"],
+  //   queryFn: async () => {
+  //     const response = await fetch("/api/stocks");
+  //     if (!response.ok) {
+  //       throw new Error("Failed to fetch stocks");
+  //     }
+  //     return response.json();
+  //   },
+  //   enabled: !!symbol,
+  // });
+
+  // Fetch company data
+  const { data: stock, isLoading: stockLoading } = useQuery({
+    queryKey: ["/api/stock", symbol],
     queryFn: async () => {
-      const response = await fetch("/api/stocks");
+      const response = await fetch(`/api/stock/${symbol}`);
       if (!response.ok) {
-        throw new Error("Failed to fetch stocks");
+        throw new Error("Failed to fetch company data");
       }
       return response.json();
     },
     enabled: !!symbol,
   });
-
-  // Fetch company data
   const { data: company, isLoading: companyLoading } = useQuery({
     queryKey: ["/api/company", symbol],
     queryFn: async () => {
@@ -94,8 +105,9 @@ export default function StockDetail() {
   });
 
   // Use WebSocket data if available, otherwise use API data
-  const stocksData = wsStocks && wsStocks.length > 0 ? wsStocks : (allStocks as StockData[]) || [];
-  const stockData = stocksData.find((s: StockData) => s.symbol === symbol?.toUpperCase());
+  const stocksData =
+    wsStocks && wsStocks.length > 0 ? wsStocks : (stock as StockData) || [];
+  const stockData = stock as StockData;
   const companyData = company as CompanyData;
 
   // Set default active announcement tab when data loads
@@ -495,6 +507,29 @@ export default function StockDetail() {
                 </span>
               </div>
             </div>
+            {/* Compact Price Summary Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+              {[
+                { label: "BID", value: formatPrice(stockData.current - 0.5) },
+                { label: "ASK", value: formatPrice(stockData.current + 0.5) },
+                { label: "OPEN", value: formatPrice(stockData.open) },
+                { label: "HIGH", value: formatPrice(stockData.high) },
+                { label: "LOW", value: formatPrice(stockData.low) },
+                { label: "VOLUME", value: formatVolume(stockData.volume) },
+              ].map((item, index) => (
+                <div
+                  key={index}
+                  className="bg-gray-50 p-3 rounded-lg text-center"
+                >
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                    {item.label}
+                  </p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {item.value}
+                  </p>
+                </div>
+              ))}
+            </div>
 
             <div className="mt-3 lg:mt-0 text-right">
               <div className="text-3xl font-bold text-gray-900 mb-1 font-mono">
@@ -516,35 +551,11 @@ export default function StockDetail() {
               </div>
             </div>
           </div>
-
-          {/* Compact Price Summary Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
-            {[
-              { label: "BID", value: formatPrice(stockData.current - 0.5) },
-              { label: "ASK", value: formatPrice(stockData.current + 0.5) },
-              { label: "OPEN", value: formatPrice(stockData.open) },
-              { label: "HIGH", value: formatPrice(stockData.high) },
-              { label: "LOW", value: formatPrice(stockData.low) },
-              { label: "VOLUME", value: formatVolume(stockData.volume) },
-            ].map((item, index) => (
-              <div
-                key={index}
-                className="bg-gray-50 p-3 rounded-lg text-center"
-              >
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-                  {item.label}
-                </p>
-                <p className="text-sm font-semibold text-gray-900">
-                  {item.value}
-                </p>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
 
       {/* Compact Sticky Tabs Navigation with Back Button */}
-      <div className="sticky top-0 z-40 bg-gradient-to-r from-green-600 to-blue-600 text-white shadow-md">
+      <div className="sticky top-[140px] z-60 bg-gradient-to-r from-green-600 to-blue-600 text-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-2">
             <div className="flex items-center space-x-4">
@@ -577,9 +588,6 @@ export default function StockDetail() {
           </div>
         </div>
       </div>
-
-      {/* Live Stock Ticker */}
-      <MarketDataTable stocks={stocksData || []} />
 
       {/* Compact Tab Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
