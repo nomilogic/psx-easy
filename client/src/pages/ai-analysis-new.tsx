@@ -125,18 +125,34 @@ function AIAnalysisPage() {
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [indexData, setIndexData] = useState<IndexData[]>([]);
 
-  const { data: stocksData = [], isLoading: stocksLoading, error: stocksError } = useQuery<any>({
+  const { data: stocksData, isLoading: stocksLoading, error: stocksError } = useQuery<any>({
     queryKey: ["/api/stocks"],
   });
 
-  // Ensure stocks is always an array
-  const stocks = Array.isArray(stocksData?.stocks) ? stocksData.stocks : 
-                 Array.isArray(stocksData) ? stocksData : [];
+  // Ensure stocks is always an array - check the actual API response structure
+  const stocks = stocksData?.stocks ? stocksData.stocks : [];
+
+  // Debug logging
+  console.log('Stocks data:', { stocksData, stocks, length: stocks.length, loading: stocksLoading });
 
   const filteredStocks = stocks.filter((stock: any) => 
     stock.symbol?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     stock.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Show loading state while stocks are being fetched
+  if (stocksLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading AI Analysis Tools...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Auto-load data on component mount
   useEffect(() => {
@@ -296,6 +312,19 @@ function AIAnalysisPage() {
             </div>
           </div>
         </div>
+
+        {/* Debug Panel (temporary) */}
+        {stocks.length === 0 && (
+          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <h3 className="font-semibold text-yellow-800 mb-2">Debug Info:</h3>
+            <p className="text-sm text-yellow-700">
+              Stocks loaded: {stocks.length} | Loading: {stocksLoading ? 'Yes' : 'No'} | 
+              Has API Data: {stocksData ? 'Yes' : 'No'} | 
+              Filtered: {filteredStocks.length}
+            </p>
+            {stocksError && <p className="text-red-600">Error: {String(stocksError)}</p>}
+          </div>
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="grid w-full grid-cols-5 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl p-1">
@@ -551,11 +580,15 @@ function AIAnalysisPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Top Performers</SelectItem>
-                        {filteredStocks.slice(0, 20).map((stock: any) => (
-                          <SelectItem key={stock.symbol} value={stock.symbol}>
-                            {stock.symbol} - {stock.name?.substring(0, 25)}
-                          </SelectItem>
-                        ))}
+                        {stocks.length > 0 ? (
+                          filteredStocks.slice(0, 20).map((stock: any) => (
+                            <SelectItem key={stock.symbol} value={stock.symbol}>
+                              {stock.symbol} - {stock.name?.substring(0, 25)}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="loading" disabled>Loading stocks...</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -776,11 +809,15 @@ function AIAnalysisPage() {
                         <SelectValue placeholder="Choose a stock to analyze" />
                       </SelectTrigger>
                       <SelectContent>
-                        {filteredStocks.slice(0, 50).map((stock: any) => (
-                          <SelectItem key={stock.symbol} value={stock.symbol}>
-                            {stock.symbol} - {stock.name?.substring(0, 30)}
-                          </SelectItem>
-                        ))}
+                        {stocks.length > 0 ? (
+                          filteredStocks.slice(0, 50).map((stock: any) => (
+                            <SelectItem key={stock.symbol} value={stock.symbol}>
+                              {stock.symbol} - {stock.name?.substring(0, 30)}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="loading" disabled>Loading stocks...</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
