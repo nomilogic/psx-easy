@@ -129,8 +129,9 @@ function AIAnalysisPage() {
     queryKey: ["/api/stocks"],
   });
 
-  // Ensure stocks is always an array - check the actual API response structure
-  const stocks = stocksData?.stocks ? stocksData.stocks : [];
+  // Ensure stocks is always an array - handle both direct array and nested structure
+  const stocks = Array.isArray(stocksData) ? stocksData : 
+                 (stocksData?.stocks && Array.isArray(stocksData.stocks)) ? stocksData.stocks : [];
 
   // Debug logging
   console.log('Stocks data:', { stocksData, stocks, length: stocks.length, loading: stocksLoading });
@@ -140,8 +141,8 @@ function AIAnalysisPage() {
     stock.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Show loading state while stocks are being fetched
-  if (stocksLoading) {
+  // Show loading state only if actually loading
+  if (stocksLoading && stocks.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center min-h-[400px]">
@@ -199,7 +200,7 @@ function AIAnalysisPage() {
     if (loading) return;
     setLoading(true);
     try {
-      const symbols = selectedStock && selectedStock !== "all" ? [selectedStock] : [];
+      const symbols = selectedStock && selectedStock !== "all" && selectedStock !== "no-stocks" ? [selectedStock] : [];
       const response = await fetch("/api/ai-predictions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -208,6 +209,8 @@ function AIAnalysisPage() {
       if (response.ok) {
         const data = await response.json();
         setPredictions(data.predictions || []);
+      } else {
+        console.error("Predictions API error:", response.status, response.statusText);
       }
     } catch (error) {
       console.error("Failed to fetch predictions:", error);
@@ -241,7 +244,7 @@ function AIAnalysisPage() {
   };
 
   const analyzeStock = async () => {
-    if (!selectedStock || selectedStock === "all" || loading) return;
+    if (!selectedStock || selectedStock === "all" || selectedStock === "no-stocks" || loading) return;
     setLoading(true);
     try {
       const response = await fetch("/api/ai-analysis", {
@@ -255,6 +258,8 @@ function AIAnalysisPage() {
       if (response.ok) {
         const data = await response.json();
         setAnalysisResult(data);
+      } else {
+        console.error("Analysis API error:", response.status, response.statusText);
       }
     } catch (error) {
       console.error("Failed to analyze stock:", error);
@@ -313,16 +318,19 @@ function AIAnalysisPage() {
           </div>
         </div>
 
-        {/* Debug Panel (temporary) */}
-        {stocks.length === 0 && (
-          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <h3 className="font-semibold text-yellow-800 mb-2">Debug Info:</h3>
-            <p className="text-sm text-yellow-700">
-              Stocks loaded: {stocks.length} | Loading: {stocksLoading ? 'Yes' : 'No'} | 
-              Has API Data: {stocksData ? 'Yes' : 'No'} | 
-              Filtered: {filteredStocks.length}
-            </p>
-            {stocksError && <p className="text-red-600">Error: {String(stocksError)}</p>}
+        {/* Stock Loading Status */}
+        {stocksLoading && (
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-3"></div>
+              <p className="text-blue-700">Loading stock data...</p>
+            </div>
+          </div>
+        )}
+
+        {stocksError && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700">Error loading stocks: {String(stocksError)}</p>
           </div>
         )}
 
@@ -580,14 +588,16 @@ function AIAnalysisPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Top Performers</SelectItem>
-                        {stocks.length > 0 ? (
-                          filteredStocks.slice(0, 20).map((stock: any) => (
+                        {filteredStocks.length > 0 ? (
+                          filteredStocks.slice(0, 50).map((stock: any) => (
                             <SelectItem key={stock.symbol} value={stock.symbol}>
-                              {stock.symbol} - {stock.name?.substring(0, 25)}
+                              {stock.symbol} - {stock.name?.substring(0, 30) || 'Unknown Company'}
                             </SelectItem>
                           ))
-                        ) : (
+                        ) : stocksLoading ? (
                           <SelectItem value="loading" disabled>Loading stocks...</SelectItem>
+                        ) : (
+                          <SelectItem value="no-stocks" disabled>No stocks available</SelectItem>
                         )}
                       </SelectContent>
                     </Select>
@@ -809,14 +819,16 @@ function AIAnalysisPage() {
                         <SelectValue placeholder="Choose a stock to analyze" />
                       </SelectTrigger>
                       <SelectContent>
-                        {stocks.length > 0 ? (
+                        {filteredStocks.length > 0 ? (
                           filteredStocks.slice(0, 50).map((stock: any) => (
                             <SelectItem key={stock.symbol} value={stock.symbol}>
-                              {stock.symbol} - {stock.name?.substring(0, 30)}
+                              {stock.symbol} - {stock.name?.substring(0, 30) || 'Unknown Company'}
                             </SelectItem>
                           ))
-                        ) : (
+                        ) : stocksLoading ? (
                           <SelectItem value="loading" disabled>Loading stocks...</SelectItem>
+                        ) : (
+                          <SelectItem value="no-stocks" disabled>No stocks available</SelectItem>
                         )}
                       </SelectContent>
                     </Select>
@@ -824,7 +836,7 @@ function AIAnalysisPage() {
                   <div className="flex items-end">
                     <Button 
                       onClick={analyzeStock} 
-                      disabled={!selectedStock || selectedStock === "all" || loading} 
+                      disabled={!selectedStock || selectedStock === "all" || selectedStock === "no-stocks" || loading} 
                       className="w-full bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white"
                     >
                       {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
