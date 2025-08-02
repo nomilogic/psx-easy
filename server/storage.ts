@@ -530,22 +530,39 @@ export class DatabaseStorage implements IStorage {
             sectorMap.set(key, {
               name: stock.sector,
               code: stock.sectorCode,
-              volume: stock.volume
+              volume: stock.volume || 0
             });
           } else {
             // Add volume to existing sector
             const existing = sectorMap.get(key)!;
-            existing.volume += stock.volume;
+            existing.volume += (stock.volume || 0);
+          }
+        } else if (stock.sector) {
+          // Handle stocks without sector codes by using sector name as key
+          const key = stock.sector.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+          if (!sectorMap.has(key)) {
+            sectorMap.set(key, {
+              name: stock.sector,
+              code: key,
+              volume: stock.volume || 0
+            });
+          } else {
+            const existing = sectorMap.get(key)!;
+            existing.volume += (stock.volume || 0);
           }
         }
       });
 
       const sectors = Array.from(sectorMap.values());
-      await this.setSectors(sectors);
-
-      console.log(`Updated ${sectors.length} sectors from stock data`);
+      
+      if (sectors.length > 0) {
+        await this.setSectors(sectors);
+        console.log(`✅ Updated ${sectors.length} sectors from ${stocks.length} stocks`);
+      } else {
+        console.log("⚠️ No sectors found in stock data");
+      }
     } catch (error) {
-      console.error("Error updating sectors from stocks:", error);
+      console.error("❌ Error updating sectors from stocks:", error);
     }
   }
 
@@ -808,7 +825,7 @@ export class DatabaseStorage implements IStorage {
       const conditions = [];
       
       if (filters.sector) {
-        conditions.push(sql`${stocksTable.sector} ILIKE ${`%${filters.sector}%`}`);
+        conditions.push(sql`LOWER(${stocksTable.sector}) LIKE LOWER(${`%${filters.sector}%`})`);
       }
       
       if (filters.sectorCode) {
@@ -816,8 +833,9 @@ export class DatabaseStorage implements IStorage {
       }
       
       if (filters.search) {
+        const searchTerm = `%${filters.search.toLowerCase()}%`;
         conditions.push(
-          sql`(${stocksTable.symbol} ILIKE ${`%${filters.search}%`} OR ${stocksTable.name} ILIKE ${`%${filters.search}%`})`
+          sql`(LOWER(${stocksTable.symbol}) LIKE ${searchTerm} OR LOWER(${stocksTable.name}) LIKE ${searchTerm})`
         );
       }
       
@@ -835,29 +853,41 @@ export class DatabaseStorage implements IStorage {
         query = query.offset(filters.offset);
       }
       
-      return await query;
+      const result = await Promise.race([
+        query,
+        new Promise<StockData[]>((_, reject) =>
+          setTimeout(() => reject(new Error("Query timeout")), 5000)
+        ),
+      ]);
+      
+      return result;
     } catch (error) {
-      console.error("Error in getFilteredStocks:", error);
-      // Fallback to basic market data
-      const allStocks = await this.getMarketData();
+      console.error("Error in getFilteredStocks, using fallback:", error);
+      // Fallback to in-memory filtering
+      const allStocks = await this.getMarketDataFromDatabase();
       let filtered = allStocks;
       
       if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
         filtered = filtered.filter(stock => 
-          stock.symbol.toLowerCase().includes(filters.search!.toLowerCase()) ||
-          stock.name.toLowerCase().includes(filters.search!.toLowerCase())
+          stock.symbol.toLowerCase().includes(searchLower) ||
+          stock.name.toLowerCase().includes(searchLower)
         );
       }
       
       if (filters.sector) {
+        const sectorLower = filters.sector.toLowerCase();
         filtered = filtered.filter(stock => 
-          stock.sector.toLowerCase().includes(filters.sector!.toLowerCase())
+          stock.sector.toLowerCase().includes(sectorLower)
         );
       }
       
       if (filters.sectorCode) {
         filtered = filtered.filter(stock => stock.sectorCode === filters.sectorCode);
       }
+      
+      // Sort by volume
+      filtered.sort((a, b) => b.volume - a.volume);
       
       // Apply pagination
       const start = filters.offset || 0;

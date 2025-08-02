@@ -21,7 +21,7 @@ setInterval(() => {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Register KSE100 routes first
   app.use(kse100Routes);
-  
+
   // Middleware to track API calls
   app.use("/api", (req, res, next) => {
     apiCallsThisMinute++;
@@ -37,25 +37,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hour = pakistanTime.getHours();
       const minute = pakistanTime.getMinutes();
       const day = pakistanTime.getDay(); // 0 = Sunday, 6 = Saturday
-      
+
       // Market is closed on weekends (Saturday = 6, Sunday = 0)
       const isWeekend = day === 0 || day === 6;
-      
+
       // Market hours: 9:30 AM to 5:00 PM (17:00)
       const marketOpenTime = 9 * 60 + 30; // 9:30 AM in minutes
       const marketCloseTime = 17 * 60; // 5:00 PM in minutes
       const currentTimeMinutes = hour * 60 + minute;
-      
+
       const isMarketHours = currentTimeMinutes >= marketOpenTime && currentTimeMinutes <= marketCloseTime;
       const isOpen = !isWeekend && isMarketHours;
-      
+
       const marketStatus = {
         isOpen,
         currentTime: pakistanTime.toISOString(),
         nextOpenTime: isOpen ? undefined : getNextOpenTime(pakistanTime),
         nextCloseTime: isOpen ? getTodayCloseTime(pakistanTime) : undefined,
       };
-      
+
       res.json(marketStatus);
     } catch (error) {
       console.error("Error fetching market status:", error);
@@ -72,17 +72,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   function getNextOpenTime(date: Date): string {
     const nextOpen = new Date(date);
     nextOpen.setHours(9, 30, 0, 0);
-    
+
     // If it's past 5 PM today, move to next day
     if (date.getHours() >= 17) {
       nextOpen.setDate(nextOpen.getDate() + 1);
     }
-    
+
     // Skip weekends
     while (nextOpen.getDay() === 0 || nextOpen.getDay() === 6) {
       nextOpen.setDate(nextOpen.getDate() + 1);
     }
-    
+
     return nextOpen.toISOString();
   }
 
@@ -104,10 +104,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/market/initialize", async (req, res) => {
     try {
       console.log("Starting market data initialization...");
-      
+
       // Fetch fresh data from Arif Habib API
       const freshData = await storage.fetchFreshMarketData();
-      
+
       if (freshData && freshData.length > 0) {
         console.log(`Successfully initialized ${freshData.length} stocks`);
         res.json({
@@ -128,11 +128,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/market/update", async (req, res) => {
     try {
       console.log("Starting market data update...");
-      
+
       // Get current data for comparison
       const currentData = await storage.getMarketData();
       const freshData = await storage.fetchFreshMarketData();
-      
+
       if (freshData && freshData.length > 0) {
         // Update only changed fields
         let updatedCount = 0;
@@ -145,9 +145,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             updatedCount++;
           }
         }
-        
+
         await storage.setMarketData(freshData);
-        
+
         console.log(`Updated ${updatedCount} stocks with changes`);
         res.json({
           message: `Market data updated - ${updatedCount} stocks changed`,
@@ -164,43 +164,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Optimized stocks endpoint with database-level filtering
+  // Stocks API with filtering
   app.get("/api/stocks", async (req, res) => {
     try {
-      const { sector, sector_code, search, limit, offset } = req.query;
-      
-      // Use database filtering instead of in-memory filtering
-      const stocks = await storage.getFilteredStocks({
+      const { 
+        sector, 
+        sectorCode, 
+        search, 
+        page = "1", 
+        limit = "50",
+        sortBy = "volume",
+        sortOrder = "desc"
+      } = req.query;
+
+      const pageNum = Math.max(1, parseInt(page as string, 10));
+      const limitNum = Math.min(500, Math.max(1, parseInt(limit as string, 10))); // Cap at 500
+      const offset = (pageNum - 1) * limitNum;
+
+      const filters = {
         sector: sector as string,
-        sectorCode: sector_code as string,
+        sectorCode: sectorCode as string,
         search: search as string,
-        limit: limit ? parseInt(limit as string, 10) : 50,
-        offset: offset ? parseInt(offset as string, 10) : 0
-      });
-      
-      const totalCount = await storage.getStocksCount({
-        sector: sector as string,
-        sectorCode: sector_code as string,
-        search: search as string
-      });
-      
-      res.json({
-        stocks: stocks,
-        total: totalCount,
-        pagination: {
-          offset: offset ? parseInt(offset as string, 10) : 0,
-          limit: limit ? parseInt(limit as string, 10) : 50,
-          hasMore: (offset ? parseInt(offset as string, 10) : 0) + stocks.length < totalCount
-        },
-        filters: {
-          sector: sector || null,
-          sector_code: sector_code || null,
-          search: search || null
+        limit: limitNum,
+        offset
+      };
+
+      // Remove undefined/empty filters
+      Object.keys(filters).forEach(key => {
+        if (filters[key as keyof typeof filters] === undefined || filters[key as keyof typeof filters] === '') {
+          delete filters[key as keyof typeof filters];
         }
       });
+
+      console.log(`🔍 Stocks API called with filters:`, filters);
+
+      // Get filtered stocks and total count with timeout protection
+      const stocksPromise = storage.getFilteredStocks(filters);
+      const countPromise = storage.getStocksCount({ 
+        sector: sector as string, 
+        sectorCode: sectorCode as string, 
+        search: search as string 
+      });
+
+      const [stocks, totalCount] = await Promise.all([
+        Promise.race([
+          stocksPromise,
+          new Promise<StockData[]>((_, reject) => 
+            setTimeout(() => reject(new Error("Stocks query timeout")), 8000)
+          )
+        ]),
+        Promise.race([
+          countPromise,
+          new Promise<number>((_, reject) => 
+            setTimeout(() => reject(new Error("Count query timeout")), 5000)
+          )
+        ])
+      ]);
+
+      const totalPages = Math.ceil(totalCount / limitNum);
+
+      console.log(`📊 Returning ${stocks.length} stocks (page ${pageNum}/${totalPages})`);
+
+      res.json({
+        stocks,
+        pagination: {
+          currentPage: pageNum,
+          totalPages,
+          totalItems: totalCount,
+          hasNextPage: pageNum < totalPages,
+          hasPrevPage: pageNum > 1
+        },
+        filters: filters
+      });
     } catch (error) {
-      console.error("Error fetching stocks:", error);
-      res.status(500).json({ error: "Failed to fetch stocks data" });
+      console.error("❌ Error in stocks API:", error);
+
+      // Fallback response
+      try {
+        const fallbackStocks = await storage.getMarketDataFromDatabase();
+        const limitNum = Math.min(50, parseInt(limit as string, 10) || 50);
+        const offset = ((parseInt(page as string, 10) || 1) - 1) * limitNum;
+
+        const paginatedStocks = fallbackStocks.slice(offset, offset + limitNum);
+
+        res.json({
+          stocks: paginatedStocks,
+          pagination: {
+            currentPage: parseInt(page as string, 10) || 1,
+            totalPages: Math.ceil(fallbackStocks.length / limitNum),
+            totalItems: fallbackStocks.length,
+            hasNextPage: offset + limitNum < fallbackStocks.length,
+            hasPrevPage: offset > 0
+          },
+          fallback: true
+        });
+      } catch (fallbackError) {
+        console.error("❌ Fallback also failed:", fallbackError);
+        res.status(500).json({ error: "Failed to fetch stocks data" });
+      }
     }
   });
 
@@ -273,14 +334,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/kse100", async (req, res) => {
     try {
       const { limit, offset } = req.query;
-      
+
       const stocks = await storage.getFilteredStocksByIndex("KSE100", {
         limit: limit ? parseInt(limit as string, 10) : 100,
         offset: offset ? parseInt(offset as string, 10) : 0
       });
-      
+
       const total = await storage.getStocksCountByIndex("KSE100");
-      
+
       res.json({
         stocks: stocks,
         total: total,
@@ -313,13 +374,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const stocks = await storage.getMarketData();
       const allSectorCodes = new Set<string>();
-      
+
       stocks.forEach(stock => {
         if (stock.sectorCode) {
           allSectorCodes.add(stock.sectorCode);
         }
       });
-      
+
       const sectorCode = await Promise.all(
         Array.from(allSectorCodes).sort().map(async code => ({
           code: code,
@@ -327,7 +388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           stockCount: stocks.filter(s => s.sectorCode === code).length
         }))
       );
-      
+
       res.json(sectorCode);
     } catch (error) {
       console.error("Error fetching sector codes:", error);
@@ -493,7 +554,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         connectedClients: 0, // WebSocket clients are now handled by separate server
       });
       const updatedStatus = await storage.getSystemStatus();
-      
+
       // Add data source status information
       const enhancedStatus = {
         ...updatedStatus,
@@ -501,7 +562,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fallbackDataSource: "PSX Service",
         lastDataFetch: new Date().toISOString(),
       };
-      
+
       res.json(enhancedStatus);
     } catch (error) {
       console.error("Error fetching system status:", error);
@@ -841,8 +902,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               analysis:
                 aiText.length > 300 ? aiText.substring(0, 300) + "..." : aiText,
               recommendation:
-                sentiment === "Bullish"
-                  ? `Buy - ${stock.symbol} shows strong upward momentum`
+                sentiment === "Bullish"                  ? `Buy - ${stock.symbol} shows strong upward momentum`
                   : sentiment === "Bearish"
                     ? `Sell - ${stock.symbol} facing downward pressure`
                     : `Hold - ${stock.symbol} in consolidation phase`,

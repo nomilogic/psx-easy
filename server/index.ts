@@ -79,12 +79,25 @@ async function initializeMarketData() {
     console.log("🚀 Initializing market data on startup...");
 
     const { storage } = await import("./storage");
-    const freshData = await storage.fetchFreshMarketData();
+    
+    // First try to get existing data
+    let stockData = await storage.getMarketDataFromDatabase();
+    
+    if (!stockData || stockData.length === 0) {
+      console.log("📡 No existing data found, fetching fresh data...");
+      stockData = await storage.fetchFreshMarketData();
+    } else {
+      console.log(`📊 Found ${stockData.length} existing stocks, fetching fresh updates...`);
+      // Fetch fresh data in background but don't wait for it
+      storage.fetchFreshMarketData().catch((error) => {
+        console.warn("Background fresh data fetch failed:", error);
+      });
+    }
 
-    if (freshData && freshData.length > 0) {
-      // Update sectors from stock data
-      await storage.updateSectorsFromStocks(freshData);
-      console.log(`✅ Initialized ${freshData.length} stocks on startup`);
+    if (stockData && stockData.length > 0) {
+      // Always update sectors from current stock data
+      await storage.updateSectorsFromStocks(stockData);
+      console.log(`✅ Initialized with ${stockData.length} stocks and updated sectors`);
     } else {
       console.log("⚠️ No data available for initialization");
     }
