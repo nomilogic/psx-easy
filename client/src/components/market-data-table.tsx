@@ -78,7 +78,9 @@ export default function MarketDataTable({ stocks: initialStocks }: MarketDataTab
 
   const formatChange = (change: number, changePercent: number) => {
     const sign = change >= 0 ? '+' : '';
-    return `${sign}${change.toFixed(2)} (${sign}${changePercent.toFixed(1)}%)`;
+    const safeChange = change || 0;
+    const safeChangePercent = changePercent || 0;
+    return `${sign}${safeChange.toFixed(2)} (${sign}${safeChangePercent.toFixed(1)}%)`;
   };
 
   const handleSort = (key: SortKey) => {
