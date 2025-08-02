@@ -8,6 +8,7 @@ import { useWebSocket } from "@/hooks/use-websocket";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Activity } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQuery } from "@tanstack/react-query";
 
 interface MarketDataTableProps {
   stocks: StockData[];
@@ -28,12 +29,27 @@ export default function MarketDataTable({ stocks: initialStocks }: MarketDataTab
 
   const { isConnected, lastMessage } = useWebSocket();
 
+  // API fallback when WebSocket is not working
+  const { data: apiData } = useQuery({
+    queryKey: ['/api/stocks'],
+    enabled: !isConnected, // Only fetch when WebSocket is not connected
+    refetchInterval: 30000, // Refetch every 30 seconds
+    staleTime: 10000,
+  });
+
   // Initialize stocks with props data or empty array
   useEffect(() => {
     if (initialStocks && initialStocks.length > 0) {
       setStocks(initialStocks);
     }
   }, [initialStocks]);
+
+  // Use API data when WebSocket is not connected
+  useEffect(() => {
+    if (!isConnected && apiData?.stocks && Array.isArray(apiData.stocks)) {
+      setStocks(apiData.stocks);
+    }
+  }, [isConnected, apiData]);
   const formatPrice = (price: number) => {
     return `₨${price.toFixed(2)}`;
   };
@@ -184,7 +200,9 @@ export default function MarketDataTable({ stocks: initialStocks }: MarketDataTab
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-lg font-semibold text-slate-900">Market Data Table</h3>
-              <p className="text-sm text-slate-600">Auto-refreshing every 30 seconds • {searchTerm ? `${filteredAndSortedStocks.length} of ${stocks.length}` : stocks.length} stocks</p>
+              <p className="text-sm text-slate-600">
+                {isConnected ? "Live via WebSocket" : "API fallback"} • Auto-refreshing every 30 seconds • {searchTerm ? `${filteredAndSortedStocks.length} of ${stocks.length}` : stocks.length} stocks
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-slate-600">Show:</span>
