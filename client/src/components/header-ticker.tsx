@@ -22,8 +22,17 @@ export default function HeaderTicker({ stocks: initialStocks }: HeaderTickerProp
   // API fallback for when WebSocket fails
   const { data: apiStocks } = useQuery({
     queryKey: ['/api/stocks'],
-    refetchInterval: 30000,
+    queryFn: async () => {
+      const response = await fetch('/api/stocks');
+      if (!response.ok) {
+        throw new Error('Failed to fetch stocks');
+      }
+      return response.json();
+    },
+    enabled: true, // Always try to fetch data
+    refetchInterval: isConnected ? 60000 : 30000, // Slower refresh when WebSocket is active
     staleTime: 10000,
+    retry: 3,
   });
   
   // Use WebSocket data if available, otherwise fall back to API
@@ -31,10 +40,13 @@ export default function HeaderTicker({ stocks: initialStocks }: HeaderTickerProp
     if (currentStocks && currentStocks.length > 0 && isConnected) {
       return currentStocks;
     }
+    if ((!isConnected || currentStocks.length === 0) && apiStocks?.stocks && Array.isArray(apiStocks.stocks)) {
+      return apiStocks.stocks;
+    }
     if (initialStocks && initialStocks.length > 0) {
       return initialStocks;
     }
-    return (apiStocks as any)?.stocks || [];
+    return [];
   }, [currentStocks, initialStocks, apiStocks, isConnected]);
 
   // Update stocks when WebSocket data changes, but prevent animation restart

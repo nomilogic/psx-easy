@@ -25,8 +25,6 @@ import {
   ChevronRight,
   Play,
   Lightbulb,
-  ArrowUpRight,
-  ArrowDownRight,
   Clock,
   Users,
   Building,
@@ -35,11 +33,6 @@ import {
   Star,
   Shield,
   Calendar,
-  Filter,
-  Search,
-  Bookmark,
-  Share2,
-  Download,
   RefreshCw,
   PieChart,
   LineChart,
@@ -69,6 +62,7 @@ import HeaderTicker from "@/components/header-ticker";
 import IndicesTicker from "@/components/indices-ticker";
 import MarketDataTable from "@/components/market-data-table";
 import { SimpleMarketStatus } from "@/components/SimpleMarketStatus";
+import { useMarketWebSocket } from "@/hooks/useMarketWebSocket";
 const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
 
 export default function Homepage() {
@@ -467,90 +461,10 @@ export default function Homepage() {
             </CardContent>
           </Card>
 
-          {/* Compact Live Data Table */}
-          <Card className="mt-6">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center">
-                  <Activity className="w-5 h-5 mr-2 text-blue-600" />
-                  Live Market Data
-                  <Badge variant="secondary" className={`ml-2 ${isConnected ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
-                    {isConnected ? "Live" : "Offline"}
-                  </Badge>
-                </CardTitle>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    <Filter className="w-4 h-4 mr-2" />
-                    Filter
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Download className="w-4 h-4 mr-2" />
-                    Export
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {stocks && stocks.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-gray-200 text-xs">
-                        <th className="text-left py-2 font-semibold">Symbol</th>
-                        <th className="text-left py-2 font-semibold">Company</th>
-                        <th className="text-right py-2 font-semibold">Price</th>
-                        <th className="text-right py-2 font-semibold">Change</th>
-                        <th className="text-right py-2 font-semibold">Volume</th>
-                        <th className="text-center py-2 font-semibold">Trend</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {stocks.slice(0, 12).map((stock) => (
-                        <tr key={stock.symbol} className="border-b border-gray-100 hover:bg-gray-50 text-xs">
-                          <td className="py-2">
-                            <span className="font-bold text-blue-600">{stock.symbol}</span>
-                          </td>
-                          <td className="py-2 text-gray-900 max-w-32 truncate">
-                            {stock.name}
-                          </td>
-                          <td className="py-2 text-right font-mono">
-                            {formatCurrency(stock.current)}
-                          </td>
-                          <td className="py-2 text-right">
-                            <Badge 
-                              variant="outline" 
-                              className={`text-xs ${stock.isPositive ? "border-green-500 text-green-700 bg-green-50" : "border-red-500 text-red-700 bg-red-50"}`}
-                            >
-                              {formatPercent(stock.changePercent)}
-                            </Badge>
-                          </td>
-                          <td className="py-2 text-right font-mono text-gray-600">
-                            {(stock.volume / 1000).toFixed(0)}K
-                          </td>
-                          <td className="py-2 text-center">
-                            {stock.isPositive ? 
-                              <ArrowUpRight className="w-4 h-4 text-green-500 mx-auto" /> : 
-                              <ArrowDownRight className="w-4 h-4 text-red-500 mx-auto" />
-                            }
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <div className="mt-4 text-center">
-                    <Button variant="outline" asChild>
-                      <a href="/api">View All Stocks ({stocks.length})</a>
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading market data...</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Market Data Table */}
+          <div className="mt-6">
+            <MarketDataTable stocks={displayStocks} />
+          </div>
 
           {/* Compact AI Features Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
