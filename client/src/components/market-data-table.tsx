@@ -76,10 +76,10 @@ export default function MarketDataTable({ stocks: initialStocks }: MarketDataTab
     return volume.toString();
   };
 
-  const formatChange = (change: number, changePercent: number) => {
-    const sign = change >= 0 ? '+' : '';
-    const safeChange = change || 0;
-    const safeChangePercent = changePercent || 0;
+  const formatChange = (change: number | undefined, changePercent: number | undefined) => {
+    const safeChange = change ?? 0;
+    const safeChangePercent = changePercent ?? 0;
+    const sign = safeChange >= 0 ? '+' : '';
     return `${sign}${safeChange.toFixed(2)} (${sign}${safeChangePercent.toFixed(1)}%)`;
   };
 
@@ -401,7 +401,7 @@ export default function MarketDataTable({ stocks: initialStocks }: MarketDataTab
                       <span className={`text-sm font-mono font-medium ${
                         stock.isPositive ? 'text-secondary' : 'text-accent'
                       }`}>
-                        {formatChange(stock.change, stock.changePercent)}
+                        {formatChange(stock.change ?? 0, stock.changePercent ?? 0)}
                       </span>
                     </div>
                   </td>
