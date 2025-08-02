@@ -125,12 +125,16 @@ function AIAnalysisPage() {
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [indexData, setIndexData] = useState<IndexData[]>([]);
 
-  const { data: stocks } = useQuery<Stock[]>({
+  const { data: stocksData = [], isLoading: stocksLoading, error: stocksError } = useQuery<any>({
     queryKey: ["/api/stocks"],
   });
 
-  const filteredStocks = stocks?.filter(stock => 
-    stock.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  // Ensure stocks is always an array
+  const stocks = Array.isArray(stocksData?.stocks) ? stocksData.stocks : 
+                 Array.isArray(stocksData) ? stocksData : [];
+
+  const filteredStocks = stocks.filter((stock: any) => 
+    stock.symbol?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     stock.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -346,7 +350,7 @@ function AIAnalysisPage() {
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-lg font-bold">
-                              {latestData ? latestData[1].toLocaleString() : 'Loading...'}
+                              {latestData && latestData[1] ? latestData[1].toLocaleString() : 'Loading...'}
                             </span>
                             {change >= 0 ? 
                               <ArrowUpRight className="w-4 h-4 text-green-500" /> : 
@@ -422,7 +426,7 @@ function AIAnalysisPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-600">Active Stocks</p>
-                      <p className="text-2xl font-bold">{stocks?.length || 0}</p>
+                      <p className="text-2xl font-bold">{stocks.length}</p>
                     </div>
                     <Activity className="w-8 h-8 text-blue-500" />
                   </div>
@@ -435,7 +439,7 @@ function AIAnalysisPage() {
                     <div>
                       <p className="text-sm text-gray-600">Gainers</p>
                       <p className="text-2xl font-bold text-green-600">
-                        {stocks?.filter(s => s.changePercent > 0).length || 0}
+                        {stocks.filter((s: any) => s.changePercent > 0).length}
                       </p>
                     </div>
                     <TrendingUp className="w-8 h-8 text-green-500" />
@@ -449,7 +453,7 @@ function AIAnalysisPage() {
                     <div>
                       <p className="text-sm text-gray-600">Losers</p>
                       <p className="text-2xl font-bold text-red-600">
-                        {stocks?.filter(s => s.changePercent < 0).length || 0}
+                        {stocks.filter((s: any) => s.changePercent < 0).length}
                       </p>
                     </div>
                     <TrendingDown className="w-8 h-8 text-red-500" />
@@ -463,7 +467,7 @@ function AIAnalysisPage() {
                     <div>
                       <p className="text-sm text-gray-600">Total Volume</p>
                       <p className="text-2xl font-bold text-purple-600">
-                        {stocks ? `${(stocks.reduce((sum, s) => sum + s.volume, 0) / 1000000).toFixed(0)}M` : '0M'}
+                        {`${(stocks.reduce((sum: number, s: any) => sum + (s.volume || 0), 0) / 1000000).toFixed(0)}M`}
                       </p>
                     </div>
                     <BarChart3 className="w-8 h-8 text-purple-500" />
@@ -547,7 +551,7 @@ function AIAnalysisPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Top Performers</SelectItem>
-                        {filteredStocks?.slice(0, 20).map((stock) => (
+                        {filteredStocks.slice(0, 20).map((stock: any) => (
                           <SelectItem key={stock.symbol} value={stock.symbol}>
                             {stock.symbol} - {stock.name?.substring(0, 25)}
                           </SelectItem>
@@ -772,7 +776,7 @@ function AIAnalysisPage() {
                         <SelectValue placeholder="Choose a stock to analyze" />
                       </SelectTrigger>
                       <SelectContent>
-                        {filteredStocks?.slice(0, 50).map((stock) => (
+                        {filteredStocks.slice(0, 50).map((stock: any) => (
                           <SelectItem key={stock.symbol} value={stock.symbol}>
                             {stock.symbol} - {stock.name?.substring(0, 30)}
                           </SelectItem>
