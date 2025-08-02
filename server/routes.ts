@@ -889,15 +889,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       let aiText = "";
-      if (geminiResponse.ok) {
-        const geminiData = await geminiResponse.json();
-        aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      } else {
-        console.error(
-          "Gemini API error:",
-          geminiResponse.status,
-          await geminiResponse.text(),
-        );
+      try {
+        if (geminiResponse.ok) {
+          const geminiData = await geminiResponse.json();
+          aiText =
+            geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        } else {
+          console.error(
+            "Gemini API error:",
+            geminiResponse.status,
+            await geminiResponse.text(),
+          );
+        }
+      } catch (error) {
+        console.error("Gemini API call failed:", error);
       }
 
       // Parse AI response with enhanced analysis
@@ -937,8 +942,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 stock.current * (1 + (stock.changePercent / 100) * 1.5),
               confidence: Math.min(
                 95,
-                Math.max(60, 85 - Math.abs(stock.changePercent) * 2),
-              ),
+                Math.max(60, 85 - Math.abs(stock.changePercent) * 2)
+              )
             };
           }
         } else {
@@ -977,14 +982,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 (1 +
                   Math.max(
                     0.02,
-                    Math.min(0.15, Math.abs(stock.changePercent) / 100),
+                    Math.min(0.15, Math.abs(stock.changePercent) / 100)
                   ))
-              ).toFixed(2),
+              ).toFixed(2)
             ),
             confidence: Math.min(
               95,
-              Math.max(75, 90 - Math.abs(stock.changePercent) * 1.5),
-            ),
+              Math.max(75, 90 - Math.abs(stock.changePercent) * 1.5)
+            )
           };
         }
       } catch (parseError) {
@@ -1000,13 +1005,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 : "Hold - Wait for clearer directional signals",
           riskLevel: "Medium",
           targetPrice: Number((stock.current * 1.05).toFixed(2)),
-          confidence: 80,
+          confidence: 80
         };
       }
 
       res.json({
         symbol,
-        ...analysis,
+        ...analysis
       });
     } catch (error) {
       console.error("AI analysis error:", error);
@@ -1068,7 +1073,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const {
         riskLevel = "medium",
         investmentAmount = 100000,
-        timeHorizon = "1 year",
+        timeHorizon = "1 year"
       } = req.body;
 
       // Get current market data
@@ -1109,9 +1114,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
-              }),
-            },
+                generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+              })
+            }
           );
 
           if (geminiResponse.ok) {
@@ -1139,21 +1144,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 Banking: 25,
                 "Oil & Gas": 20,
                 Textiles: 15,
-                Others: 10,
+                Others: 10
               }
             : riskLevel === "low"
               ? {
                   Banking: 40,
                   Utilities: 25,
                   "Consumer Goods": 20,
-                  "Government Bonds": 15,
+                  "Government Bonds": 15
                 }
               : {
                   Banking: 30,
                   Technology: 20,
                   "Oil & Gas": 20,
                   Textiles: 15,
-                  Cement: 15,
+                  Cement: 15
                 };
 
         portfolioAnalysis = {
@@ -1162,7 +1167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             symbol: stock.symbol,
             name: stock.name,
             allocation: Math.round(20 + Math.random() * 10),
-            rationale: `Strong performer with ${stock.changePercent.toFixed(2)}% gain today. Good ${riskLevel}-risk investment for ${timeHorizon} timeframe.`,
+            rationale: `Strong performer with ${stock.changePercent.toFixed(2)}% gain today. Good ${riskLevel}-risk investment for ${timeHorizon} timeframe.`
           })),
           riskAssessment: `${riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1)} risk portfolio with diversification across ${Object.keys(sectorAllocation).length} sectors. Expected volatility appropriate for ${timeHorizon} investment horizon.`,
           expectedReturn:
@@ -1170,7 +1175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ? "15-25%"
               : riskLevel === "low"
                 ? "8-12%"
-                : "10-18%",
+                : "10-18%"
         };
       }
 
@@ -1192,14 +1197,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newsPromises = [
         // NewsAPI for international business news
         fetch(
-          `https://newsapi.org/v2/top-headlines?country=${country}&category=${category}&pageSize=10&apiKey=${process.env.NEWS_API_KEY || "demo"}`,
+          `https://newsapi.org/v2/top-headlines?country=${country}&category=${category}&pageSize=10&apiKey=${process.env.NEWS_API_KEY || "demo"}`
         ),
         // Alpha Vantage news for financial markets
         fetch(
-          `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&topics=financial_markets,economy&apikey=${process.env.ALPHA_VANTAGE_KEY || "demo"}`,
+          `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&topics=financial_markets,economy&apikey=${process.env.ALPHA_VANTAGE_KEY || "demo"}`
         ),
         // Financial news from RSS feeds
-        fetch("https://feeds.feedburner.com/ndtvprofit-latest"),
+        fetch("https://feeds.feedburner.com/ndtvprofit-latest")
       ];
 
       const results = await Promise.allSettled(newsPromises);
@@ -1218,8 +1223,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 source: article.source.name,
                 publishedAt: article.publishedAt,
                 category: "market",
-                impact: "medium",
-              })),
+                impact: "medium"
+              }))
             );
           }
         } catch (error) {
@@ -1233,12 +1238,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const topGainer = stocks.reduce(
           (max, stock) =>
             stock.changePercent > max.changePercent ? stock : max,
-          stocks[0],
+          stocks[0]
         );
         const topLoser = stocks.reduce(
           (min, stock) =>
             stock.changePercent < min.changePercent ? stock : min,
-          stocks[0],
+          stocks[0]
         );
 
         news.push(
@@ -1249,7 +1254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             source: "PSX Live",
             publishedAt: new Date().toISOString(),
             category: "market",
-            impact: "high",
+            impact: "high"
           },
           {
             title: `Banking Sector Shows Mixed Performance Amid Policy Changes`,
@@ -1258,7 +1263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             source: "Market Analysis",
             publishedAt: new Date().toISOString(),
             category: "economy",
-            impact: "medium",
+            impact: "medium"
           },
           {
             title: `${topLoser.symbol} Under Pressure, Down ${Math.abs(topLoser.changePercent || 0).toFixed(2)}%`,
@@ -1267,7 +1272,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             source: "PSX Live",
             publishedAt: new Date().toISOString(),
             category: "market",
-            impact: "medium",
+            impact: "medium"
           },
           {
             title: "Global Commodity Prices Impact Pakistani Export Sectors",
@@ -1277,7 +1282,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             source: "Economic Times",
             publishedAt: new Date().toISOString(),
             category: "economy",
-            impact: "high",
+            impact: "high"
           },
           {
             title:
@@ -1288,8 +1293,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             source: "Tech News",
             publishedAt: new Date().toISOString(),
             category: "technology",
-            impact: "medium",
-          },
+            impact: "medium"
+          }
         );
       }
 
@@ -1323,7 +1328,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "ACI",
         "JSGBKTI",
         "MII30",
-        "HBLTT",
+        "HBLTT"
       ];
 
       if (!VALID_INDICES.includes(symbol.toUpperCase())) {
@@ -1334,7 +1339,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const timeSeriesData = await PSXService.fetchStockTimeSeries(
           symbol,
-          interval as any,
+          interval as any
         );
 
         if (timeSeriesData && timeSeriesData.chartData.length > 0) {
@@ -1343,8 +1348,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             data: timeSeriesData.chartData.map((point) => [
               Math.floor(point.timestamp / 1000),
               point.price,
-              point.volume,
-            ]),
+              point.volume
+            ])
           };
 
           res.json({
@@ -1353,7 +1358,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ...formattedData,
             currentPrice: timeSeriesData.currentPrice,
             change: timeSeriesData.change,
-            changePercent: timeSeriesData.changePercent,
+            changePercent: timeSeriesData.changePercent
           });
         } else {
           throw new Error("No data received from PSX service");
@@ -1368,8 +1373,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             accept: "application/json, text/javascript, */*; q=0.01",
             "accept-language": "en-US,en;q=0.9",
             "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          },
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+          }
         });
 
         if (response.ok) {
@@ -1382,7 +1387,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error(
         `Error fetching index data for ${req.params.symbol}:`,
-        error,
+        error
       );
 
       // Final fallback with realistic market data
@@ -1400,15 +1405,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 Math.floor(timestamp / 1000),
                 basePrice,
                 volume,
-                basePrice * 0.98,
+                basePrice * 0.98
               ]
             : [Math.floor(timestamp / 1000), basePrice, volume];
-        }),
+        })
       };
       res.json({
         symbol: req.params.symbol.toUpperCase(),
         interval: req.query.interval,
-        ...mockData,
+        ...mockData
       });
     }
   });
@@ -1421,7 +1426,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const symbols = stocks.map((stock) => ({
         symbol: stock.symbol,
         name: stock.name || stock.symbol,
-        sector: stock.sector || "Other",
+        sector: stock.sector || "Other"
       }));
 
       res.json(symbols);
@@ -1433,28 +1438,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         {
           symbol: "HBL",
           name: "Habib Bank Limited",
-          sector: "COMMERCIAL BANKS",
+          sector: "COMMERCIAL BANKS"
         },
         {
           symbol: "UBL",
           name: "United Bank Limited",
-          sector: "COMMERCIAL BANKS",
+          sector: "COMMERCIAL BANKS"
         },
         {
           symbol: "MEBL",
           name: "MCB Bank Limited",
-          sector: "COMMERCIAL BANKS",
+          sector: "COMMERCIAL BANKS"
         },
         {
           symbol: "UNITY",
           name: "Unity Foods Limited",
-          sector: "FOOD & PERSONAL CARE PRODUCTS",
+          sector: "FOOD & PERSONAL CARE PRODUCTS"
         },
         {
           symbol: "PSO",
           name: "Pakistan State Oil Company Limited",
-          sector: "OIL & GAS MARKETING COMPANIES",
-        },
+          sector: "OIL & GAS MARKETING COMPANIES"
+        }
       ];
 
       res.json(fallbackSymbols);
@@ -1469,7 +1474,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const timeSeriesData = await PSXService.fetchStockTimeSeries(
         symbol.toUpperCase(),
-        interval as any,
+        interval as any
       );
 
       if (timeSeriesData) {
@@ -1510,7 +1515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stocks.length;
       const totalMarketCap = stocks.reduce(
         (sum, stock) => sum + stock.current * stock.volume,
-        0,
+        0
       );
 
       // Sector performance analysis
@@ -1521,7 +1526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               s.symbol.includes(sector.code) ||
               s.name
                 ?.toLowerCase()
-                .includes(sector.name.toLowerCase().split(" ")[0]),
+                .includes(sector.name.toLowerCase().split(" ")[0])
           );
           const avgSectorChange =
             sectorStocks.length > 0
@@ -1531,7 +1536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return {
             name: sector.name,
             volume: sector.volume,
-            performance: avgSectorChange,
+            performance: avgSectorChange
           };
         }) || [];
 
@@ -1574,7 +1579,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .slice(0, 8)
           .map(
             (sector) =>
-              `- ${sector.name}: Volume ${sector.volume.toLocaleString()} (${sector.performance > 0 ? "+" : ""}${sector.performance.toFixed(2)}%)`,
+              `- ${sector.name}: Volume ${sector.volume.toLocaleString()} (${sector.performance > 0 ? "+" : ""}${sector.performance.toFixed(2)}%)`
           )
           .join("\n")}
 
@@ -1583,7 +1588,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .slice(0, 5)
           .map(
             (s) =>
-              `${s.symbol}: Current Rs. ${s.current} (+${s.changePercent.toFixed(2)}%) - Analyze momentum, support/resistance levels, and predict next 1-week movement`,
+              `${s.symbol}: Current Rs. ${s.current} (+${s.changePercent.toFixed(2)}%) - Analyze momentum, support/resistance levels, and predict next 1-week movement`
           )
           .join("\n")}
 
@@ -1629,9 +1634,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.7, maxOutputTokens: 3500 },
-              }),
-            },
+                generationConfig: { temperature: 0.7, maxOutputTokens: 3500 }
+              })
+            }
           );
 
           if (geminiResponse.ok) {
@@ -1654,7 +1659,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ? "moderate"
               : "low";
         const topSector = sectorPerformance.sort(
-          (a: any, b: any) => b.volume - a.volume,
+          (a: any, b: any) => b.volume - a.volume
         )[0];
 
         aiInsight = `
@@ -1688,8 +1693,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           topGainers: topGainers.slice(0, 5),
           topLosers: topLosers.slice(0, 5),
           sectorPerformance: sectorPerformance.slice(0, 10),
-          marketSummary: marketSummary,
-        },
+          marketSummary: marketSummary
+        }
       });
     } catch (error) {
       console.error("Market insights error:", error);
@@ -1732,7 +1737,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ${stocksForPrediction
           .map(
             (s) =>
-              `- ${s.symbol} (${s.name?.substring(0, 30)}): Current Rs. ${s.current}, Change: ${s.changePercent.toFixed(2)}%, Volume: ${s.volume.toLocaleString()}`,
+              `- ${s.symbol} (${s.name?.substring(0, 30)}): Current Rs. ${s.current}, Change: ${s.changePercent.toFixed(2)}%, Volume: ${s.volume.toLocaleString()}`
           )
           .join("\n")}
 
@@ -1742,7 +1747,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ?.slice(0, 5)
             .map(
               (sector: any) =>
-                `- ${sector.name}: ${sector.volume.toLocaleString()}`,
+                `- ${sector.name}: ${sector.volume.toLocaleString()}`
             )
             .join("\n") || "Sector data loading..."
         }
@@ -1769,13 +1774,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.6, maxOutputTokens: 3000 },
-              }),
-            },
+                generationConfig: { temperature: 0.6, maxOutputTokens: 3000 }
+              })
+            }
           );
 
           if (geminiResponse.ok) {
             const geminiData = await geminiResponse.json();
             const aiText =
-              geminiData.candidates?.[0]?.content?.parts?json/g, '')
-                  .replace(/
+              geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          }
+        } catch (error) {
+          console.error("Gemini API error:", error);
+        }
+      }
+
+      res.json(aiPredictions);
+    } catch (error) {
+      console.error("AI prediction error:", error);
+      res.status(500).json({ error: "Failed to generate AI predictions" });
+    }
+  });
+
+  return createServer(app);
+}
