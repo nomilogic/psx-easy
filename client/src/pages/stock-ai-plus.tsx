@@ -1,14 +1,14 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Search, 
   TrendingUp, 
@@ -44,7 +44,20 @@ import {
   Newspaper,
   BookOpen,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Upload,
+  Download,
+  Edit3,
+  Save,
+  FileText,
+  Database,
+  Settings,
+  BarChart2,
+  TrendingUp as TrendIcon,
+  Calculator,
+  MousePointer,
+  Layers,
+  Package
 } from "lucide-react";
 import { Link } from "wouter";
 import { ResponsiveContainer, LineChart as RechartsLineChart, Line, XAxis, YAxis, AreaChart, Area, BarChart, Bar, PieChart as RechartsPieChart, Cell } from 'recharts';
@@ -90,6 +103,7 @@ interface StockData {
       net_income?: any;
       EPS?: any;
       margins?: any;
+      ratios?: any;
     };
     dividends?: {
       annual_yield_percent: number;
@@ -161,10 +175,18 @@ function StockAIPlus() {
   const [selectedStock, setSelectedStock] = useState<StockData | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [editMode, setEditMode] = useState(false);
+  const [customDataInput, setCustomDataInput] = useState("");
+  const [dataSource, setDataSource] = useState<"json" | "custom">("json");
 
   // Load the pre-analyzed stock data from JSON
   const [stockAnalysisData, setStockAnalysisData] = useState<StockData[]>([]);
+
+  // News data
+  const { data: newsData } = useQuery({
+    queryKey: ["/api/news"],
+    refetchInterval: 300000, // 5 minutes
+  });
 
   useEffect(() => {
     // Load the stock analysis data from the JSON file
@@ -175,6 +197,7 @@ function StockAIPlus() {
           setStockAnalysisData(data.stocks);
           if (data.stocks.length > 0) {
             setSelectedStock(data.stocks[0]);
+            setCustomDataInput(JSON.stringify(data.stocks[0], null, 2));
           }
         }
       })
@@ -197,7 +220,15 @@ function StockAIPlus() {
                 "52_week_high": 160,
                 "52_week_low": 90,
                 volatility_weekly_percent: "3.2"
-              }
+              },
+              news: [
+                {
+                  date: "2025-08-01",
+                  title: "Sample Company reports strong Q3 results",
+                  impact: "Positive",
+                  summary: "The company exceeded analyst expectations with revenue growth of 25%."
+                }
+              ]
             },
             ai_insights: {
               ai_rating: "A (Buy)",
@@ -208,6 +239,7 @@ function StockAIPlus() {
         ];
         setStockAnalysisData(sampleData);
         setSelectedStock(sampleData[0]);
+        setCustomDataInput(JSON.stringify(sampleData[0], null, 2));
       });
   }, []);
 
@@ -252,38 +284,60 @@ function StockAIPlus() {
     return "secondary";
   };
 
-  const renderDynamicSection = (title: string, data: any, icon: React.ReactNode) => {
+  const handleCustomDataLoad = () => {
+    try {
+      const parsedData = JSON.parse(customDataInput);
+      setSelectedStock(parsedData);
+      setDataSource("custom");
+    } catch (error) {
+      alert("Invalid JSON format. Please check your input.");
+    }
+  };
+
+  const exportCurrentData = () => {
+    if (selectedStock) {
+      const dataStr = JSON.stringify(selectedStock, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${selectedStock.ticker}_analysis.json`;
+      link.click();
+    }
+  };
+
+  const renderCompactSection = (title: string, data: any, icon: React.ReactNode, colorClass: string = "border-gray-200") => {
     if (!data || typeof data !== 'object') return null;
 
     return (
-      <Card className="h-full">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
+      <Card className={`border-2 ${colorClass} hover:shadow-md transition-shadow`}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
             {icon}
             {title}
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {Object.entries(data).map(([key, value], index) => {
+        <CardContent className="pt-0">
+          <div className="space-y-2">
+            {Object.entries(data).slice(0, 4).map(([key, value], index) => {
               if (value === null || value === undefined) return null;
-              
+
               const displayKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).replace(/_/g, ' ');
-              
+
               if (typeof value === 'object' && !Array.isArray(value)) {
                 return (
-                  <div key={key} className="p-3 bg-muted/50 rounded-lg">
-                    <h4 className="font-medium text-sm mb-2">{displayKey}</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-                      {Object.entries(value).map(([subKey, subValue]) => (
+                  <div key={key} className="text-xs">
+                    <span className="font-medium text-gray-600">{displayKey}:</span>
+                    <div className="ml-2 mt-1">
+                      {Object.entries(value).slice(0, 2).map(([subKey, subValue]) => (
                         <div key={subKey} className="flex justify-between">
-                          <span className="text-muted-foreground">{subKey.replace(/_/g, ' ')}:</span>
+                          <span className="text-gray-500">{subKey.replace(/_/g, ' ')}:</span>
                           <span className="font-medium">
                             {typeof subValue === 'number' ? 
                               (subKey.includes('percent') ? formatPercent(subValue) : 
                                subKey.includes('price') || subKey.includes('amount') ? formatCurrency(subValue) :
                                subValue.toLocaleString()) : 
-                              String(subValue)}
+                              String(subValue).substring(0, 20)}
                           </span>
                         </div>
                       ))}
@@ -294,35 +348,29 @@ function StockAIPlus() {
 
               if (Array.isArray(value)) {
                 return (
-                  <div key={key} className="p-3 bg-muted/50 rounded-lg">
-                    <h4 className="font-medium text-sm mb-2">{displayKey}</h4>
-                    <div className="space-y-1">
-                      {value.slice(0, 5).map((item, idx) => (
-                        <div key={idx} className="text-xs p-2 bg-background rounded border">
-                          {typeof item === 'object' ? JSON.stringify(item, null, 2) : String(item)}
-                        </div>
-                      ))}
-                      {value.length > 5 && (
-                        <div className="text-xs text-muted-foreground">...and {value.length - 5} more items</div>
-                      )}
-                    </div>
+                  <div key={key} className="text-xs">
+                    <span className="font-medium text-gray-600">{displayKey}:</span>
+                    <div className="ml-2 text-gray-500">{value.length} items</div>
                   </div>
                 );
               }
 
               return (
-                <div key={key} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                  <span className="text-sm text-muted-foreground">{displayKey}</span>
-                  <span className="text-sm font-medium">
+                <div key={key} className="flex justify-between items-center text-xs">
+                  <span className="text-gray-600 font-medium">{displayKey}:</span>
+                  <span className="font-semibold">
                     {typeof value === 'number' ? 
                       (key.includes('percent') ? formatPercent(value) : 
                        key.includes('price') || key.includes('amount') ? formatCurrency(value) :
                        value.toLocaleString()) : 
-                      String(value)}
+                      String(value).substring(0, 15)}
                   </span>
                 </div>
               );
             })}
+            {Object.keys(data).length > 4 && (
+              <div className="text-xs text-gray-400">...and {Object.keys(data).length - 4} more fields</div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -346,71 +394,112 @@ function StockAIPlus() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20">
-      <div className="container mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="mb-6">
+      <div className="container mx-auto px-3 py-4 max-w-[1600px]">
+        {/* Compact Header */}
+        <div className="mb-4">
           <div className="flex items-center justify-between">
-            <div className="space-y-3">
+            <div className="space-y-2">
               <Link href="/ai-analysis-new">
-                <Button variant="ghost" size="sm" className="mb-2 hover:bg-blue-100 dark:hover:bg-blue-900/50">
-                  <ArrowLeft className="w-4 h-4 mr-2" /> Back to AI Analysis
+                <Button variant="ghost" size="sm" className="mb-1 hover:bg-blue-100 dark:hover:bg-blue-900/50">
+                  <ArrowLeft className="w-3 h-3 mr-1" /> Back
                 </Button>
               </Link>
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl">
-                  <Sparkles className="w-8 h-8 text-white" />
+              <div className="flex items-center space-x-2">
+                <div className="p-1.5 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg">
+                  <Sparkles className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                    Stock AI+
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    Stock AI+ Compact
                   </h1>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    Advanced AI-powered comprehensive stock analysis
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    Comprehensive AI analysis in compact view
                   </p>
                 </div>
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Refresh Data
+              <Button variant="outline" size="sm" onClick={exportCurrentData}>
+                <Download className="w-3 h-3 mr-1" />
+                Export
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setEditMode(!editMode)}>
+                <Edit3 className="w-3 h-3 mr-1" />
+                {editMode ? 'View' : 'Edit'}
               </Button>
             </div>
           </div>
         </div>
 
+        {/* Data Input Section */}
+        {editMode && (
+          <Card className="mb-4 border-2 border-purple-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Database className="w-5 h-5 text-purple-600" />
+                Data Input & Testing
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex gap-2">
+                <Select value={dataSource} onValueChange={(value: "json" | "custom") => setDataSource(value)}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="json">JSON File Data</SelectItem>
+                    <SelectItem value="custom">Custom JSON Input</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={handleCustomDataLoad} size="sm" disabled={dataSource !== "custom"}>
+                  <Upload className="w-3 h-3 mr-1" />
+                  Load Custom Data
+                </Button>
+              </div>
+
+              {dataSource === "custom" && (
+                <Textarea
+                  value={customDataInput}
+                  onChange={(e) => setCustomDataInput(e.target.value)}
+                  placeholder="Paste your JSON data structure here..."
+                  className="h-32 font-mono text-xs"
+                />
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Stock Selection */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Search className="w-5 h-5" />
-              Select Stock for Comprehensive Analysis
+        <Card className="mb-4 border-2 border-blue-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Search className="w-4 h-4" />
+              Stock Selection
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-4 mb-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="Search by ticker or company name..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+            <div className="flex gap-2 mb-3">
+              <Input
+                placeholder="Search stocks..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1"
+              />
             </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-32 overflow-y-auto">
+
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 max-h-24 overflow-y-auto">
               {filteredStocks.map((stock) => (
                 <Button
                   key={stock.ticker}
                   variant={selectedStock?.ticker === stock.ticker ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedStock(stock)}
-                  className="justify-start text-left"
+                  className="justify-start text-left text-xs h-12"
                 >
                   <div>
                     <div className="font-semibold">{stock.ticker}</div>
                     <div className="text-xs text-muted-foreground truncate">
-                      {stock.company_name?.substring(0, 20)}...
+                      {stock.company_name?.substring(0, 15)}...
                     </div>
                   </div>
                 </Button>
@@ -419,535 +508,285 @@ function StockAIPlus() {
           </CardContent>
         </Card>
 
-        {/* Stock Header */}
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
+        {/* Stock Header Card */}
+        <Card className="mb-4 border-2 border-green-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                   {selectedStock.ticker?.substring(0, 3) || 'STK'}
                 </div>
                 <div>
-                  <h2 className="text-3xl font-bold">{selectedStock.ticker}</h2>
-                  <p className="text-lg text-muted-foreground">{selectedStock.company_name}</p>
-                  <div className="flex items-center gap-3 mt-2">
-                    <Badge variant="outline">{selectedStock.sector}</Badge>
-                    <Badge variant="outline">{selectedStock.exchange}</Badge>
-                    <Badge variant="outline">{selectedStock.country}</Badge>
-                    {selectedStock.website && (
-                      <Button variant="ghost" size="sm" asChild>
-                        <a href={selectedStock.website} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="w-3 h-3 mr-1" />
-                          Website
-                        </a>
-                      </Button>
+                  <h2 className="text-xl font-bold">{selectedStock.ticker}</h2>
+                  <p className="text-sm text-muted-foreground">{selectedStock.company_name}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant="outline" className="text-xs">{selectedStock.sector}</Badge>
+                    <Badge variant="outline" className="text-xs">{selectedStock.exchange}</Badge>
+                    {selectedStock.ai_insights?.ai_rating && (
+                      <Badge variant={getRatingBadgeVariant(selectedStock.ai_insights.ai_rating)} className="text-xs">
+                        {selectedStock.ai_insights.ai_rating}
+                      </Badge>
                     )}
                   </div>
                 </div>
               </div>
-              <div className="text-right">
-                {selectedStock.ai_insights?.ai_rating && (
-                  <Badge variant={getRatingBadgeVariant(selectedStock.ai_insights.ai_rating)} className="text-lg px-4 py-2 mb-2">
-                    {selectedStock.ai_insights.ai_rating}
-                  </Badge>
-                )}
-                {selectedStock.ai_insights?.investment_type && (
-                  <p className="text-sm text-muted-foreground">
-                    Investment Type: {selectedStock.ai_insights.investment_type}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                <div className="text-center p-2 bg-blue-50 rounded">
+                  <p className="text-blue-700">Current</p>
+                  <p className="font-bold text-blue-900">
+                    {formatCurrency(selectedStock.historical?.price?.end_price)}
                   </p>
-                )}
-              </div>
-            </div>
-
-            {/* Key Metrics Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 rounded-lg">
-                <p className="text-sm text-muted-foreground">Current Price</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {formatCurrency(selectedStock.historical?.price?.end_price)}
-                </p>
-              </div>
-              <div className="text-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 rounded-lg">
-                <p className="text-sm text-muted-foreground">Change</p>
-                <p className={`text-2xl font-bold ${selectedStock.historical?.price?.change_percent && selectedStock.historical.price.change_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatPercent(selectedStock.historical?.price?.change_percent)}
-                </p>
-              </div>
-              <div className="text-center p-4 bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 rounded-lg">
-                <p className="text-sm text-muted-foreground">52W High</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {formatCurrency(selectedStock.historical?.price?.["52_week_high"])}
-                </p>
-              </div>
-              <div className="text-center p-4 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 rounded-lg">
-                <p className="text-sm text-muted-foreground">Market Cap</p>
-                <p className="text-2xl font-bold text-orange-600">
-                  {selectedStock.historical?.market_cap ? 
-                    `${selectedStock.historical.market_cap.end?.toLocaleString()} ${selectedStock.historical.market_cap.unit}` : 
-                    'N/A'}
-                </p>
+                </div>
+                <div className="text-center p-2 bg-green-50 rounded">
+                  <p className="text-green-700">Change</p>
+                  <p className={`font-bold ${selectedStock.historical?.price?.change_percent && selectedStock.historical.price.change_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatPercent(selectedStock.historical?.price?.change_percent)}
+                  </p>
+                </div>
+                <div className="text-center p-2 bg-purple-50 rounded">
+                  <p className="text-purple-700">52W High</p>
+                  <p className="font-bold text-purple-900">
+                    {formatCurrency(selectedStock.historical?.price?.["52_week_high"])}
+                  </p>
+                </div>
+                <div className="text-center p-2 bg-orange-50 rounded">
+                  <p className="text-orange-700">Volume</p>
+                  <p className="font-bold text-orange-900">
+                    {selectedStock.technical_indicators?.volume_average_30d ? 
+                      `${(selectedStock.technical_indicators.volume_average_30d / 1000000).toFixed(1)}M` : 
+                      'N/A'}
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Main Analysis Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl p-1">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white rounded-lg text-xs">
-              <Eye className="w-3 h-3 mr-1" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="historical" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white rounded-lg text-xs">
-              <BarChart3 className="w-3 h-3 mr-1" />
-              Historical
-            </TabsTrigger>
-            <TabsTrigger value="forecast" className="data-[state=active]:bg-green-500 data-[state=active]:text-white rounded-lg text-xs">
-              <Target className="w-3 h-3 mr-1" />
-              Forecast
-            </TabsTrigger>
-            <TabsTrigger value="technical" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white rounded-lg text-xs">
-              <LineChart className="w-3 h-3 mr-1" />
-              Technical
-            </TabsTrigger>
-            <TabsTrigger value="ai-insights" className="data-[state=active]:bg-pink-500 data-[state=active]:text-white rounded-lg text-xs">
-              <Brain className="w-3 h-3 mr-1" />
-              AI Insights
-            </TabsTrigger>
-            <TabsTrigger value="sentiment" className="data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-lg text-xs">
-              <Star className="w-3 h-3 mr-1" />
-              Sentiment
-            </TabsTrigger>
-            <TabsTrigger value="risks" className="data-[state=active]:bg-red-500 data-[state=active]:text-white rounded-lg text-xs">
-              <Shield className="w-3 h-3 mr-1" />
-              Risks
-            </TabsTrigger>
-            <TabsTrigger value="metadata" className="data-[state=active]:bg-gray-500 data-[state=active]:text-white rounded-lg text-xs">
-              <Info className="w-3 h-3 mr-1" />
-              Meta
-            </TabsTrigger>
-          </TabsList>
+        {/* Main Content Grid - All Components Visible */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
 
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {selectedStock.historical?.price && renderDynamicSection(
-                "Price Data", 
-                selectedStock.historical.price, 
-                <DollarSign className="w-5 h-5 text-blue-600" />
-              )}
-              
-              {selectedStock.historical?.market_cap && renderDynamicSection(
-                "Market Capitalization", 
-                selectedStock.historical.market_cap, 
-                <Building className="w-5 h-5 text-green-600" />
-              )}
-            </div>
+          {/* Price Data */}
+          {selectedStock.historical?.price && renderCompactSection(
+            "Price Analysis", 
+            selectedStock.historical.price, 
+            <DollarSign className="w-4 h-4 text-blue-600" />,
+            "border-blue-200"
+          )}
 
-            {selectedStock.historical?.notable_trends && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-purple-600" />
-                    Notable Trends
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {selectedStock.historical.notable_trends.map((trend, index) => (
-                      <div key={index} className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 rounded-lg border">
-                        <p className="text-sm font-medium flex items-start gap-2">
-                          <ChevronRight className="w-4 h-4 mt-0.5 text-purple-600 flex-shrink-0" />
-                          {trend}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+          {/* Market Cap */}
+          {selectedStock.historical?.market_cap && renderCompactSection(
+            "Market Cap", 
+            selectedStock.historical.market_cap, 
+            <Building className="w-4 h-4 text-green-600" />,
+            "border-green-200"
+          )}
 
-            {selectedStock.watchlist_tags && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Star className="w-5 h-5 text-yellow-600" />
-                    Watchlist Tags
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedStock.watchlist_tags.map((tag, index) => (
-                      <Badge key={index} variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
+          {/* Technical Indicators */}
+          {selectedStock.technical_indicators && renderCompactSection(
+            "Technical Indicators", 
+            selectedStock.technical_indicators, 
+            <BarChart2 className="w-4 h-4 text-purple-600" />,
+            "border-purple-200"
+          )}
 
-          {/* Historical Tab */}
-          <TabsContent value="historical" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {selectedStock.historical?.financials && renderDynamicSection(
-                "Financial Data", 
-                selectedStock.historical.financials, 
-                <BarChart3 className="w-5 h-5 text-blue-600" />
-              )}
-              
-              {selectedStock.historical?.dividends && renderDynamicSection(
-                "Dividend Information", 
-                selectedStock.historical.dividends, 
-                <Percent className="w-5 h-5 text-green-600" />
-              )}
-            </div>
+          {/* AI Insights */}
+          {selectedStock.ai_insights && renderCompactSection(
+            "AI Analysis", 
+            selectedStock.ai_insights, 
+            <Brain className="w-4 h-4 text-pink-600" />,
+            "border-pink-200"
+          )}
 
-            {selectedStock.historical?.news && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Newspaper className="w-5 h-5 text-indigo-600" />
-                    Recent News & Events
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4 max-h-96 overflow-y-auto">
-                    {selectedStock.historical.news.map((newsItem, index) => (
-                      <div key={index} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-semibold text-sm">{newsItem.title}</h4>
-                          <div className="flex items-center gap-2">
-                            <Badge variant={
-                              newsItem.impact === "Positive" ? "default" :
-                              newsItem.impact === "Negative" ? "destructive" : "secondary"
-                            }>
-                              {newsItem.impact}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">{newsItem.date}</span>
-                          </div>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{newsItem.summary}</p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
+          {/* Forecast */}
+          {selectedStock.forecast && renderCompactSection(
+            "Forecast", 
+            selectedStock.forecast, 
+            <Target className="w-4 h-4 text-orange-600" />,
+            "border-orange-200"
+          )}
 
-          {/* Forecast Tab */}
-          <TabsContent value="forecast" className="space-y-6">
-            {selectedStock.forecast?.expected_price_range && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="w-5 h-5 text-green-600" />
-                    Price Forecast
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center p-6 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 rounded-xl mb-6">
-                    <p className="text-sm text-muted-foreground mb-2">Expected Price Target</p>
-                    <p className="text-4xl font-bold text-green-600 mb-4">
-                      {formatCurrency(selectedStock.forecast.expected_price_range.expected_average)}
-                    </p>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Low Estimate</p>
-                        <p className="font-semibold text-red-600">
-                          {formatCurrency(selectedStock.forecast.expected_price_range.low)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">High Estimate</p>
-                        <p className="font-semibold text-green-600">
-                          {formatCurrency(selectedStock.forecast.expected_price_range.high)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+          {/* Financials */}
+          {selectedStock.historical?.financials && renderCompactSection(
+            "Financials", 
+            selectedStock.historical.financials, 
+            <Calculator className="w-4 h-4 text-indigo-600" />,
+            "border-indigo-200"
+          )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-muted/50 rounded-lg">
-                      <p className="text-sm text-muted-foreground">Upside Potential</p>
-                      <p className="text-xl font-bold text-green-600">
-                        {formatPercent(selectedStock.forecast.upside_percent)}
-                      </p>
-                    </div>
-                    <div className="text-center p-4 bg-muted/50 rounded-lg">
-                      <p className="text-sm text-muted-foreground">Confidence Level</p>
-                      <p className="text-xl font-bold">{safeValue(selectedStock.forecast.confidence_level)}</p>
-                    </div>
-                    <div className="text-center p-4 bg-muted/50 rounded-lg">
-                      <p className="text-sm text-muted-foreground">EPS Estimate</p>
-                      <p className="text-xl font-bold">{safeValue(selectedStock.forecast.EPS_estimate)}</p>
-                    </div>
-                  </div>
+          {/* Analyst Sentiment */}
+          {selectedStock.analyst_sentiment && renderCompactSection(
+            "Analyst Views", 
+            selectedStock.analyst_sentiment, 
+            <Users className="w-4 h-4 text-teal-600" />,
+            "border-teal-200"
+          )}
 
-                  {selectedStock.forecast.forecast_notes && (
-                    <Alert className="mt-4">
-                      <Lightbulb className="w-4 h-4" />
-                      <AlertDescription>
-                        <strong>Forecast Notes:</strong> {selectedStock.forecast.forecast_notes}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+          {/* Global Exposure */}
+          {selectedStock.global_exposure && renderCompactSection(
+            "Global Exposure", 
+            selectedStock.global_exposure, 
+            <Globe className="w-4 h-4 text-red-600" />,
+            "border-red-200"
+          )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {selectedStock.forecast && renderDynamicSection(
-                "Additional Forecast Data", 
-                Object.fromEntries(
-                  Object.entries(selectedStock.forecast).filter(([key]) => 
-                    !['expected_price_range', 'upside_percent', 'confidence_level', 'forecast_notes'].includes(key)
-                  )
-                ), 
-                <Calendar className="w-5 h-5 text-orange-600" />
-              )}
-            </div>
-          </TabsContent>
+          {/* Pattern Analysis */}
+          {selectedStock.pattern_analysis && renderCompactSection(
+            "Patterns", 
+            selectedStock.pattern_analysis, 
+            <TrendIcon className="w-4 h-4 text-yellow-600" />,
+            "border-yellow-200"
+          )}
 
-          {/* Technical Tab */}
-          <TabsContent value="technical" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {selectedStock.technical_indicators && renderDynamicSection(
-                "Technical Indicators", 
-                selectedStock.technical_indicators, 
-                <Activity className="w-5 h-5 text-blue-600" />
-              )}
-              
-              {selectedStock.pattern_analysis && renderDynamicSection(
-                "Pattern Analysis", 
-                selectedStock.pattern_analysis, 
-                <PieChart className="w-5 h-5 text-purple-600" />
-              )}
-            </div>
+          {/* Dividends */}
+          {selectedStock.historical?.dividends && renderCompactSection(
+            "Dividends", 
+            selectedStock.historical.dividends, 
+            <Percent className="w-4 h-4 text-emerald-600" />,
+            "border-emerald-200"
+          )}
 
-            {selectedStock.technical_indicators?.rsi && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <LineChart className="w-5 h-5 text-orange-600" />
-                    RSI Indicator
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">RSI Value</span>
-                      <Badge variant={
-                        selectedStock.technical_indicators.rsi > 70 ? "destructive" :
-                        selectedStock.technical_indicators.rsi < 30 ? "default" : "secondary"
-                      }>
-                        {selectedStock.technical_indicators.rsi > 70 ? "Overbought" :
-                         selectedStock.technical_indicators.rsi < 30 ? "Oversold" : "Neutral"}
-                      </Badge>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Oversold (30)</span>
-                        <span className="font-bold">{selectedStock.technical_indicators.rsi}</span>
-                        <span>Overbought (70)</span>
-                      </div>
-                      <Progress value={selectedStock.technical_indicators.rsi} className="h-3" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
+          {/* Period Info */}
+          {selectedStock.period && renderCompactSection(
+            "Analysis Period", 
+            selectedStock.period, 
+            <Calendar className="w-4 h-4 text-slate-600" />,
+            "border-slate-200"
+          )}
 
-          {/* AI Insights Tab */}
-          <TabsContent value="ai-insights" className="space-y-6">
-            {selectedStock.ai_insights?.trend_summary && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Brain className="w-5 h-5 text-purple-600" />
-                    AI Trend Summary
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 rounded-xl">
-                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                      {selectedStock.ai_insights.trend_summary}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+          {/* Metadata */}
+          {selectedStock.metadata && renderCompactSection(
+            "Metadata", 
+            selectedStock.metadata, 
+            <Info className="w-4 h-4 text-gray-600" />,
+            "border-gray-200"
+          )}
+        </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {selectedStock.ai_insights?.short_term_analysis && renderDynamicSection(
-                "Short-term Analysis", 
-                selectedStock.ai_insights.short_term_analysis, 
-                <Clock className="w-5 h-5 text-blue-600" />
-              )}
-              
-              {selectedStock.ai_insights?.long_term_analysis && renderDynamicSection(
-                "Long-term Analysis", 
-                selectedStock.ai_insights.long_term_analysis, 
-                <Calendar className="w-5 h-5 text-green-600" />
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {selectedStock.ai_insights?.key_growth_drivers && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-green-600" />
-                      Growth Drivers
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2">
-                      {selectedStock.ai_insights.key_growth_drivers.map((driver, index) => (
-                        <li key={index} className="flex items-start gap-2 p-2 bg-green-50 dark:bg-green-950 rounded-lg">
-                          <div className="w-2 h-2 rounded-full bg-green-500 mt-2 flex-shrink-0" />
-                          <span className="text-sm">{driver}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-              )}
-
-              {selectedStock.ai_insights?.potential_risks && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <AlertTriangle className="w-5 h-5 text-red-600" />
-                      Potential Risks
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2">
-                      {selectedStock.ai_insights.potential_risks.map((risk, index) => (
-                        <li key={index} className="flex items-start gap-2 p-2 bg-red-50 dark:bg-red-950 rounded-lg">
-                          <div className="w-2 h-2 rounded-full bg-red-500 mt-2 flex-shrink-0" />
-                          <span className="text-sm">{risk}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Sentiment Tab */}
-          <TabsContent value="sentiment" className="space-y-6">
-            {selectedStock.analyst_sentiment && renderDynamicSection(
-              "Analyst Sentiment", 
-              selectedStock.analyst_sentiment, 
-              <Users className="w-5 h-5 text-indigo-600" />
-            )}
-
-            {selectedStock.alerts && selectedStock.alerts.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-yellow-600" />
-                    Active Alerts
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {selectedStock.alerts.map((alert, index) => (
-                      <Alert key={index}>
-                        <AlertTriangle className="w-4 h-4" />
-                        <AlertDescription>
-                          <strong>{alert.type}:</strong> {alert.message}
-                        </AlertDescription>
-                      </Alert>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          {/* Risks Tab */}
-          <TabsContent value="risks" className="space-y-6">
-            {selectedStock.global_exposure && renderDynamicSection(
-              "Global Risk Exposure", 
-              selectedStock.global_exposure, 
-              <Globe className="w-5 h-5 text-red-600" />
-            )}
-
-            {selectedStock.global_exposure?.exports_percent !== undefined && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-orange-600" />
-                    Export Exposure Analysis
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="font-medium">Export Exposure</span>
-                        <span className="font-bold">{selectedStock.global_exposure.exports_percent}%</span>
-                      </div>
-                      <Progress value={selectedStock.global_exposure.exports_percent} className="h-3" />
-                    </div>
-                    
-                    {selectedStock.global_exposure.currency_risk && (
-                      <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                        <span className="font-medium">Currency Risk</span>
-                        <Badge variant={
-                          selectedStock.global_exposure.currency_risk === "High" ? "destructive" :
-                          selectedStock.global_exposure.currency_risk === "Medium" ? "default" : "secondary"
-                        }>
-                          {selectedStock.global_exposure.currency_risk}
+        {/* News Section */}
+        {selectedStock.historical?.news && selectedStock.historical.news.length > 0 && (
+          <Card className="mt-4 border-2 border-blue-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Newspaper className="w-5 h-5 text-blue-600" />
+                Recent News & Events
+                <Badge variant="outline">{selectedStock.historical.news.length} items</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {selectedStock.historical.news.slice(0, 6).map((newsItem, index) => (
+                  <div key={index} className="p-3 border rounded-lg hover:bg-blue-50 transition-colors">
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="font-semibold text-sm line-clamp-2">{newsItem.title}</h4>
+                      <div className="flex flex-col items-end gap-1">
+                        <Badge 
+                          variant={
+                            newsItem.impact === "Positive" ? "default" :
+                            newsItem.impact === "Negative" ? "destructive" : "secondary"
+                          }
+                          className="text-xs"
+                        >
+                          {newsItem.impact}
                         </Badge>
+                        <span className="text-xs text-muted-foreground">{newsItem.date}</span>
                       </div>
-                    )}
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-3">{newsItem.summary}</p>
                   </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-          {/* Metadata Tab */}
-          <TabsContent value="metadata" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {selectedStock.period && renderDynamicSection(
-                "Analysis Period", 
-                selectedStock.period, 
-                <Calendar className="w-5 h-5 text-blue-600" />
-              )}
-              
-              {selectedStock.metadata && renderDynamicSection(
-                "Analysis Metadata", 
-                selectedStock.metadata, 
-                <Info className="w-5 h-5 text-gray-600" />
-              )}
-            </div>
+        {/* Notable Trends */}
+        {selectedStock.historical?.notable_trends && (
+          <Card className="mt-4 border-2 border-purple-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-purple-600" />
+                Notable Trends
+                <Badge variant="outline">{selectedStock.historical.notable_trends.length} trends</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {selectedStock.historical.notable_trends.map((trend, index) => (
+                  <div key={index} className="p-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 rounded border">
+                    <p className="text-sm font-medium flex items-start gap-2">
+                      <ChevronRight className="w-3 h-3 mt-0.5 text-purple-600 flex-shrink-0" />
+                      {trend}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-purple-600" />
-                  Complete Data Structure
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="max-h-96 overflow-auto">
-                  <pre className="text-xs bg-muted p-4 rounded-lg overflow-x-auto">
-                    {JSON.stringify(selectedStock, null, 2)}
-                  </pre>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        {/* Watchlist Tags */}
+        {selectedStock.watchlist_tags && (
+          <Card className="mt-4 border-2 border-yellow-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Star className="w-5 h-5 text-yellow-600" />
+                Investment Tags
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {selectedStock.watchlist_tags.map((tag, index) => (
+                  <Badge key={index} variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100 text-xs">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Alerts */}
+        {selectedStock.alerts && selectedStock.alerts.length > 0 && (
+          <Card className="mt-4 border-2 border-red-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+                Active Alerts
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {selectedStock.alerts.map((alert, index) => (
+                  <Alert key={index} className="border-red-200">
+                    <AlertTriangle className="w-4 h-4" />
+                    <AlertDescription className="text-sm">
+                      <strong>{alert.type}:</strong> {alert.message}
+                    </AlertDescription>
+                  </Alert>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Raw Data Preview */}
+        {editMode && (
+          <Card className="mt-4 border-2 border-gray-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <FileText className="w-5 h-5 text-gray-600" />
+                Raw Data Structure
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="max-h-64 overflow-auto">
+                <pre className="text-xs bg-gray-50 p-3 rounded border font-mono">
+                  {JSON.stringify(selectedStock, null, 2)}
+                </pre>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
