@@ -1109,8 +1109,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         news.push(
           {
-            title: `${topGainer.symbol} Surges ${topGainer.changePercent.toFixed(2)}% in Today's Trading`,
-            description: `${topGainer.name} reached Rs. ${topGainer.current} with significant volume of ${topGainer.volume.toLocaleString()} shares, making it today's top performer.`,
+            title: `${topGainer.symbol} Surges ${(topGainer.changePercent || 0).toFixed(2)}% in Today's Trading`,
+            description: `${topGainer.name} reached Rs. ${(topGainer.current || 0).toFixed(2)} with significant volume of ${(topGainer.volume || 0).toLocaleString()} shares, making it today's top performer.`,
             url: `/stock/${topGainer.symbol}`,
             source: "PSX Live",
             publishedAt: new Date().toISOString(),
@@ -1127,8 +1127,8 @@ source: "Market Analysis",
             impact: "medium",
           },
           {
-            title: `${topLoser.symbol} Under Pressure, Down ${Math.abs(topLoser.changePercent).toFixed(2)}%`,
-            description: `${topLoser.name} faces selling pressure, trading at Rs. ${topLoser.current} with increased volume indicating investor concern.`,
+            title: `${topLoser.symbol} Under Pressure, Down ${Math.abs(topLoser.changePercent || 0).toFixed(2)}%`,
+            description: `${topLoser.name} faces selling pressure, trading at Rs. ${(topLoser.current || 0).toFixed(2)} with increased volume indicating investor concern.`,
             url: `/stock/${topLoser.symbol}`,
             source: "PSX Live",
             publishedAt: new Date().toISOString(),

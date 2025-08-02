@@ -793,6 +793,158 @@ export class DatabaseStorage implements IStorage {
   async updateSystemStatus(status: Partial<SystemStatus>): Promise<void> {
     this.systemStatus = { ...this.systemStatus, ...status };
   }
+
+  // Add missing filtering methods
+  async getFilteredStocks(filters: {
+    sector?: string;
+    sectorCode?: string;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<StockData[]> {
+    try {
+      let query = db.select().from(stocksTable);
+      
+      const conditions = [];
+      
+      if (filters.sector) {
+        conditions.push(sql`${stocksTable.sector} ILIKE ${`%${filters.sector}%`}`);
+      }
+      
+      if (filters.sectorCode) {
+        conditions.push(eq(stocksTable.sectorCode, filters.sectorCode));
+      }
+      
+      if (filters.search) {
+        conditions.push(
+          sql`(${stocksTable.symbol} ILIKE ${`%${filters.search}%`} OR ${stocksTable.name} ILIKE ${`%${filters.search}%`})`
+        );
+      }
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+      
+      query = query.orderBy(desc(stocksTable.volume));
+      
+      if (filters.limit) {
+        query = query.limit(filters.limit);
+      }
+      
+      if (filters.offset) {
+        query = query.offset(filters.offset);
+      }
+      
+      return await query;
+    } catch (error) {
+      console.error("Error in getFilteredStocks:", error);
+      // Fallback to basic market data
+      const allStocks = await this.getMarketData();
+      let filtered = allStocks;
+      
+      if (filters.search) {
+        filtered = filtered.filter(stock => 
+          stock.symbol.toLowerCase().includes(filters.search!.toLowerCase()) ||
+          stock.name.toLowerCase().includes(filters.search!.toLowerCase())
+        );
+      }
+      
+      if (filters.sector) {
+        filtered = filtered.filter(stock => 
+          stock.sector.toLowerCase().includes(filters.sector!.toLowerCase())
+        );
+      }
+      
+      if (filters.sectorCode) {
+        filtered = filtered.filter(stock => stock.sectorCode === filters.sectorCode);
+      }
+      
+      // Apply pagination
+      const start = filters.offset || 0;
+      const end = start + (filters.limit || 50);
+      
+      return filtered.slice(start, end);
+    }
+  }
+
+  async getStocksCount(filters: {
+    sector?: string;
+    sectorCode?: string;
+    search?: string;
+  }): Promise<number> {
+    try {
+      let query = db.select({ count: sql<number>`count(*)` }).from(stocksTable);
+      
+      const conditions = [];
+      
+      if (filters.sector) {
+        conditions.push(sql`${stocksTable.sector} ILIKE ${`%${filters.sector}%`}`);
+      }
+      
+      if (filters.sectorCode) {
+        conditions.push(eq(stocksTable.sectorCode, filters.sectorCode));
+      }
+      
+      if (filters.search) {
+        conditions.push(
+          sql`(${stocksTable.symbol} ILIKE ${`%${filters.search}%`} OR ${stocksTable.name} ILIKE ${`%${filters.search}%`})`
+        );
+      }
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+      
+      const result = await query;
+      return result[0]?.count || 0;
+    } catch (error) {
+      console.error("Error in getStocksCount:", error);
+      return 0;
+    }
+  }
+
+  async getFilteredStocksByIndex(indexSymbol: string, options: {
+    limit?: number;
+    offset?: number;
+  }): Promise<StockData[]> {
+    try {
+      // For now, treat KSE100 as top volume stocks
+      if (indexSymbol === "KSE100") {
+        return await this.getFilteredStocks({
+          limit: options.limit || 100,
+          offset: options.offset || 0
+        });
+      }
+      
+      // For other indices, return empty for now
+      return [];
+    } catch (error) {
+      console.error("Error in getFilteredStocksByIndex:", error);
+      return [];
+    }
+  }
+
+  async getStocksCountByIndex(indexSymbol: string): Promise<number> {
+    try {
+      if (indexSymbol === "KSE100") {
+        return Math.min(100, await this.getStocksCount({}));
+      }
+      return 0;
+    } catch (error) {
+      console.error("Error in getStocksCountByIndex:", error);
+      return 0;
+    }
+  }
+
+  async getAvailableIndices(): Promise<any[]> {
+    return [
+      {
+        symbol: "KSE100",
+        name: "KSE 100 Index",
+        description: "Top 100 companies by market capitalization"
+      }
+    ];
+  }
 }
 
 export const storage = new DatabaseStorage();

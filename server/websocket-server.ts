@@ -84,7 +84,7 @@ export class MarketWebSocketServer {
   }
 
   private setupSupabaseRealtime() {
-    // Subscribe to stock table changes for real-time updates
+    // Supabase real-time is ONE of multiple data sources, not the only one
     this.supabaseSubscription = supabase
       .channel('stocks_channel')
       .on(
@@ -95,9 +95,10 @@ export class MarketWebSocketServer {
           table: 'stocks'
         },
         (payload) => {
-          // Broadcast individual stock updates
+          // Broadcast individual stock updates from Supabase real-time
           this.broadcastToClients({
             type: 'stock_update',
+            source: 'supabase_realtime',
             data: {
               symbol: payload.new.symbol,
               current: payload.new.current,
@@ -118,9 +119,10 @@ export class MarketWebSocketServer {
           table: 'stocks'
         },
         (payload) => {
-          // Broadcast new stock additions
+          // Broadcast new stock additions from Supabase real-time
           this.broadcastToClients({
             type: 'new_stock',
+            source: 'supabase_realtime',
             data: payload.new,
             timestamp: new Date().toISOString()
           });
@@ -134,9 +136,10 @@ export class MarketWebSocketServer {
           table: 'market_summaries'
         },
         (payload) => {
-          // Broadcast market summary updates
+          // Broadcast market summary updates from Supabase real-time
           this.broadcastToClients({
             type: 'market_summary_update',
+            source: 'supabase_realtime',
             data: payload.new,
             timestamp: new Date().toISOString()
           });
@@ -144,7 +147,7 @@ export class MarketWebSocketServer {
       )
       .subscribe();
 
-    console.log('🔄 Supabase real-time subscription active for live stock updates');
+    console.log('🔄 Supabase real-time subscription active - ONE of multiple data sources');
   }
 
   private startMarketUpdates() {
@@ -153,7 +156,7 @@ export class MarketWebSocketServer {
       return;
     }
 
-    // Update market data every 30 seconds during market hours
+    // Multiple data source approach: API bridge + WebSocket + Supabase real-time
     this.marketUpdateInterval = setInterval(async () => {
       if (!MarketSchedule.isMarketOpen()) {
         console.log('🕒 Market closed - stopping updates');
@@ -162,38 +165,80 @@ export class MarketWebSocketServer {
       }
 
       try {
-        // Get KSE100 stocks for real-time updates
-        const kse100Stocks = await this.storage.getFilteredStocksByIndex("KSE100", { limit: 100 });
-        const marketSummary = await this.storage.getMarketSummary();
+        // METHOD 1: Fetch fresh data via API bridge (Arif Habib + PSX fallback)
+        const freshData = await this.storage.fetchFreshMarketData();
+        
+        if (freshData && freshData.length > 0) {
+          // Broadcast fresh API data
+          this.broadcastToClients({
+            type: 'market_update',
+            source: 'api_bridge',
+            data: {
+              stocks: freshData.slice(0, 50), // Top 50 by volume
+              summary: await this.storage.getMarketSummary(),
+              total: freshData.length
+            },
+            timestamp: new Date().toISOString()
+          });
 
-        // Broadcast KSE100 updates specifically
-        this.broadcastToClients({
-          type: 'kse100_update',
-          data: {
-            stocks: kse100Stocks,
-            summary: marketSummary,
-            index: "KSE100"
-          },
-          timestamp: new Date().toISOString()
-        });
+          // Broadcast KSE100 specifically from fresh data
+          const kse100Stocks = freshData
+            .filter(stock => stock.listedIn?.includes('KSE100') || freshData.indexOf(stock) < 100)
+            .slice(0, 100);
+          
+          this.broadcastToClients({
+            type: 'kse100_update',
+            source: 'api_bridge',
+            data: {
+              stocks: kse100Stocks,
+              index: "KSE100"
+            },
+            timestamp: new Date().toISOString()
+          });
+        }
 
-        // Also broadcast general market update with top movers
-        const topStocks = await this.storage.getFilteredStocks({ limit: 50 });
+        // METHOD 2: Get database-cached data as fallback
+        const cachedStocks = await this.storage.getFilteredStocks({ limit: 50 });
+        const cachedKSE100 = await this.storage.getFilteredStocksByIndex("KSE100", { limit: 100 });
+        
+        // Broadcast cached data with different source identifier
         this.broadcastToClients({
           type: 'market_update',
+          source: 'database_cache',
           data: {
-            stocks: topStocks,
-            summary: marketSummary
+            stocks: cachedStocks,
+            summary: await this.storage.getMarketSummary()
           },
           timestamp: new Date().toISOString()
         });
 
+        // METHOD 3: Supabase real-time updates are handled separately in setupSupabaseRealtime()
+        // No need to fetch here as they come via real-time subscriptions
+
+        console.log('📊 Multi-source update completed: API bridge + Database cache + Supabase real-time');
+
       } catch (error) {
-        console.error('Error updating market data:', error);
+        console.error('Error in multi-source market data update:', error);
+        
+        // Final fallback: try to get any available data
+        try {
+          const fallbackStocks = await this.storage.getMarketData();
+          this.broadcastToClients({
+            type: 'market_update',
+            source: 'fallback',
+            data: {
+              stocks: fallbackStocks.slice(0, 50),
+              summary: await this.storage.getMarketSummary()
+            },
+            timestamp: new Date().toISOString()
+          });
+        } catch (fallbackError) {
+          console.error('Even fallback failed:', fallbackError);
+        }
       }
     }, 30000);
 
-    console.log('📊 Market data updates started (30s interval) with KSE100 focus');
+    console.log('📊 Multi-source market data updates started: API Bridge + WebSocket + Supabase Real-time');
   }
 
   private stopMarketUpdates() {
