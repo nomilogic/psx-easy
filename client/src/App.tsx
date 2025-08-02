@@ -9,6 +9,7 @@ import StockDetail from "@/pages/stock-detail";
 import NotFound from "@/pages/not-found";
 import ApiDashboard from "@/pages/api-dashboard";
 import AiAnalysis from "@/pages/ai-analysis-new";
+import AIAnalysisComprehensive from "@/pages/ai-analysis-comprehensive";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,6 +28,7 @@ function AppContent() {
     if (location === "/") return "home";
     if (location === "/api") return "api";
     if (location === "/ai-analysis") return "ai-analysis";
+    if (location === "/ai-comprehensive") return "ai-comprehensive";
     if (location.startsWith("/stock/")) return "stock-detail";
     return "home";
   };
@@ -52,6 +54,7 @@ function AppContent() {
         <Route path="/stock/:symbol" component={StockDetail} />
         <Route path="/api" component={ApiDashboard} />
         <Route path="/ai-analysis" component={AiAnalysis} />
+        <Route path="/ai-comprehensive" component={AIAnalysisComprehensive} />
         <Route component={NotFound} />
       </Switch>
       <Toaster />

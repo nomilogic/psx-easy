@@ -1,0 +1,380 @@
+
+{
+  "stock": {
+    "ticker": "string",
+    "company_name": "string",
+    "exchange": "string",
+    "sector": "string",
+    "country": "string",
+    "currency": "string",
+    "isin": "string",
+    "website": "string",
+    "logo_url": "string"
+  },
+
+  "period": {
+    "historical_from": "YYYY-MM-DD",
+    "historical_to": "YYYY-MM-DD",
+    "forecast_to": "YYYY-MM-DD",
+    "last_updated": "YYYY-MM-DD"
+  },
+
+  "charts": {
+    "candlestick": [
+      {
+        "date": "YYYY-MM-DD",
+        "open": "number",
+        "high": "number",
+        "low": "number",
+        "close": "number",
+        "volume": "number"
+      }
+    ],
+    "line_chart": [
+      {
+        "date": "YYYY-MM-DD",
+        "close": "number"
+      }
+    ],
+    "volume_chart": [
+      {
+        "date": "YYYY-MM-DD",
+        "volume": "number"
+      }
+    ]
+  },
+
+  "historical": {
+    "price": {
+      "start_price": "number",
+      "end_price": "number",
+      "change_percent": "number",
+      "52_week_high": "number",
+      "52_week_low": "number",
+      "volatility_weekly_percent": "number"
+    },
+    "market_cap": {
+      "start": "number",
+      "end": "number",
+      "unit": "billion",
+      "change_percent": "number"
+    },
+    "financials": {
+      "revenue": {
+        "YYYY": "number"
+      },
+      "net_income": {
+        "YYYY": "number"
+      },
+      "EPS": {
+        "YYYY": "number"
+      },
+      "margins": {
+        "net_profit_margin": "number",
+        "gross_profit_margin": "number"
+      }
+    },
+    "dividends": {
+      "annual_yield_percent": "number",
+      "payouts": [
+        {
+          "date": "YYYY-MM-DD",
+          "amount_percent": "number"
+        }
+      ]
+    },
+    "news": [
+      {
+        "date": "YYYY-MM-DD",
+        "title": "string",
+        "impact": "Strong Positive | Positive | Neutral | Negative | Strong Negative",
+        "summary": "string"
+      }
+    ],
+    "notable_trends": [
+      {
+        "label": "Bear Run | Recovery | Bull Run | Sideways",
+        "start": "YYYY-MM-DD",
+        "end": "YYYY-MM-DD",
+        "description": "string"
+      }
+    ]
+  },
+
+  "forecast": {
+    "expected_price_range": {
+      "low": "number",
+      "high": "number",
+      "expected_average": "number"
+    },
+    "EPS_estimate": "number",
+    "revenue_estimate": "number",
+    "net_income_estimate": "number",
+    "dividends_expected": [
+      {
+        "quarter": "Qx YYYY",
+        "dividend_percent": "number"
+      }
+    ],
+    "price_target": "number",
+    "upside_percent": "number",
+    "confidence_level": "Low | Moderate | High",
+    "forecast_notes": "string"
+  },
+
+  "technical_indicators": {
+    "rsi": "number",
+    "moving_averages": {
+      "20_day": "number",
+      "50_day": "number",
+      "100_day": "number",
+      "200_day": "number"
+    },
+    "macd": {
+      "value": "number",
+      "signal": "number",
+      "histogram": "number"
+    },
+    "bollinger_bands": {
+      "upper": "number",
+      "lower": "number",
+      "basis": "number"
+    },
+    "volume_average_30d": "number",
+    "adx": "number"
+  },
+
+  "pattern_analysis": {
+    "detected_patterns": [
+      {
+        "pattern": "Cup and Handle | Double Top | Head and Shoulders | Flag | Wedge | Triangle",
+        "start_date": "YYYY-MM-DD",
+        "end_date": "YYYY-MM-DD",
+        "confidence": "Low | Moderate | High",
+        "signal": "Bullish | Bearish | Neutral"
+      }
+    ]
+  },
+
+  "analyst_sentiment": {
+    "recommendation": "Buy | Hold | Sell",
+    "price_target_range": {
+      "low": "number",
+      "average": "number",
+      "high": "number"
+    },
+    "analysts_count": "number",
+    "summary": "string"
+  },
+
+  "ai_insights": {
+    "trend_summary": "string",
+    "short_term_analysis": {
+      "bias": "Bullish | Bearish | Neutral",
+      "support_levels": ["number"],
+      "resistance_levels": ["number"],
+      "volatility": "Low | Medium | High",
+      "momentum": "Rising | Falling | Flat"
+    },
+    "long_term_analysis": {
+      "trend": "Uptrend | Downtrend | Sideways",
+      "valuation": "Undervalued | Overvalued | Fairly Priced",
+      "sector_performance": "Outperforming | Underperforming",
+      "macro_impact": "Positive | Negative | Neutral",
+      "fundamental_strength": "Strong | Average | Weak"
+    },
+    "key_growth_drivers": ["string"],
+    "potential_risks": ["string"],
+    "ai_rating": "Strong Buy | Buy | Hold | Sell | Avoid",
+    "investment_type": "Growth | Value | Dividend | Balanced | Speculative"
+  },
+
+  "watchlist_tags": ["High Dividend", "Blue Chip", "Speculative", "Recovery", "Turnaround", "Breakout"],
+
+  "alerts": [
+    {
+      "type": "Price Target | RSI Overbought | MACD Crossover | Pattern Formed",
+      "message": "string",
+      "date_triggered": "YYYY-MM-DD"
+    }
+  ],
+
+  "global_exposure": {
+    "exports_percent": "number",
+    "currency_risk": "High | Low | Moderate",
+    "international_investors": ["BlackRock", "Vanguard", "Others"]
+  },
+
+  "metadata": {
+    "source": "AI | Human Analyst | Hybrid",
+    "model_version": "v1.5.0",
+    "generated_on": "YYYY-MM-DD",
+    "language": "en"
+  }
+}
+
+{
+  "stock": {
+    "ticker": "OGDC",
+    "company_name": "Oil & Gas Development Company",
+    "exchange": "PSX",
+    "sector": "Energy",
+    "country": "Pakistan",
+    "currency": "PKR",
+    "isin": "PK1234567890",
+    "website": "https://ogdcl.com",
+    "logo_url": "https://example.com/logo.png"
+  },
+
+  "when_was_this_analysis_generated": "2025-08-02",
+  "what_is_the_current_trend": "Bullish",
+
+  "what_are_the_latest_prices_and_chart_data": {
+    "latest_close": 135.2,
+    "52_week_high": 145.0,
+    "52_week_low": 98.5,
+    "candlestick_data": [ /* last 30 days of OHLC */ ],
+    "volume_data": [ /* volume per day */ ]
+  },
+
+  "what_are_the_technical_indicators_saying": {
+    "rsi": {
+      "value": 58,
+      "interpretation": "Neutral"
+    },
+    "macd": {
+      "line": -0.1,
+      "signal": -0.2,
+      "histogram": 0.1,
+      "trend": "Bullish"
+    },
+    "moving_averages": {
+      "20_day": 134.5,
+      "50_day": 130.2,
+      "200_day": 122.3,
+      "signal": "Golden Cross"
+    },
+    "bollinger_bands": {
+      "upper": 138.2,
+      "lower": 128.1,
+      "status": "Within Range"
+    },
+    "stochastic_oscillator": {
+      "k": 78,
+      "d": 72,
+      "signal": "Overbought"
+    }
+  },
+
+  "what_patterns_have_been_detected": [
+    {
+      "pattern": "Cup and Handle",
+      "confidence": "High",
+      "signal": "Bullish",
+      "detected_from": "2025-06-01",
+      "to": "2025-07-25"
+    }
+  ],
+
+  "what_is_the_short_term_outlook": {
+    "bias": "Bullish",
+    "momentum": "Rising",
+    "support_levels": [132.0, 128.5],
+    "resistance_levels": [138.5, 142.0],
+    "volatility": "Medium",
+    "investment_window_days": 7
+  },
+
+  "what_is_the_long_term_outlook": {
+    "trend": "Uptrend",
+    "valuation": "Undervalued",
+    "macro_sentiment": "Positive",
+    "industry_position": "Outperforming",
+    "holding_period_months": 12
+  },
+
+  "what_do_ai_models_predict_for_future": {
+    "forecast_range": {
+      "low": 125,
+      "expected": 145,
+      "high": 162
+    },
+    "ai_rating": "Strong Buy",
+    "confidence": 0.89,
+    "investment_type": "Growth",
+    "potential_risks": [
+      "Oil price fluctuations",
+      "Regulatory changes",
+      "Political instability"
+    ],
+    "growth_drivers": [
+      "Increased export demand",
+      "Government energy reforms",
+      "Rising global oil prices"
+    ]
+  },
+
+  "how_has_the_stock_performed_in_past_2_years": {
+    "price_change_percent": 34.5,
+    "volatility_30d_avg": 2.3,
+    "market_cap_growth": "22%",
+    "dividend_yield_avg": "6.5%",
+    "key_news_events": [
+      {
+        "date": "2024-10-05",
+        "title": "OGDC signs new LNG deal",
+        "impact": "Strong Positive"
+      },
+      {
+        "date": "2023-11-20",
+        "title": "Regulatory pressure on energy firms",
+        "impact": "Negative"
+      }
+    ],
+    "notable_trends": [
+      {
+        "type": "Recovery",
+        "from": "2024-03-01",
+        "to": "2024-07-15",
+        "description": "Recovered after hitting 2-year low"
+      }
+    ]
+  },
+
+  "what_are_the_analysts_saying": {
+    "analyst_sentiment": "Buy",
+    "target_range": {
+      "low": 132,
+      "avg": 148,
+      "high": 165
+    },
+    "analysts_covered": 9,
+    "summary": "Analysts expect continued upside driven by increased global demand and favorable policy environment."
+  },
+
+  "are_there_any_alerts_or_watch_tags": {
+    "tags": ["Breakout", "Recovery", "Blue Chip", "High Dividend"],
+    "alerts": [
+      {
+        "type": "MACD Crossover",
+        "triggered_on": "2025-07-30",
+        "description": "MACD line crossed signal upwards"
+      }
+    ]
+  },
+
+  "is_this_stock_exposed_to_global_risks": {
+    "exports_percent": 38,
+    "currency_risk": "Moderate",
+    "foreign_ownership": ["Vanguard", "Templeton"],
+    "geo_dependency": ["China", "Gulf region"]
+  },
+
+  "meta": {
+    "source": "Gemini AI",
+    "model_version": "gpt-4o",
+    "schema_version": "v3.0",
+    "generated_on": "2025-08-02",
+    "language": "en"
+  }
+}

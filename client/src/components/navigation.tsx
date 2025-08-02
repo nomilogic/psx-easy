@@ -27,6 +27,7 @@ export default function Navigation() {
     { path: "/", label: "Home", icon: Home },
     { path: "/api", label: "Market Data", icon: BarChart3 },
     { path: "/ai-analysis", label: "AI Analysis", icon: Brain },
+    { path: "/ai-comprehensive", label: "AI Stock Analysis", icon: Bot },
   ];
 
   const isActive = (path: string) => {
