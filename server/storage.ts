@@ -518,6 +518,37 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Method to extract and store sectors from stock data
+  async updateSectorsFromStocks(stocks: StockData[]): Promise<void> {
+    try {
+      const sectorMap = new Map<string, SectorData>();
+
+      stocks.forEach(stock => {
+        if (stock.sector && stock.sectorCode) {
+          const key = stock.sectorCode;
+          if (!sectorMap.has(key)) {
+            sectorMap.set(key, {
+              name: stock.sector,
+              code: stock.sectorCode,
+              volume: stock.volume
+            });
+          } else {
+            // Add volume to existing sector
+            const existing = sectorMap.get(key)!;
+            existing.volume += stock.volume;
+          }
+        }
+      });
+
+      const sectors = Array.from(sectorMap.values());
+      await this.setSectors(sectors);
+
+      console.log(`Updated ${sectors.length} sectors from stock data`);
+    } catch (error) {
+      console.error("Error updating sectors from stocks:", error);
+    }
+  }
+
   async getPerformers(): Promise<PerformersData | null> {
     return this.performers;
   }

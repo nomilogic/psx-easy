@@ -84,27 +84,67 @@ export class MarketWebSocketServer {
   }
 
   private setupSupabaseRealtime() {
-    // Subscribe to stock table changes
+    // Subscribe to stock table changes for real-time updates
     this.supabaseSubscription = supabase
       .channel('stocks_channel')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'stocks'
         },
         (payload) => {
+          // Broadcast individual stock updates
           this.broadcastToClients({
             type: 'stock_update',
-            data: payload,
+            data: {
+              symbol: payload.new.symbol,
+              current: payload.new.current,
+              change: payload.new.change,
+              changePercent: payload.new.change_percent,
+              volume: payload.new.volume,
+              isPositive: payload.new.is_positive
+            },
+            timestamp: new Date().toISOString()
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'stocks'
+        },
+        (payload) => {
+          // Broadcast new stock additions
+          this.broadcastToClients({
+            type: 'new_stock',
+            data: payload.new,
+            timestamp: new Date().toISOString()
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'market_summaries'
+        },
+        (payload) => {
+          // Broadcast market summary updates
+          this.broadcastToClients({
+            type: 'market_summary_update',
+            data: payload.new,
             timestamp: new Date().toISOString()
           });
         }
       )
       .subscribe();
 
-    console.log('🔄 Supabase real-time subscription active');
+    console.log('🔄 Supabase real-time subscription active for live stock updates');
   }
 
   private startMarketUpdates() {
@@ -122,15 +162,27 @@ export class MarketWebSocketServer {
       }
 
       try {
-        // Get latest market data from database (no external fetching)
-        const marketData = await this.storage.getMarketData();
+        // Get KSE100 stocks for real-time updates
+        const kse100Stocks = await this.storage.getFilteredStocksByIndex("KSE100", { limit: 100 });
         const marketSummary = await this.storage.getMarketSummary();
 
-        // Broadcast to all connected clients
+        // Broadcast KSE100 updates specifically
+        this.broadcastToClients({
+          type: 'kse100_update',
+          data: {
+            stocks: kse100Stocks,
+            summary: marketSummary,
+            index: "KSE100"
+          },
+          timestamp: new Date().toISOString()
+        });
+
+        // Also broadcast general market update with top movers
+        const topStocks = await this.storage.getFilteredStocks({ limit: 50 });
         this.broadcastToClients({
           type: 'market_update',
           data: {
-            stocks: marketData.slice(0, 100), // Send top 100 for performance
+            stocks: topStocks,
             summary: marketSummary
           },
           timestamp: new Date().toISOString()
@@ -141,7 +193,7 @@ export class MarketWebSocketServer {
       }
     }, 30000);
 
-    console.log('📊 Market data updates started (30s interval)');
+    console.log('📊 Market data updates started (30s interval) with KSE100 focus');
   }
 
   private stopMarketUpdates() {

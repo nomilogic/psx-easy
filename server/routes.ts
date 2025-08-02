@@ -100,83 +100,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // All stocks endpoint with filtering
+  // Initialize market data - Full fetch and replace
+  app.post("/api/market/initialize", async (req, res) => {
+    try {
+      console.log("Starting market data initialization...");
+      
+      // Fetch fresh data from Arif Habib API
+      const freshData = await storage.fetchFreshMarketData();
+      
+      if (freshData && freshData.length > 0) {
+        console.log(`Successfully initialized ${freshData.length} stocks`);
+        res.json({
+          message: `Market data initialized with ${freshData.length} stocks`,
+          count: freshData.length,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        res.status(500).json({ error: "Failed to initialize market data" });
+      }
+    } catch (error) {
+      console.error("Error initializing market data:", error);
+      res.status(500).json({ error: "Failed to initialize market data" });
+    }
+  });
+
+  // Update market data - Incremental updates only
+  app.post("/api/market/update", async (req, res) => {
+    try {
+      console.log("Starting market data update...");
+      
+      // Get current data for comparison
+      const currentData = await storage.getMarketData();
+      const freshData = await storage.fetchFreshMarketData();
+      
+      if (freshData && freshData.length > 0) {
+        // Update only changed fields
+        let updatedCount = 0;
+        for (const stock of freshData) {
+          const existing = currentData.find(s => s.symbol === stock.symbol);
+          if (!existing || 
+              existing.current !== stock.current || 
+              existing.volume !== stock.volume ||
+              existing.change !== stock.change) {
+            updatedCount++;
+          }
+        }
+        
+        await storage.setMarketData(freshData);
+        
+        console.log(`Updated ${updatedCount} stocks with changes`);
+        res.json({
+          message: `Market data updated - ${updatedCount} stocks changed`,
+          totalStocks: freshData.length,
+          updatedCount: updatedCount,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        res.status(500).json({ error: "Failed to update market data" });
+      }
+    } catch (error) {
+      console.error("Error updating market data:", error);
+      res.status(500).json({ error: "Failed to update market data" });
+    }
+  });
+
+  // Optimized stocks endpoint with database-level filtering
   app.get("/api/stocks", async (req, res) => {
     try {
-      const { sector, index, sector_code, listed_in, limit, offset, search } = req.query;
+      const { sector, sector_code, search, limit, offset } = req.query;
       
-      let stocks = await storage.getMarketData();
+      // Use database filtering instead of in-memory filtering
+      const stocks = await storage.getFilteredStocks({
+        sector: sector as string,
+        sectorCode: sector_code as string,
+        search: search as string,
+        limit: limit ? parseInt(limit as string, 10) : 50,
+        offset: offset ? parseInt(offset as string, 10) : 0
+      });
       
-      // Apply search filter first if provided
-      if (search && typeof search === 'string') {
-        const searchTerm = search.toLowerCase();
-        stocks = stocks.filter(stock => 
-          stock.symbol.toLowerCase().includes(searchTerm) ||
-          stock.name.toLowerCase().includes(searchTerm) ||
-          stock.sector.toLowerCase().includes(searchTerm)
-        );
-      }
-      
-      // Apply sector filter
-      if (sector && typeof sector === 'string') {
-        stocks = stocks.filter(stock => 
-          stock.sector.toLowerCase().includes(sector.toLowerCase())
-        );
-      }
-      
-      // Apply index filter (legacy parameter name)
-      if (index && typeof index === 'string') {
-        stocks = stocks.filter(stock => 
-          stock.listedIn && Array.isArray(stock.listedIn) && 
-          stock.listedIn.some(idx => 
-            idx.toLowerCase().includes(index.toLowerCase())
-          )
-        );
-      }
-      
-      // Apply listed_in filter (preferred parameter name)
-      if (listed_in && typeof listed_in === 'string') {
-        stocks = stocks.filter(stock => 
-          stock.listedIn && Array.isArray(stock.listedIn) && 
-          stock.listedIn.some(idx => 
-            idx.toLowerCase().includes(listed_in.toLowerCase())
-          )
-        );
-      }
-      
-      // Apply sector_code filter
-      if (sector_code && typeof sector_code === 'string') {
-        stocks = stocks.filter(stock => 
-          stock.sectorCode === sector_code
-        );
-      }
-      
-      // Apply pagination
-      const startIndex = offset ? parseInt(offset as string, 10) : 0;
-      const limitNum = limit ? parseInt(limit as string, 10) : 50; // Default limit
-      const endIndex = startIndex + limitNum;
-      const paginatedStocks = stocks.slice(startIndex, endIndex);
+      const totalCount = await storage.getStocksCount({
+        sector: sector as string,
+        sectorCode: sector_code as string,
+        search: search as string
+      });
       
       res.json({
-        stocks: paginatedStocks,
-        total: stocks.length,
-        filtered: paginatedStocks.length,
+        stocks: stocks,
+        total: totalCount,
         pagination: {
-          offset: startIndex,
-          limit: limitNum,
-          hasMore: endIndex < stocks.length
+          offset: offset ? parseInt(offset as string, 10) : 0,
+          limit: limit ? parseInt(limit as string, 10) : 50,
+          hasMore: (offset ? parseInt(offset as string, 10) : 0) + stocks.length < totalCount
         },
         filters: {
           sector: sector || null,
-          index: index || null,
-          listed_in: listed_in || null,
           sector_code: sector_code || null,
           search: search || null
-        },
-        availableFilters: {
-          sectors: Array.from(new Set(stocks.map(s => s.sector))).sort(),
-          indices: Array.from(new Set(stocks.flatMap(s => s.listedIn || []))).sort(),
-          sectorCode: Array.from(new Set(stocks.map(s => s.sectorCode).filter(Boolean))).sort()
         }
       });
     } catch (error) {
@@ -250,26 +269,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // KSE100 default endpoint
+  app.get("/api/kse100", async (req, res) => {
+    try {
+      const { limit, offset } = req.query;
+      
+      const stocks = await storage.getFilteredStocksByIndex("KSE100", {
+        limit: limit ? parseInt(limit as string, 10) : 100,
+        offset: offset ? parseInt(offset as string, 10) : 0
+      });
+      
+      const total = await storage.getStocksCountByIndex("KSE100");
+      
+      res.json({
+        stocks: stocks,
+        total: total,
+        index: "KSE100",
+        pagination: {
+          offset: offset ? parseInt(offset as string, 10) : 0,
+          limit: limit ? parseInt(limit as string, 10) : 100,
+          hasMore: (offset ? parseInt(offset as string, 10) : 0) + stocks.length < total
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching KSE100 stocks:", error);
+      res.status(500).json({ error: "Failed to fetch KSE100 stocks" });
+    }
+  });
+
   // Available indices endpoint
   app.get("/api/indices", async (req, res) => {
     try {
-      const stocks = await storage.getMarketData();
-      const allIndices = new Set<string>();
-      
-      stocks.forEach(stock => {
-        if (stock.listedIn && Array.isArray(stock.listedIn)) {
-          stock.listedIn.forEach(index => allIndices.add(index));
-        }
-      });
-      
-      const indices = Array.from(allIndices).sort().map(index => ({
-        code: index,
-        name: index,
-        stockCount: stocks.filter(s => 
-          s.listedIn && s.listedIn.includes(index)
-        ).length
-      }));
-      
+      const indices = await storage.getAvailableIndices();
       res.json(indices);
     } catch (error) {
       console.error("Error fetching indices:", error);

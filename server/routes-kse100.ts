@@ -6,38 +6,49 @@ const router = Router();
 // Create a pool for database queries
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-// **Get stocks by index (KSE100, etc.)**
+// **Get stocks by index (KSE100, etc.) with optimized database filtering**
 router.get("/api/stocks/:indexSymbol", async (req, res) => {
   try {
     const { indexSymbol } = req.params;
+    const { limit, offset } = req.query;
 
-    // Get constituent stocks for the index
-    // const constituents = await pool.query(
-    //   'SELECT stock_symbol FROM stocks WHERE index_symbol = $1',
-    //   [indexSymbol]
-    // );
-
-    // if (constituents.rows.length === 0) {
-    //   return res.json([]);
-    // }
-
-    // // Get stock data for constituents
-    // const symbols = constituents.rows.map(row => row.stock_symbol);
-    // const placeholders = symbols.map((_, i) => `$${i + 1}`).join(',');
+    const limitNum = limit ? parseInt(limit as string, 10) : 100;
+    const offsetNum = offset ? parseInt(offset as string, 10) : 0;
 
     const stocksQuery = `
       SELECT 
         symbol, name, sector, ldcp, open, high, low, current, 
-        change, change_percent as "changePercent", volume, is_positive as "isPositive"
+        change, change_percent as "changePercent", volume, is_positive as "isPositive",
+        sector_code as "sectorCode", listed_in as "listedIn"
       FROM stocks
-      WHERE listed_in @> '["${indexSymbol}"]'
+      WHERE listed_in @> $1
       ORDER BY current DESC
+      LIMIT $2 OFFSET $3
     `;
-    console.log(stocksQuery, "data");
 
-    const stocks = await pool.query(stocksQuery, []);
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM stocks
+      WHERE listed_in @> $1
+    `;
 
-    res.json(stocks.rows);
+    const [stocks, countResult] = await Promise.all([
+      pool.query(stocksQuery, [JSON.stringify([indexSymbol]), limitNum, offsetNum]),
+      pool.query(countQuery, [JSON.stringify([indexSymbol])])
+    ]);
+
+    const total = parseInt(countResult.rows[0].total);
+
+    res.json({
+      stocks: stocks.rows,
+      total: total,
+      index: indexSymbol,
+      pagination: {
+        offset: offsetNum,
+        limit: limitNum,
+        hasMore: offsetNum + stocks.rows.length < total
+      }
+    });
   } catch (error) {
     console.error(
       `Error fetching stocks for index ${req.params.indexSymbol}:`,

@@ -67,5 +67,28 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+
+    // Initialize market data on startup
+    initializeMarketData();
   });
 })();
+
+// Initialize market data from Arif Habib API on startup
+async function initializeMarketData() {
+  try {
+    console.log("🚀 Initializing market data on startup...");
+
+    const { storage } = await import("./storage");
+    const freshData = await storage.fetchFreshMarketData();
+
+    if (freshData && freshData.length > 0) {
+      // Update sectors from stock data
+      await storage.updateSectorsFromStocks(freshData);
+      console.log(`✅ Initialized ${freshData.length} stocks on startup`);
+    } else {
+      console.log("⚠️ No data available for initialization");
+    }
+  } catch (error) {
+    console.error("❌ Failed to initialize market data on startup:", error);
+  }
+}
