@@ -133,12 +133,6 @@ function AIAnalysisPage() {
   const stocks = Array.isArray(stocksData) ? stocksData : 
                  (stocksData?.stocks && Array.isArray(stocksData.stocks)) ? stocksData.stocks : [];
 
-  // Auto-load data on component mount
-  useEffect(() => {
-    fetchMarketInsights();
-    fetchIndexData();
-  }, []);
-
   // Debug logging
   console.log('Stocks data:', { stocksData, stocks, length: stocks.length, loading: stocksLoading });
 
@@ -282,6 +276,12 @@ function AIAnalysisPage() {
       volume: item[2]
     }));
   };
+
+  // Auto-load data on component mount - placed after all function definitions
+  useEffect(() => {
+    fetchMarketInsights();
+    fetchIndexData();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20">
