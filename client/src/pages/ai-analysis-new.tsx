@@ -141,6 +141,26 @@ function AIAnalysisPage() {
     stock.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Show loading state only if actually loading
+  if (stocksLoading && stocks.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading AI Analysis Tools...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Auto-load data on component mount
+  useEffect(() => {
+    fetchMarketInsights();
+    fetchIndexData();
+  }, []);
+
   const fetchIndexData = async () => {
     try {
       const promises = MAJOR_INDICES.map(async (index) => {
@@ -248,57 +268,11 @@ function AIAnalysisPage() {
     }
   };
 
-  const formatCurrency = (amount?: number | null) => {
-    if (amount === null || amount === undefined || isNaN(amount)) return 'N/A';
-    return `Rs. ${amount.toLocaleString()}`;
-  };
-  
-  const formatPercent = (percent?: number | null) => {
-    if (percent === null || percent === undefined || isNaN(percent)) return 'N/A';
-    return `${percent >= 0 ? '+' : ''}${percent.toFixed(2)}%`;
-  };
+  const formatCurrency = (amount: number) => `Rs. ${amount.toLocaleString()}`;
+  const formatPercent = (percent: number) => `${percent >= 0 ? '+' : ''}${percent.toFixed(2)}%`;
 
-  const formatNumber = (num?: number | null) => {
-    if (num === null || num === undefined || isNaN(num)) return 'N/A';
-    return num.toLocaleString();
-  };
-
-  const safeString = (str?: string | null) => {
-    return str || 'N/A';
-  };
-
-  const renderHTMLContent = (htmlContent?: string | null) => {
-    if (!htmlContent) return <p className="text-gray-500">No content available</p>;
+  const renderHTMLContent = (htmlContent: string) => {
     return <div dangerouslySetInnerHTML={{ __html: htmlContent }} className="prose prose-sm max-w-none dark:prose-invert prose-blue" />;
-  };
-
-  const renderDynamicData = (data: any, title: string) => {
-    if (!data || typeof data !== 'object') return null;
-    
-    return (
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle className="text-lg">{title}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {Object.entries(data).map(([key, value]) => (
-              <div key={key} className="p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm font-medium text-gray-600 capitalize">
-                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                </p>
-                <p className="text-lg font-bold text-gray-900">
-                  {value === null || value === undefined ? 'N/A' : 
-                   typeof value === 'number' ? formatNumber(value) : 
-                   typeof value === 'string' ? value : 
-                   JSON.stringify(value)}
-                </p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
   };
 
   const getIndexChartData = (data: number[][]) => {
@@ -309,28 +283,6 @@ function AIAnalysisPage() {
     }));
   };
 
-  // Auto-load data on component mount - placed after all function definitions
-  useEffect(() => {
-    fetchMarketInsights();
-    fetchIndexData();
-  }, []);
-
-  // Show loading state only if actually loading
-  if (stocksLoading && stocks.length === 0) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading AI Analysis Tools...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900/20 dark:to-indigo-900/20">
       <div className="container mx-auto px-4 py-6">
@@ -338,18 +290,11 @@ function AIAnalysisPage() {
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <div className="space-y-3">
-              <div className="flex gap-2">
-                <Link href="/">
-                  <Button variant="ghost" size="sm" className="mb-2 hover:bg-blue-100 dark:hover:bg-blue-900/50">
-                    <ArrowLeft className="w-4 h-4 mr-2" /> Dashboard
-                  </Button>
-                </Link>
-                <Link href="/stock-ai-plus">
-                  <Button variant="outline" size="sm" className="mb-2 hover:bg-purple-100 dark:hover:bg-purple-900/50">
-                    <Sparkles className="w-4 h-4 mr-2" /> Stock AI+
-                  </Button>
-                </Link>
-              </div>
+              <Link href="/">
+                <Button variant="ghost" size="sm" className="mb-2 hover:bg-blue-100 dark:hover:bg-blue-900/50">
+                  <ArrowLeft className="w-4 h-4 mr-2" /> Dashboard
+                </Button>
+              </Link>
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
                   <Brain className="w-8 h-8 text-white" />
@@ -427,22 +372,22 @@ function AIAnalysisPage() {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {indexData.slice(0, 6).map((index, idx) => {
-                      const latestData = index?.data?.[index.data.length - 1];
-                      const prevData = index?.data?.[index.data.length - 2];
-                      const change = latestData && prevData && latestData[1] && prevData[1] ? 
+                      const latestData = index.data?.[index.data.length - 1];
+                      const prevData = index.data?.[index.data.length - 2];
+                      const change = latestData && prevData ? 
                         ((latestData[1] - prevData[1]) / prevData[1] * 100) : 0;
 
                       return (
-                        <div key={index?.symbol || idx} className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border">
+                        <div key={index.symbol} className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border">
                           <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-bold text-gray-900">{safeString(index?.symbol)}</h3>
+                            <h3 className="font-bold text-gray-900">{index.symbol}</h3>
                             <Badge className={`${change >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} text-xs`}>
                               {formatPercent(change)}
                             </Badge>
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-lg font-bold">
-                              {latestData && latestData[1] ? formatNumber(latestData[1]) : 'Loading...'}
+                              {latestData && latestData[1] ? latestData[1].toLocaleString() : 'Loading...'}
                             </span>
                             {change >= 0 ? 
                               <ArrowUpRight className="w-4 h-4 text-green-500" /> : 
@@ -585,36 +530,23 @@ function AIAnalysisPage() {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl">
                         <p className="text-sm text-blue-700">Total Stocks</p>
-                        <p className="text-2xl font-bold text-blue-900">{formatNumber(marketInsights?.marketData?.totalStocks)}</p>
+                        <p className="text-2xl font-bold text-blue-900">{marketInsights.marketData.totalStocks}</p>
                       </div>
                       <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
                         <p className="text-sm text-green-700">Avg Change</p>
-                        <p className="text-2xl font-bold text-green-900">{safeString(marketInsights?.marketData?.avgChange)}%</p>
+                        <p className="text-2xl font-bold text-green-900">{marketInsights.marketData.avgChange}%</p>
                       </div>
                       <div className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl">
                         <p className="text-sm text-purple-700">Volume</p>
                         <p className="text-2xl font-bold text-purple-900">
-                          {marketInsights?.marketData?.totalVolume ? 
-                            `${(marketInsights.marketData.totalVolume / 1000000).toFixed(0)}M` : 'N/A'}
+                          {((marketInsights.marketData.totalVolume || 0) / 1000000).toFixed(0)}M
                         </p>
                       </div>
                       <div className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl">
                         <p className="text-sm text-orange-700">Top Gainers</p>
-                        <p className="text-2xl font-bold text-orange-900">{formatNumber(marketInsights?.marketData?.topGainers?.length)}</p>
+                        <p className="text-2xl font-bold text-orange-900">{marketInsights.marketData.topGainers?.length || 0}</p>
                       </div>
                     </div>
-
-                    {/* Render any additional market data dynamically */}
-                    {marketInsights?.marketData && Object.keys(marketInsights.marketData).length > 4 && 
-                      renderDynamicData(
-                        Object.fromEntries(
-                          Object.entries(marketInsights.marketData).filter(([key]) => 
-                            !['totalStocks', 'avgChange', 'totalVolume', 'topGainers'].includes(key)
-                          )
-                        ), 
-                        "Additional Market Data"
-                      )
-                    }
 
                     <Card>
                       <CardContent className="p-6">
@@ -697,15 +629,15 @@ function AIAnalysisPage() {
 
                 {predictions.length > 0 && (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-                    {predictions.map((prediction, idx) => (
-                      <Card key={prediction?.symbol || idx} className="border-l-4 border-l-purple-500">
+                    {predictions.map((prediction) => (
+                      <Card key={prediction.symbol} className="border-l-4 border-l-purple-500">
                         <CardHeader className="pb-3">
                           <div className="flex items-center justify-between">
                             <div>
-                              <CardTitle className="text-lg">{safeString(prediction?.symbol)}</CardTitle>
-                              <CardDescription>{safeString(prediction?.name)}</CardDescription>
+                              <CardTitle className="text-lg">{prediction.symbol}</CardTitle>
+                              <CardDescription>{prediction.name}</CardDescription>
                             </div>
-                            <Badge variant="outline">{formatNumber(prediction?.confidence)}%</Badge>
+                            <Badge variant="outline">{prediction.confidence}%</Badge>
                           </div>
                         </CardHeader>
                         <CardContent className="space-y-3">
@@ -713,12 +645,12 @@ function AIAnalysisPage() {
                             <div className="grid grid-cols-2 gap-2 text-sm">
                               <div>
                                 <span className="text-gray-600">Current</span>
-                                <p className="font-bold">{formatCurrency(prediction?.currentPrice)}</p>
+                                <p className="font-bold">{formatCurrency(prediction.currentPrice)}</p>
                               </div>
                               <div>
                                 <span className="text-gray-600">Target Range</span>
                                 <p className="font-bold text-purple-600">
-                                  {formatCurrency(prediction?.predictedLow)} - {formatCurrency(prediction?.predictedHigh)}
+                                  {formatCurrency(prediction.predictedLow)} - {formatCurrency(prediction.predictedHigh)}
                                 </p>
                               </div>
                             </div>
@@ -729,26 +661,14 @@ function AIAnalysisPage() {
                             <Badge 
                               variant="outline" 
                               className={`${
-                                prediction?.risk === "Low" ? "border-green-500 text-green-700" :
-                                prediction?.risk === "Medium" ? "border-yellow-500 text-yellow-700" :
+                                prediction.risk === "Low" ? "border-green-500 text-green-700" :
+                                prediction.risk === "Medium" ? "border-yellow-500 text-yellow-700" :
                                 "border-red-500 text-red-700"
                               }`}
                             >
-                              {safeString(prediction?.risk)}
+                              {prediction.risk}
                             </Badge>
                           </div>
-
-                          {/* Render any additional prediction data */}
-                          {prediction && Object.keys(prediction).length > 6 && 
-                            renderDynamicData(
-                              Object.fromEntries(
-                                Object.entries(prediction).filter(([key]) => 
-                                  !['symbol', 'name', 'currentPrice', 'predictedLow', 'predictedHigh', 'confidence', 'risk', 'factors', 'rationale'].includes(key)
-                                )
-                              ), 
-                              "Additional Prediction Data"
-                            )
-                          }
                         </CardContent>
                       </Card>
                     ))}
@@ -824,21 +744,18 @@ function AIAnalysisPage() {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-3">
-                          {portfolio?.allocation && Object.entries(portfolio.allocation).map(([sector, percent], idx) => (
+                          {Object.entries(portfolio.allocation).map(([sector, percent], idx) => (
                             <div key={sector} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                               <div className="flex items-center">
                                 <div 
                                   className="w-4 h-4 rounded-full mr-3" 
                                   style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }}
                                 />
-                                <span className="font-medium">{safeString(sector)}</span>
+                                <span className="font-medium">{sector}</span>
                               </div>
-                              <span className="font-bold text-orange-600">{formatNumber(percent as number)}%</span>
+                              <span className="font-bold text-orange-600">{percent}%</span>
                             </div>
                           ))}
-                          {(!portfolio?.allocation || Object.keys(portfolio.allocation).length === 0) && (
-                            <p className="text-gray-500 text-center py-4">No allocation data available</p>
-                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -851,12 +768,12 @@ function AIAnalysisPage() {
                         <div className="grid grid-cols-2 gap-4">
                           <div className="p-3 bg-orange-50 rounded-xl">
                             <p className="text-sm text-orange-700">Expected Return</p>
-                            <p className="text-xl font-bold text-orange-800">{safeString(portfolio?.expectedReturn)}</p>
+                            <p className="text-xl font-bold text-orange-800">{portfolio.expectedReturn}</p>
                           </div>
                           <div className="p-3 bg-blue-50 rounded-xl">
                             <p className="text-sm text-blue-700">Investment</p>
                             <p className="text-xl font-bold text-blue-800">
-                              {formatCurrency(parseInt(investmentAmount) || 0)}
+                              {formatCurrency(parseInt(investmentAmount))}
                             </p>
                           </div>
                         </div>
@@ -864,21 +781,9 @@ function AIAnalysisPage() {
                         <Alert className="border-orange-200 bg-orange-50">
                           <Shield className="w-4 h-4" />
                           <AlertDescription className="text-orange-800">
-                            {safeString(portfolio?.riskAssessment)}
+                            {portfolio.riskAssessment}
                           </AlertDescription>
                         </Alert>
-
-                        {/* Render any additional portfolio data */}
-                        {portfolio && Object.keys(portfolio).length > 3 && 
-                          renderDynamicData(
-                            Object.fromEntries(
-                              Object.entries(portfolio).filter(([key]) => 
-                                !['allocation', 'expectedReturn', 'riskAssessment', 'recommendations'].includes(key)
-                              )
-                            ), 
-                            "Additional Portfolio Data"
-                          )
-                        }
                       </CardContent>
                     </Card>
                   </div>
@@ -958,19 +863,19 @@ function AIAnalysisPage() {
                         <div className="p-4 bg-blue-50 rounded-xl">
                           <p className="text-sm text-blue-700">Target Price</p>
                           <p className="text-2xl font-bold text-blue-900">
-                            {formatCurrency(analysisResult?.targetPrice)}
+                            {formatCurrency(analysisResult.targetPrice)}
                           </p>
                         </div>
                         <div className="p-4 bg-purple-50 rounded-xl">
                           <p className="text-sm text-purple-700">AI Confidence</p>
                           <p className="text-2xl font-bold text-purple-900">
-                            {formatNumber(analysisResult?.confidence)}%
+                            {analysisResult.confidence}%
                           </p>
                         </div>
                         <div className="p-4 bg-orange-50 rounded-xl">
                           <p className="text-sm text-orange-700">Risk Level</p>
                           <p className="text-2xl font-bold text-orange-900">
-                            {safeString(analysisResult?.riskLevel)}
+                            {analysisResult.riskLevel}
                           </p>
                         </div>
                       </div>
@@ -978,27 +883,15 @@ function AIAnalysisPage() {
                       <Card>
                         <CardContent className="p-6">
                           <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-6">
-                            {analysisResult?.analysis?.includes('<') ? 
+                            {analysisResult.analysis?.includes('<') ? 
                               renderHTMLContent(analysisResult.analysis) : 
                               <p className="text-gray-700 leading-relaxed">
-                                {safeString(analysisResult?.analysis)}
+                                {analysisResult.analysis}
                               </p>
                             }
                           </div>
                         </CardContent>
                       </Card>
-
-                      {/* Render any additional analysis data */}
-                      {analysisResult && Object.keys(analysisResult).length > 5 && 
-                        renderDynamicData(
-                          Object.fromEntries(
-                            Object.entries(analysisResult).filter(([key]) => 
-                              !['symbol', 'analysis', 'recommendation', 'targetPrice', 'confidence', 'riskLevel'].includes(key)
-                            )
-                          ), 
-                          "Additional Analysis Data"
-                        )
-                      }
                     </CardContent>
                   </Card>
                 )}

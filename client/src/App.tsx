@@ -8,9 +8,8 @@ import Homepage from "@/pages/homepage";
 import StockDetail from "@/pages/stock-detail";
 import NotFound from "@/pages/not-found";
 import ApiDashboard from "@/pages/api-dashboard";
-import AIAnalysis from "@/pages/ai-analysis-new";
+import AiAnalysis from "@/pages/ai-analysis-new";
 import AIAnalysisComprehensive from "@/pages/ai-analysis-comprehensive";
-import StockAIPlus from "@/pages/stock-ai-plus";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,9 +53,8 @@ function AppContent() {
         <Route path="/" component={Homepage} />
         <Route path="/stock/:symbol" component={StockDetail} />
         <Route path="/api" component={ApiDashboard} />
-        <Route path="/ai-analysis" component={AIAnalysis} />
-        <Route path="/ai-analysis-comprehensive" component={AIAnalysisComprehensive} />
-        <Route path="/stock-ai-plus" component={StockAIPlus} />
+        <Route path="/ai-analysis" component={AiAnalysis} />
+        <Route path="/ai-comprehensive" component={AIAnalysisComprehensive} />
         <Route component={NotFound} />
       </Switch>
       <Toaster />

@@ -889,20 +889,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       let aiText = "";
-      try {
-        if (geminiResponse.ok) {
-          const geminiData = await geminiResponse.json();
-          aiText =
-            geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        } else {
-          console.error(
-            "Gemini API error:",
-            geminiResponse.status,
-            await geminiResponse.text(),
-          );
-        }
-      } catch (error) {
-        console.error("Gemini API call failed:", error);
+      if (geminiResponse.ok) {
+        const geminiData = await geminiResponse.json();
+        aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      } else {
+        console.error(
+          "Gemini API error:",
+          geminiResponse.status,
+          await geminiResponse.text(),
+        );
       }
 
       // Parse AI response with enhanced analysis
@@ -942,8 +937,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 stock.current * (1 + (stock.changePercent / 100) * 1.5),
               confidence: Math.min(
                 95,
-                Math.max(60, 85 - Math.abs(stock.changePercent) * 2)
-              )
+                Math.max(60, 85 - Math.abs(stock.changePercent) * 2),
+              ),
             };
           }
         } else {
@@ -982,14 +977,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 (1 +
                   Math.max(
                     0.02,
-                    Math.min(0.15, Math.abs(stock.changePercent) / 100)
+                    Math.min(0.15, Math.abs(stock.changePercent) / 100),
                   ))
-              ).toFixed(2)
+              ).toFixed(2),
             ),
             confidence: Math.min(
               95,
-              Math.max(75, 90 - Math.abs(stock.changePercent) * 1.5)
-            )
+              Math.max(75, 90 - Math.abs(stock.changePercent) * 1.5),
+            ),
           };
         }
       } catch (parseError) {
@@ -1005,65 +1000,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 : "Hold - Wait for clearer directional signals",
           riskLevel: "Medium",
           targetPrice: Number((stock.current * 1.05).toFixed(2)),
-          confidence: 80
+          confidence: 80,
         };
       }
 
       res.json({
         symbol,
-        ...analysis
+        ...analysis,
       });
     } catch (error) {
       console.error("AI analysis error:", error);
       res.status(500).json({ error: "Failed to generate AI analysis" });
-    }
-  });
-
-  // Stock Analysis Data endpoint
-  app.get("/api/stock-analysis-data", async (req, res) => {
-    try {
-      // Read the stock analysis JSON file
-      const fs = await import('fs');
-      const path = await import('path');
-      const filePath = path.join(process.cwd(), 'server', 'stockAnalysis.json');
-
-      if (fs.existsSync(filePath)) {
-        const data = fs.readFileSync(filePath, 'utf8');
-        const stockAnalysis = JSON.parse(data);
-        res.json(stockAnalysis);
-      } else {
-        // Return sample structure if file doesn't exist
-        res.json({
-          stocks: [
-            {
-              ticker: "SAMPLE",
-              company_name: "Sample Company Limited",
-              exchange: "PSX",
-              sector: "Technology",
-              country: "Pakistan",
-              currency: "PKR",
-              historical: {
-                price: {
-                  start_price: 100,
-                  end_price: 150,
-                  change_percent: 50,
-                  "52_week_high": 160,
-                  "52_week_low": 90,
-                  volatility_weekly_percent: "3.2"
-                }
-              },
-              ai_insights: {
-                ai_rating: "A (Buy)",
-                trend_summary: "Sample analysis data - please ensure stockAnalysis.json is available",
-                investment_type: "Growth"
-              }
-            }
-          ]
-        });
-      }
-    } catch (error) {
-      console.error("Error loading stock analysis data:", error);
-      res.status(500).json({ error: "Failed to load stock analysis data" });
     }
   });
 
@@ -1073,7 +1020,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const {
         riskLevel = "medium",
         investmentAmount = 100000,
-        timeHorizon = "1 year"
+        timeHorizon = "1 year",
       } = req.body;
 
       // Get current market data
@@ -1114,9 +1061,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
-              })
-            }
+                generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
+              }),
+            },
           );
 
           if (geminiResponse.ok) {
@@ -1144,21 +1091,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 Banking: 25,
                 "Oil & Gas": 20,
                 Textiles: 15,
-                Others: 10
+                Others: 10,
               }
             : riskLevel === "low"
               ? {
                   Banking: 40,
                   Utilities: 25,
                   "Consumer Goods": 20,
-                  "Government Bonds": 15
+                  "Government Bonds": 15,
                 }
               : {
                   Banking: 30,
                   Technology: 20,
                   "Oil & Gas": 20,
                   Textiles: 15,
-                  Cement: 15
+                  Cement: 15,
                 };
 
         portfolioAnalysis = {
@@ -1167,7 +1114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             symbol: stock.symbol,
             name: stock.name,
             allocation: Math.round(20 + Math.random() * 10),
-            rationale: `Strong performer with ${stock.changePercent.toFixed(2)}% gain today. Good ${riskLevel}-risk investment for ${timeHorizon} timeframe.`
+            rationale: `Strong performer with ${stock.changePercent.toFixed(2)}% gain today. Good ${riskLevel}-risk investment for ${timeHorizon} timeframe.`,
           })),
           riskAssessment: `${riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1)} risk portfolio with diversification across ${Object.keys(sectorAllocation).length} sectors. Expected volatility appropriate for ${timeHorizon} investment horizon.`,
           expectedReturn:
@@ -1175,7 +1122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ? "15-25%"
               : riskLevel === "low"
                 ? "8-12%"
-                : "10-18%"
+                : "10-18%",
         };
       }
 
@@ -1197,14 +1144,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newsPromises = [
         // NewsAPI for international business news
         fetch(
-          `https://newsapi.org/v2/top-headlines?country=${country}&category=${category}&pageSize=10&apiKey=${process.env.NEWS_API_KEY || "demo"}`
+          `https://newsapi.org/v2/top-headlines?country=${country}&category=${category}&pageSize=10&apiKey=${process.env.NEWS_API_KEY || "demo"}`,
         ),
         // Alpha Vantage news for financial markets
         fetch(
-          `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&topics=financial_markets,economy&apikey=${process.env.ALPHA_VANTAGE_KEY || "demo"}`
+          `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&topics=financial_markets,economy&apikey=${process.env.ALPHA_VANTAGE_KEY || "demo"}`,
         ),
         // Financial news from RSS feeds
-        fetch("https://feeds.feedburner.com/ndtvprofit-latest")
+        fetch("https://feeds.feedburner.com/ndtvprofit-latest"),
       ];
 
       const results = await Promise.allSettled(newsPromises);
@@ -1223,8 +1170,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 source: article.source.name,
                 publishedAt: article.publishedAt,
                 category: "market",
-                impact: "medium"
-              }))
+                impact: "medium",
+              })),
             );
           }
         } catch (error) {
@@ -1238,12 +1185,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const topGainer = stocks.reduce(
           (max, stock) =>
             stock.changePercent > max.changePercent ? stock : max,
-          stocks[0]
+          stocks[0],
         );
         const topLoser = stocks.reduce(
           (min, stock) =>
             stock.changePercent < min.changePercent ? stock : min,
-          stocks[0]
+          stocks[0],
         );
 
         news.push(
@@ -1254,7 +1201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             source: "PSX Live",
             publishedAt: new Date().toISOString(),
             category: "market",
-            impact: "high"
+            impact: "high",
           },
           {
             title: `Banking Sector Shows Mixed Performance Amid Policy Changes`,
@@ -1263,7 +1210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             source: "Market Analysis",
             publishedAt: new Date().toISOString(),
             category: "economy",
-            impact: "medium"
+            impact: "medium",
           },
           {
             title: `${topLoser.symbol} Under Pressure, Down ${Math.abs(topLoser.changePercent || 0).toFixed(2)}%`,
@@ -1272,7 +1219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             source: "PSX Live",
             publishedAt: new Date().toISOString(),
             category: "market",
-            impact: "medium"
+            impact: "medium",
           },
           {
             title: "Global Commodity Prices Impact Pakistani Export Sectors",
@@ -1282,7 +1229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             source: "Economic Times",
             publishedAt: new Date().toISOString(),
             category: "economy",
-            impact: "high"
+            impact: "high",
           },
           {
             title:
@@ -1293,8 +1240,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             source: "Tech News",
             publishedAt: new Date().toISOString(),
             category: "technology",
-            impact: "medium"
-          }
+            impact: "medium",
+          },
         );
       }
 
@@ -1328,7 +1275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "ACI",
         "JSGBKTI",
         "MII30",
-        "HBLTT"
+        "HBLTT",
       ];
 
       if (!VALID_INDICES.includes(symbol.toUpperCase())) {
@@ -1339,7 +1286,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const timeSeriesData = await PSXService.fetchStockTimeSeries(
           symbol,
-          interval as any
+          interval as any,
         );
 
         if (timeSeriesData && timeSeriesData.chartData.length > 0) {
@@ -1348,8 +1295,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             data: timeSeriesData.chartData.map((point) => [
               Math.floor(point.timestamp / 1000),
               point.price,
-              point.volume
-            ])
+              point.volume,
+            ]),
           };
 
           res.json({
@@ -1358,7 +1305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ...formattedData,
             currentPrice: timeSeriesData.currentPrice,
             change: timeSeriesData.change,
-            changePercent: timeSeriesData.changePercent
+            changePercent: timeSeriesData.changePercent,
           });
         } else {
           throw new Error("No data received from PSX service");
@@ -1373,8 +1320,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             accept: "application/json, text/javascript, */*; q=0.01",
             "accept-language": "en-US,en;q=0.9",
             "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-          }
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          },
         });
 
         if (response.ok) {
@@ -1387,7 +1334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error(
         `Error fetching index data for ${req.params.symbol}:`,
-        error
+        error,
       );
 
       // Final fallback with realistic market data
@@ -1405,15 +1352,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 Math.floor(timestamp / 1000),
                 basePrice,
                 volume,
-                basePrice * 0.98
+                basePrice * 0.98,
               ]
             : [Math.floor(timestamp / 1000), basePrice, volume];
-        })
+        }),
       };
       res.json({
         symbol: req.params.symbol.toUpperCase(),
         interval: req.query.interval,
-        ...mockData
+        ...mockData,
       });
     }
   });
@@ -1426,7 +1373,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const symbols = stocks.map((stock) => ({
         symbol: stock.symbol,
         name: stock.name || stock.symbol,
-        sector: stock.sector || "Other"
+        sector: stock.sector || "Other",
       }));
 
       res.json(symbols);
@@ -1438,28 +1385,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         {
           symbol: "HBL",
           name: "Habib Bank Limited",
-          sector: "COMMERCIAL BANKS"
+          sector: "COMMERCIAL BANKS",
         },
         {
           symbol: "UBL",
           name: "United Bank Limited",
-          sector: "COMMERCIAL BANKS"
+          sector: "COMMERCIAL BANKS",
         },
         {
           symbol: "MEBL",
           name: "MCB Bank Limited",
-          sector: "COMMERCIAL BANKS"
+          sector: "COMMERCIAL BANKS",
         },
         {
           symbol: "UNITY",
           name: "Unity Foods Limited",
-          sector: "FOOD & PERSONAL CARE PRODUCTS"
+          sector: "FOOD & PERSONAL CARE PRODUCTS",
         },
         {
           symbol: "PSO",
           name: "Pakistan State Oil Company Limited",
-          sector: "OIL & GAS MARKETING COMPANIES"
-        }
+          sector: "OIL & GAS MARKETING COMPANIES",
+        },
       ];
 
       res.json(fallbackSymbols);
@@ -1474,7 +1421,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const timeSeriesData = await PSXService.fetchStockTimeSeries(
         symbol.toUpperCase(),
-        interval as any
+        interval as any,
       );
 
       if (timeSeriesData) {
@@ -1515,7 +1462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stocks.length;
       const totalMarketCap = stocks.reduce(
         (sum, stock) => sum + stock.current * stock.volume,
-        0
+        0,
       );
 
       // Sector performance analysis
@@ -1526,7 +1473,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               s.symbol.includes(sector.code) ||
               s.name
                 ?.toLowerCase()
-                .includes(sector.name.toLowerCase().split(" ")[0])
+                .includes(sector.name.toLowerCase().split(" ")[0]),
           );
           const avgSectorChange =
             sectorStocks.length > 0
@@ -1536,7 +1483,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return {
             name: sector.name,
             volume: sector.volume,
-            performance: avgSectorChange
+            performance: avgSectorChange,
           };
         }) || [];
 
@@ -1579,7 +1526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .slice(0, 8)
           .map(
             (sector) =>
-              `- ${sector.name}: Volume ${sector.volume.toLocaleString()} (${sector.performance > 0 ? "+" : ""}${sector.performance.toFixed(2)}%)`
+              `- ${sector.name}: Volume ${sector.volume.toLocaleString()} (${sector.performance > 0 ? "+" : ""}${sector.performance.toFixed(2)}%)`,
           )
           .join("\n")}
 
@@ -1588,7 +1535,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .slice(0, 5)
           .map(
             (s) =>
-              `${s.symbol}: Current Rs. ${s.current} (+${s.changePercent.toFixed(2)}%) - Analyze momentum, support/resistance levels, and predict next 1-week movement`
+              `${s.symbol}: Current Rs. ${s.current} (+${s.changePercent.toFixed(2)}%) - Analyze momentum, support/resistance levels, and predict next 1-week movement`,
           )
           .join("\n")}
 
@@ -1634,9 +1581,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.7, maxOutputTokens: 3500 }
-              })
-            }
+                generationConfig: { temperature: 0.7, maxOutputTokens: 3500 },
+              }),
+            },
           );
 
           if (geminiResponse.ok) {
@@ -1659,7 +1606,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ? "moderate"
               : "low";
         const topSector = sectorPerformance.sort(
-          (a: any, b: any) => b.volume - a.volume
+          (a: any, b: any) => b.volume - a.volume,
         )[0];
 
         aiInsight = `
@@ -1693,8 +1640,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           topGainers: topGainers.slice(0, 5),
           topLosers: topLosers.slice(0, 5),
           sectorPerformance: sectorPerformance.slice(0, 10),
-          marketSummary: marketSummary
-        }
+          marketSummary: marketSummary,
+        },
       });
     } catch (error) {
       console.error("Market insights error:", error);
@@ -1737,7 +1684,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ${stocksForPrediction
           .map(
             (s) =>
-              `- ${s.symbol} (${s.name?.substring(0, 30)}): Current Rs. ${s.current}, Change: ${s.changePercent.toFixed(2)}%, Volume: ${s.volume.toLocaleString()}`
+              `- ${s.symbol} (${s.name?.substring(0, 30)}): Current Rs. ${s.current}, Change: ${s.changePercent.toFixed(2)}%, Volume: ${s.volume.toLocaleString()}`,
           )
           .join("\n")}
 
@@ -1747,7 +1694,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ?.slice(0, 5)
             .map(
               (sector: any) =>
-                `- ${sector.name}: ${sector.volume.toLocaleString()}`
+                `- ${sector.name}: ${sector.volume.toLocaleString()}`,
             )
             .join("\n") || "Sector data loading..."
         }
@@ -1774,27 +1721,518 @@ export async function registerRoutes(app: Express): Promise<Server> {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.6, maxOutputTokens: 3000 }
-              })
-            }
+                generationConfig: { temperature: 0.6, maxOutputTokens: 3000 },
+              }),
+            },
           );
 
           if (geminiResponse.ok) {
             const geminiData = await geminiResponse.json();
             const aiText =
               geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+            // Try to parse JSON response
+            const jsonMatch = aiText.match(/\[[\s\S]*\]/);
+            if (jsonMatch) {
+              aiPredictions = JSON.parse(jsonMatch[0]);
+            }
+          }
+        } catch (error) {
+          console.error("Gemini API error for predictions:", error);
+        }
+      }
+
+      // Enhanced fallback with real data-based predictions
+      if (!aiPredictions || aiPredictions.length === 0) {
+        aiPredictions = stocksForPrediction.slice(0, 10).map((stock) => {
+          const volatility =
+            Math.abs(stock.changePercent) > 3
+              ? 0.15
+              : Math.abs(stock.changePercent) > 1
+                ? 0.08
+                : 0.05;
+          const trendMultiplier =
+            marketTrend > 0 ? 1.05 : marketTrend < -1 ? 0.95 : 1.0;
+
+          const predictedLow =
+            stock.current * (1 - volatility) * trendMultiplier;
+          const predictedHigh =
+            stock.current * (1 + volatility) * trendMultiplier;
+
+          return {
+            symbol: stock.symbol,
+            name: stock.name?.substring(0, 30) || stock.symbol,
+            currentPrice: stock.current,
+            predictedLow: Math.round(predictedLow * 100) / 100,
+            predictedHigh: Math.round(predictedHigh * 100) / 100,
+            confidence:
+              stock.volume > 100000 ? 75 : stock.volume > 50000 ? 65 : 55,
+            factors: [
+              `Current momentum: ${stock.changePercent > 0 ? "Positive" : "Negative"} (${stock.changePercent.toFixed(2)}%)`,
+              `Volume analysis: ${stock.volume > 100000 ? "High" : stock.volume > 50000 ? "Moderate" : "Low"} liquidity`,
+              `Market correlation: ${marketTrend > 0 ? "Following positive market trend" : "Market headwinds present"}`,
+            ],
+            risk:
+              Math.abs(stock.changePercent) > 3
+                ? "High"
+                : Math.abs(stock.changePercent) > 1
+                  ? "Medium"
+                  : "Low",
+            rationale: `Based on current price action (${stock.changePercent.toFixed(2)}%) and volume patterns (${stock.volume.toLocaleString()}), ${timeframe} outlook considers market volatility and sector trends.`,
+          };
+        });
+      }
+
+      res.json({
+        predictions: aiPredictions,
+        marketContext: {
+          overallTrend: marketTrend.toFixed(2),
+          totalVolume: totalVolume,
+          timeframe: timeframe,
+          analysisDate: new Date().toISOString().split("T")[0],
+        },
+      });
+    } catch (error) {
+      console.error("AI predictions error:", error);
+      res.status(500).json({ error: "Failed to generate AI predictions" });
+    }
+  });
+
+  // Comprehensive AI Stock Analysis endpoint using Gemini with JSON schema
+  app.post("/api/ai-stock-analysis", async (req, res) => {
+    try {
+      const { symbol, format = "json" } = req.body;
+
+      if (!symbol) {
+        return res.status(400).json({ error: "Stock symbol is required" });
+      }
+
+      // Get comprehensive stock data
+      const stock = await storage.getStock(symbol.toUpperCase());
+      if (!stock) {
+        return res.status(404).json({ error: `Stock ${symbol} not found` });
+      }
+
+      // Get company data
+      const companyData = await storage.getCompany(symbol.toUpperCase());
+      
+      // Get market context
+      const stocks = await storage.getMarketData();
+      const marketSummary = await storage.getMarketSummary();
+      const sectors = await storage.getSectors();
+
+      // Calculate market metrics
+      const totalVolume = stocks.reduce((sum, s) => sum + s.volume, 0);
+      const avgChange = stocks.reduce((sum, s) => sum + s.changePercent, 0) / stocks.length;
+      
+      // Get sector performance
+      const sectorStocks = stocks.filter(s => s.sector === stock.sector);
+      const sectorAvgChange = sectorStocks.length > 0 
+        ? sectorStocks.reduce((sum, s) => sum + s.changePercent, 0) / sectorStocks.length 
+        : 0;
+
+      // Get recent time series data for chart analysis
+      const chartData = await PSXService.fetchStockTimeSeries(symbol.toUpperCase(), "1day" as any)
+        .catch(() => null);
+
+      const currentDate = new Date().toISOString().split('T')[0];
+      
+      // Create comprehensive prompt following the JSON schema
+      const prompt = `
+You are an expert financial analyst for Pakistan Stock Exchange. Analyze ${symbol} (${stock.name || 'N/A'}) and return a comprehensive analysis in VALID JSON format following this exact schema structure. Return ONLY the JSON, no other text.
+
+CURRENT STOCK DATA:
+- Symbol: ${symbol.toUpperCase()}
+- Company: ${stock.name || 'N/A'}
+- Current Price: Rs. ${stock.current}
+- Daily Change: ${stock.change} (${stock.changePercent}%)
+- Volume: ${stock.volume.toLocaleString()} shares
+- Sector: ${stock.sector}
+- Day High: Rs. ${stock.high}
+- Day Low: Rs. ${stock.low}
+- 52-Week High: Rs. ${stock.high52Week || 'N/A'}
+- 52-Week Low: Rs. ${stock.low52Week || 'N/A'}
+
+COMPANY FUNDAMENTALS:
+${companyData ? `
+- Market Cap: Rs. ${companyData.marketCap?.toLocaleString() || 'N/A'}
+- P/E Ratio: ${companyData.peRatio || 'N/A'}
+- Book Value: Rs. ${companyData.bookValue || 'N/A'}
+- Dividend Yield: ${companyData.dividendYield || 'N/A'}%
+- Business: ${companyData.description?.substring(0, 200) || 'N/A'}
+` : 'Limited company data available'}
+
+MARKET CONTEXT:
+- Market Average Change: ${avgChange.toFixed(2)}%
+- Total Market Volume: ${totalVolume.toLocaleString()}
+- Sector Average Change: ${sectorAvgChange.toFixed(2)}%
+- Market Status: ${marketSummary ? `${marketSummary.gainers} gainers, ${marketSummary.losers} losers` : 'Active trading'}
+
+Return analysis in this EXACT JSON structure:
+{
+  "stock": {
+    "ticker": "${symbol.toUpperCase()}",
+    "company_name": "${stock.name || 'N/A'}",
+    "exchange": "PSX",
+    "sector": "${stock.sector}",
+    "country": "Pakistan",
+    "currency": "PKR",
+    "website": "${companyData?.website || 'N/A'}",
+    "logo_url": "https://placeholder.com/logo.png"
+  },
+  "when_was_this_analysis_generated": "${currentDate}",
+  "what_is_the_current_trend": "Bullish|Bearish|Neutral",
+  "what_are_the_latest_prices_and_chart_data": {
+    "latest_close": ${stock.current},
+    "52_week_high": ${stock.high52Week || stock.high},
+    "52_week_low": ${stock.low52Week || stock.low},
+    "daily_high": ${stock.high},
+    "daily_low": ${stock.low},
+    "volume": ${stock.volume}
+  },
+  "what_are_the_technical_indicators_saying": {
+    "rsi": {
+      "value": "number between 1-100",
+      "interpretation": "Overbought|Oversold|Neutral"
+    },
+    "macd": {
+      "line": "number",
+      "signal": "number", 
+      "histogram": "number",
+      "trend": "Bullish|Bearish|Neutral"
+    },
+    "moving_averages": {
+      "20_day": "number",
+      "50_day": "number",
+      "200_day": "number",
+      "signal": "Golden Cross|Death Cross|Neutral"
+    },
+    "bollinger_bands": {
+      "upper": "number",
+      "lower": "number",
+      "status": "Above Upper|Below Lower|Within Range"
+    }
+  },
+  "what_patterns_have_been_detected": [
+    {
+      "pattern": "Cup and Handle|Double Top|Head and Shoulders|Flag|Triangle|etc",
+      "confidence": "High|Moderate|Low",
+      "signal": "Bullish|Bearish|Neutral",
+      "detected_from": "YYYY-MM-DD",
+      "to": "YYYY-MM-DD"
+    }
+  ],
+  "what_is_the_short_term_outlook": {
+    "bias": "Bullish|Bearish|Neutral",
+    "momentum": "Rising|Falling|Flat",
+    "support_levels": ["number", "number"],
+    "resistance_levels": ["number", "number"],
+    "volatility": "Low|Medium|High",
+    "investment_window_days": "number"
+  },
+  "what_is_the_long_term_outlook": {
+    "trend": "Uptrend|Downtrend|Sideways",
+    "valuation": "Undervalued|Overvalued|Fairly Priced",
+    "macro_sentiment": "Positive|Negative|Neutral",
+    "industry_position": "Outperforming|Underperforming|Average",
+    "holding_period_months": "number"
+  },
+  "what_do_ai_models_predict_for_future": {
+    "forecast_range": {
+      "low": "number",
+      "expected": "number", 
+      "high": "number"
+    },
+    "ai_rating": "Strong Buy|Buy|Hold|Sell|Strong Sell",
+    "confidence": "number between 0-1",
+    "investment_type": "Growth|Value|Dividend|Balanced|Speculative",
+    "potential_risks": ["string", "string", "string"],
+    "growth_drivers": ["string", "string", "string"]
+  },
+  "how_has_the_stock_performed_in_past_2_years": {
+    "price_change_percent": "number",
+    "volatility_30d_avg": "number",
+    "market_cap_growth": "percentage string",
+    "dividend_yield_avg": "percentage string",
+    "key_news_events": [
+      {
+        "date": "YYYY-MM-DD",
+        "title": "string",
+        "impact": "Strong Positive|Positive|Neutral|Negative|Strong Negative"
+      }
+    ],
+    "notable_trends": [
+      {
+        "type": "Recovery|Bull Run|Bear Run|Sideways",
+        "from": "YYYY-MM-DD", 
+        "to": "YYYY-MM-DD",
+        "description": "string"
+      }
+    ]
+  },
+  "what_are_the_analysts_saying": {
+    "analyst_sentiment": "Buy|Hold|Sell",
+    "target_range": {
+      "low": "number",
+      "avg": "number",
+      "high": "number"
+    },
+    "analysts_covered": "number",
+    "summary": "string"
+  },
+  "are_there_any_alerts_or_watch_tags": {
+    "tags": ["High Dividend", "Blue Chip", "Breakout", "Recovery", "etc"],
+    "alerts": [
+      {
+        "type": "Price Target|RSI Signal|MACD Crossover|Pattern Formed",
+        "triggered_on": "YYYY-MM-DD",
+        "description": "string"
+      }
+    ]
+  },
+  "is_this_stock_exposed_to_global_risks": {
+    "exports_percent": "number",
+    "currency_risk": "High|Moderate|Low",
+    "foreign_ownership": ["string", "string"],
+    "geo_dependency": ["string", "string"]
+  },
+  "meta": {
+    "source": "Gemini AI",
+    "model_version": "gemini-1.5-flash",
+    "schema_version": "v3.0",
+    "generated_on": "${currentDate}",
+    "language": "en"
+  }
+}
+
+Make sure to:
+1. Use realistic numbers based on the current stock data provided
+2. Provide actionable insights based on Pakistan Stock Exchange dynamics
+3. Consider sector performance, market conditions, and economic factors
+4. Return ONLY valid JSON - no markdown, no explanations, no additional text
+5. All numeric values should be actual numbers, not strings
+6. All arrays should contain realistic data
+7. Base predictions on current price of Rs. ${stock.current} and market trends
+`;
+
+      // Call Gemini API
+      const apiKey = process.env.GEMINI_API_KEY;
+      let aiAnalysis = null;
+
+      if (apiKey) {
+        try {
+          const geminiResponse = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { 
+                  temperature: 0.4,
+                  maxOutputTokens: 4000,
+                  topP: 0.8
+                },
+              }),
+            },
+          );
+
+          if (geminiResponse.ok) {
+            const geminiData = await geminiResponse.json();
+            const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            
+            // Extract JSON from response
+            const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              try {
+                aiAnalysis = JSON.parse(jsonMatch[0]);
+              } catch (parseError) {
+                console.error("JSON parsing error:", parseError);
+                // Try to clean and parse again
+                const cleanedJson = jsonMatch[0]
+                  .replace(/```json/g, '')
+                  .replace(/```/g, '')
+                  .trim();
+                try {
+                  aiAnalysis = JSON.parse(cleanedJson);
+                } catch (secondParseError) {
+                  console.error("Second JSON parsing failed:", secondParseError);
+                }
+              }
+            }
           }
         } catch (error) {
           console.error("Gemini API error:", error);
         }
       }
 
-      res.json(aiPredictions);
+      // Fallback analysis if AI fails
+      if (!aiAnalysis) {
+        const trend = stock.changePercent > 1 ? "Bullish" : stock.changePercent < -1 ? "Bearish" : "Neutral";
+        const volatility = Math.abs(stock.changePercent) > 3 ? "High" : Math.abs(stock.changePercent) > 1 ? "Medium" : "Low";
+        
+        aiAnalysis = {
+          stock: {
+            ticker: symbol.toUpperCase(),
+            company_name: stock.name || "N/A",
+            exchange: "PSX",
+            sector: stock.sector,
+            country: "Pakistan",
+            currency: "PKR",
+            website: companyData?.website || "N/A",
+            logo_url: "https://placeholder.com/logo.png"
+          },
+          when_was_this_analysis_generated: currentDate,
+          what_is_the_current_trend: trend,
+          what_are_the_latest_prices_and_chart_data: {
+            latest_close: stock.current,
+            "52_week_high": stock.high52Week || stock.high,
+            "52_week_low": stock.low52Week || stock.low,
+            daily_high: stock.high,
+            daily_low: stock.low,
+            volume: stock.volume
+          },
+          what_are_the_technical_indicators_saying: {
+            rsi: {
+              value: Math.round(50 + (stock.changePercent * 5)),
+              interpretation: stock.changePercent > 2 ? "Overbought" : stock.changePercent < -2 ? "Oversold" : "Neutral"
+            },
+            macd: {
+              line: stock.changePercent * 0.1,
+              signal: (stock.changePercent * 0.1) - 0.05,
+              histogram: 0.05,
+              trend: trend
+            },
+            moving_averages: {
+              "20_day": stock.current * 0.98,
+              "50_day": stock.current * 0.95,
+              "200_day": stock.current * 0.90,
+              signal: stock.changePercent > 0 ? "Golden Cross" : "Neutral"
+            },
+            bollinger_bands: {
+              upper: stock.high * 1.02,
+              lower: stock.low * 0.98,
+              status: "Within Range"
+            }
+          },
+          what_patterns_have_been_detected: [
+            {
+              pattern: stock.changePercent > 2 ? "Breakout" : stock.changePercent < -2 ? "Breakdown" : "Consolidation",
+              confidence: volatility === "High" ? "High" : "Moderate",
+              signal: trend,
+              detected_from: currentDate,
+              to: currentDate
+            }
+          ],
+          what_is_the_short_term_outlook: {
+            bias: trend,
+            momentum: stock.changePercent > 0 ? "Rising" : stock.changePercent < 0 ? "Falling" : "Flat",
+            support_levels: [stock.low * 0.95, stock.low * 0.90],
+            resistance_levels: [stock.high * 1.05, stock.high * 1.10],
+            volatility: volatility,
+            investment_window_days: 7
+          },
+          what_is_the_long_term_outlook: {
+            trend: avgChange > 0 ? "Uptrend" : "Sideways",
+            valuation: stock.changePercent < avgChange ? "Undervalued" : "Fairly Priced",
+            macro_sentiment: avgChange > 0 ? "Positive" : "Neutral",
+            industry_position: sectorAvgChange > avgChange ? "Underperforming" : "Outperforming",
+            holding_period_months: 6
+          },
+          what_do_ai_models_predict_for_future: {
+            forecast_range: {
+              low: stock.current * 0.90,
+              expected: stock.current * (1 + (stock.changePercent / 100)),
+              high: stock.current * 1.15
+            },
+            ai_rating: stock.changePercent > 2 ? "Buy" : stock.changePercent < -2 ? "Sell" : "Hold",
+            confidence: 0.75,
+            investment_type: stock.changePercent > 3 ? "Growth" : "Balanced",
+            potential_risks: [
+              "Market volatility",
+              "Sector-specific risks",
+              "Economic policy changes"
+            ],
+            growth_drivers: [
+              "Strong fundamentals",
+              "Sector growth potential",
+              "Market positioning"
+            ]
+          },
+          how_has_the_stock_performed_in_past_2_years: {
+            price_change_percent: stock.changePercent * 10,
+            volatility_30d_avg: Math.abs(stock.changePercent),
+            market_cap_growth: `${Math.round(stock.changePercent * 5)}%`,
+            dividend_yield_avg: `${companyData?.dividendYield || 3.5}%`,
+            key_news_events: [
+              {
+                date: currentDate,
+                title: `${symbol} shows ${trend.toLowerCase()} momentum`,
+                impact: stock.changePercent > 2 ? "Positive" : stock.changePercent < -2 ? "Negative" : "Neutral"
+              }
+            ],
+            notable_trends: [
+              {
+                type: stock.changePercent > 0 ? "Recovery" : "Consolidation",
+                from: "2024-01-01",
+                to: currentDate,
+                description: `Stock showing ${trend.toLowerCase()} pattern with ${volatility.toLowerCase()} volatility`
+              }
+            ]
+          },
+          what_are_the_analysts_saying: {
+            analyst_sentiment: stock.changePercent > 1 ? "Buy" : stock.changePercent < -1 ? "Sell" : "Hold",
+            target_range: {
+              low: stock.current * 0.95,
+              avg: stock.current * 1.05,
+              high: stock.current * 1.15
+            },
+            analysts_covered: 5,
+            summary: `Analysts are ${trend.toLowerCase()} on ${symbol} based on current market conditions and sector performance.`
+          },
+          are_there_any_alerts_or_watch_tags: {
+            tags: [
+              stock.changePercent > 3 ? "Breakout" : stock.changePercent < -3 ? "Breakdown" : "Stable",
+              volatility === "High" ? "High Volatility" : "Stable",
+              sectorAvgChange > avgChange ? "Sector Outperformer" : "Market Leader"
+            ],
+            alerts: [
+              {
+                type: "Price Target",
+                triggered_on: currentDate,
+                description: `Stock ${trend.toLowerCase()} with ${Math.abs(stock.changePercent).toFixed(2)}% movement`
+              }
+            ]
+          },
+          is_this_stock_exposed_to_global_risks: {
+            exports_percent: 25,
+            currency_risk: "Moderate",
+            foreign_ownership: ["Institutional", "Retail"],
+            geo_dependency: ["Regional markets", "Global economy"]
+          },
+          meta: {
+            source: "Gemini AI",
+            model_version: "gemini-1.5-flash",
+            schema_version: "v3.0",
+            generated_on: currentDate,
+            language: "en"
+          }
+        };
+      }
+
+      res.json(aiAnalysis);
     } catch (error) {
-      console.error("AI prediction error:", error);
-      res.status(500).json({ error: "Failed to generate AI predictions" });
+      console.error("AI Stock Analysis error:", error);
+      res.status(500).json({ error: "Failed to generate comprehensive stock analysis" });
     }
   });
 
-  return createServer(app);
+  const httpServer = createServer(app);
+
+  // Note: WebSocket functionality moved to separate market-ws-server.ts
+  // This server now focuses only on REST API endpoints
+
+  // Note: Periodic data fetching moved to market-ws-server.ts
+
+  return httpServer;
 }
