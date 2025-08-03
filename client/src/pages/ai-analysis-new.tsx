@@ -338,11 +338,18 @@ function AIAnalysisPage() {
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <div className="space-y-3">
-              <Link href="/">
-                <Button variant="ghost" size="sm" className="mb-2 hover:bg-blue-100 dark:hover:bg-blue-900/50">
-                  <ArrowLeft className="w-4 h-4 mr-2" /> Dashboard
-                </Button>
-              </Link>
+              <div className="flex gap-2">
+                <Link href="/">
+                  <Button variant="ghost" size="sm" className="mb-2 hover:bg-blue-100 dark:hover:bg-blue-900/50">
+                    <ArrowLeft className="w-4 h-4 mr-2" /> Dashboard
+                  </Button>
+                </Link>
+                <Link href="/stock-ai-plus">
+                  <Button variant="outline" size="sm" className="mb-2 hover:bg-purple-100 dark:hover:bg-purple-900/50">
+                    <Sparkles className="w-4 h-4 mr-2" /> Stock AI+
+                  </Button>
+                </Link>
+              </div>
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
                   <Brain className="w-8 h-8 text-white" />
