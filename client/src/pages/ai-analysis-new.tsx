@@ -133,6 +133,12 @@ function AIAnalysisPage() {
   const stocks = Array.isArray(stocksData) ? stocksData : 
                  (stocksData?.stocks && Array.isArray(stocksData.stocks)) ? stocksData.stocks : [];
 
+  // Auto-load data on component mount
+  useEffect(() => {
+    fetchMarketInsights();
+    fetchIndexData();
+  }, []);
+
   // Debug logging
   console.log('Stocks data:', { stocksData, stocks, length: stocks.length, loading: stocksLoading });
 
@@ -154,12 +160,6 @@ function AIAnalysisPage() {
       </div>
     );
   }
-
-  // Auto-load data on component mount
-  useEffect(() => {
-    fetchMarketInsights();
-    fetchIndexData();
-  }, []);
 
   const fetchIndexData = async () => {
     try {
