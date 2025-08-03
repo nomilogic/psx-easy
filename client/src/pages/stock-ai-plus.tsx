@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -71,8 +70,8 @@ interface StockAnalysisData {
         start_price: number;
         end_price: number;
         change_percent: number;
-        52_week_high: number;
-        52_week_low: number;
+        "52_week_high": number;
+        "52_week_low": number;
         volatility_weekly_percent: string;
       };
       market_cap: {
