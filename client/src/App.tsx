@@ -12,6 +12,7 @@ import AIAnalysis from "@/pages/ai-analysis-new";
 import AIAnalysisComprehensive from "@/pages/ai-analysis-comprehensive";
 import StockAIPlus from "@/pages/stock-ai-plus";
 import AIAnalysisPage from "@/pages/ai-analysis-new";
+import AITest from "@/pages/ai-test";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -59,6 +60,7 @@ function AppContent() {
         <Route path="/ai-comprehensive" component={AIAnalysisComprehensive} />
         <Route path="/stock-ai-plus" component={StockAIPlus} />
         <Route path="/ai-analysis-new" component={AIAnalysisPage} />
+        <Route path="/ai-test" component={AITest} />
         <Route component={NotFound} />
       </Switch>
       <Toaster />

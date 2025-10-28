@@ -12,6 +12,7 @@ import {
   Globe,
   TrendingUp,
   Bot,
+  Sparkles,
 } from "lucide-react";
 import GlobalHeaderTicker from "./global-header-ticker";
 import HeaderTicker from "./header-ticker";
@@ -28,6 +29,7 @@ export default function Navigation() {
     { path: "/api", label: "Market Data", icon: BarChart3 },
     { path: "/ai-analysis", label: "AI Analysis", icon: Brain },
     { path: "/ai-comprehensive", label: "AI Stock Analysis", icon: Bot },
+    { path: "/ai-test", label: "AI Test", icon: Sparkles },
   ];
 
   const isActive = (path: string) => {

@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { PSXService } from "./services/psx-service";
 import { CompanyService } from "./services/company-service";
+import { generateHTMLContent } from "./services/gemini";
 import kse100Routes from "./routes-kse100";
 import type {
   StockData,
@@ -26,6 +27,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api", (req, res, next) => {
     apiCallsThisMinute++;
     next();
+  });
+
+  // AI Test endpoint - Generate HTML from prompt
+  app.post("/api/ai-test", async (req, res) => {
+    try {
+      const { prompt } = req.body;
+      
+      if (!prompt || typeof prompt !== 'string') {
+        return res.status(400).json({ error: "Prompt is required" });
+      }
+
+      const htmlContent = await generateHTMLContent(prompt);
+      res.json({ html: htmlContent });
+    } catch (error) {
+      console.error("Error generating HTML:", error);
+      res.status(500).json({ error: "Failed to generate HTML content" });
+    }
   });
 
   // Market status endpoint
