@@ -84,26 +84,27 @@ export default function AITest() {
             {/* HTML Code */}
             <Card className="shadow-lg border-green-100 dark:border-green-900">
               <CardHeader>
-                <CardTitle className="text-green-700 dark:text-green-400">HTML Code</CardTitle>
-                <CardDescription>Copy this code to use in your project</CardDescription>
+                <CardTitle className="text-green-700 dark:text-green-400">HTML Code (Editable)</CardTitle>
+                <CardDescription>Edit the code and see changes in the preview</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="relative">
-                  <pre className="bg-slate-900 dark:bg-slate-950 text-slate-100 p-4 rounded-lg overflow-x-auto text-sm">
-                    <code data-testid="output-html-code">{htmlOutput}</code>
-                  </pre>
-                  <Button
-                    data-testid="button-copy"
-                    onClick={() => {
-                      navigator.clipboard.writeText(htmlOutput);
-                    }}
-                    variant="outline"
-                    size="sm"
-                    className="absolute top-2 right-2"
-                  >
-                    Copy
-                  </Button>
-                </div>
+              <CardContent className="space-y-3">
+                <Textarea
+                  data-testid="output-html-code"
+                  value={htmlOutput}
+                  onChange={(e) => setHtmlOutput(e.target.value)}
+                  className="min-h-[400px] font-mono text-sm bg-slate-900 dark:bg-slate-950 text-slate-100 border-slate-700"
+                />
+                <Button
+                  data-testid="button-copy"
+                  onClick={() => {
+                    navigator.clipboard.writeText(htmlOutput);
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                >
+                  Copy to Clipboard
+                </Button>
               </CardContent>
             </Card>
 

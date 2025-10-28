@@ -16,7 +16,7 @@ Return ONLY the HTML content without any markdown code blocks or explanations.
 Make sure the HTML is semantic and accessible.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-pro",
       config: {
         systemInstruction: systemPrompt,
       },
