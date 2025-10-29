@@ -13,10 +13,10 @@ export async function generateHTMLContent(prompt: string): Promise<string> {
     const systemPrompt = `You are an expert web developer. Generate clean, well-structured HTML content based on the user's request. 
 The HTML should be ready to render and can include Tailwind CSS classes for styling.
 Return ONLY the HTML content without any markdown code blocks or explanations.
-Make sure the HTML is semantic and accessible.`;
+Make sure the HTML is semantic and accessible. keep in mind all the infformation should be authentic and accurate if not available then don't include it.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-pro",
+      model: "gemini-2.5-flash",
       config: {
         systemInstruction: systemPrompt,
       },
