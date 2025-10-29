@@ -285,12 +285,12 @@ export default function AITest() {
 
         {/* Output Section */}
         {htmlOutput && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-6">
             {/* HTML Code */}
             <Card className="shadow-lg border-green-100 dark:border-green-900">
               <CardHeader>
                 <CardTitle className="text-green-700 dark:text-green-400">HTML Code (Editable)</CardTitle>
-                <CardDescription>Edit the code and see changes in the preview</CardDescription>
+                <CardDescription>Edit the code and see changes in the preview below</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Textarea
