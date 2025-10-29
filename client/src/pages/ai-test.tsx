@@ -73,6 +73,8 @@ const AI_MODELS = {
       { value: "command-r", label: "Command R" },
       { value: "dolphin", label: "Dolphin" },
       { value: "wizardlm", label: "WizardLM" },
+      { value: "gemini-search", label: "Gemini Search" },
+      { value: "searchgpt", label: "SearchGPT" },
     ],
   },
 };
