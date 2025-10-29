@@ -62,6 +62,19 @@ const AI_MODELS = {
       { value: "Salesforce/codegen-16B-mono", label: "CodeGen 16B" },
     ],
   },
+  pollinations: {
+    popular: [
+      { value: "openai", label: "OpenAI (via Pollinations)" },
+      { value: "mistral", label: "Mistral (via Pollinations)" },
+      { value: "llama", label: "Llama (via Pollinations)" },
+      { value: "claude", label: "Claude (via Pollinations)" },
+    ],
+    specialized: [
+      { value: "command-r", label: "Command R" },
+      { value: "dolphin", label: "Dolphin" },
+      { value: "wizardlm", label: "WizardLM" },
+    ],
+  },
 };
 
 const getModelLabel = (modelValue: string): string => {
@@ -240,6 +253,30 @@ export default function AITest() {
                     Hugging Face - Code
                   </div>
                   {AI_MODELS.huggingface.code.map((model) => (
+                    <SelectItem key={model.value} value={model.value}>
+                      <div className="flex items-center gap-2">
+                        <Bot className="w-4 h-4" />
+                        <span>{model.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  
+                  <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 uppercase mt-2">
+                    Pollinations.AI - Popular
+                  </div>
+                  {AI_MODELS.pollinations.popular.map((model) => (
+                    <SelectItem key={model.value} value={model.value}>
+                      <div className="flex items-center gap-2">
+                        <Bot className="w-4 h-4" />
+                        <span>{model.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  
+                  <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 uppercase mt-2">
+                    Pollinations.AI - Specialized
+                  </div>
+                  {AI_MODELS.pollinations.specialized.map((model) => (
                     <SelectItem key={model.value} value={model.value}>
                       <div className="flex items-center gap-2">
                         <Bot className="w-4 h-4" />
