@@ -49,7 +49,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         htmlContent = await generateHTMLContentOpenAI(prompt, model);
       } else if (model.startsWith('gemini-')) {
         htmlContent = await generateHTMLContent(prompt, model);
-      } else if (["openai", "mistral", "llama", "claude", "command-r", "dolphin", "wizardlm"].includes(model)) {
+      } else if (["openai", "openai-fast", "openai-large", "openai-reasoning", "openai-audio", "gemini", "gemini-search", "mistral", "deepseek", "bidara", "chickytutor", "evil", "midijourney", "qwen-coder", "roblox-rp", "rtist", "unity"].includes(model)) {
         // Use Pollinations.AI
         const { generateHTMLContentPollinations } = await import("./services/pollinations");
         htmlContent = await generateHTMLContentPollinations(prompt, model);
