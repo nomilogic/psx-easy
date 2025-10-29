@@ -61,7 +61,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ html: htmlContent });
     } catch (error) {
       console.error("Error generating HTML:", error);
-      res.status(500).json({ error: "Failed to generate HTML content" });
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate HTML content";
+      res.status(500).json({ 
+        error: "Failed to generate HTML content",
+        details: errorMessage,
+        model: model
+      });
     }
   });
 
@@ -827,7 +832,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         - Current Price: Rs. ${stock.current}
         - Daily Change: ${stock.change} (${stock.changePercent}%)
         - Volume: ${stock.volume.toLocaleString()} shares
-        - Sector: ${stock.sector}
         - Day High: Rs. ${stock.high}
         - Day Low: Rs. ${stock.low}
         - Price Range: Rs. ${stock.low} - Rs. ${stock.high}
