@@ -65,7 +65,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         error: "Failed to generate HTML content",
         details: errorMessage,
-        model: model
+        model: req.body.model || "unknown"
       });
     }
   });
