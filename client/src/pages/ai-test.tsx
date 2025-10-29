@@ -7,14 +7,48 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Sparkles, Bot } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
-const AI_MODELS = [
-  { value: "gpt-5", label: "GPT-5 (OpenAI - Latest)", provider: "OpenAI" },
-  { value: "gpt-4o", label: "GPT-4o (OpenAI)", provider: "OpenAI" },
-  { value: "gpt-4-turbo", label: "GPT-4 Turbo (OpenAI)", provider: "OpenAI" },
-  { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro (Google)", provider: "Google" },
-  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Google)", provider: "Google" },
-  { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash (Google)", provider: "Google" },
-];
+const AI_MODELS = {
+  openai: {
+    reasoning: [
+      { value: "gpt-5", label: "GPT-5" },
+      { value: "gpt-5-mini", label: "GPT-5 Mini" },
+      { value: "gpt-4o", label: "GPT-4o" },
+      { value: "gpt-4.1-mini", label: "GPT-4.1 Mini" },
+      { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
+    ],
+    open_weight: [
+      { value: "gpt-oss-120b", label: "GPT-OSS-120B" },
+      { value: "gpt-oss-20b", label: "GPT-OSS-20B" },
+    ],
+  },
+  gemini: {
+    general: [
+      { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+      { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+    ],
+    performance_and_cost: [
+      { value: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite" },
+      { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
+      { value: "gemini-2.0-flash-lite", label: "Gemini 2.0 Flash Lite" },
+    ],
+    specialized: [
+      { value: "gemini-2.5-flash-image", label: "Gemini 2.5 Flash Image" },
+    ],
+    live_api: [
+      { value: "gemini-2.5-flash-live", label: "Gemini 2.5 Flash Live" },
+    ],
+  },
+};
+
+const getModelLabel = (modelValue: string): string => {
+  for (const provider of Object.values(AI_MODELS)) {
+    for (const category of Object.values(provider)) {
+      const model = category.find((m) => m.value === modelValue);
+      if (model) return model.label;
+    }
+  }
+  return modelValue;
+};
 
 export default function AITest() {
   const [prompt, setPrompt] = useState("");
@@ -69,8 +103,71 @@ export default function AITest() {
                 <SelectTrigger data-testid="select-model" className="w-full">
                   <SelectValue placeholder="Select AI Model" />
                 </SelectTrigger>
-                <SelectContent>
-                  {AI_MODELS.map((model) => (
+                <SelectContent className="max-h-[400px]">
+                  <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 uppercase">
+                    OpenAI - Reasoning Models
+                  </div>
+                  {AI_MODELS.openai.reasoning.map((model) => (
+                    <SelectItem key={model.value} value={model.value}>
+                      <div className="flex items-center gap-2">
+                        <Bot className="w-4 h-4" />
+                        <span>{model.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  
+                  <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 uppercase mt-2">
+                    OpenAI - Open Weight
+                  </div>
+                  {AI_MODELS.openai.open_weight.map((model) => (
+                    <SelectItem key={model.value} value={model.value}>
+                      <div className="flex items-center gap-2">
+                        <Bot className="w-4 h-4" />
+                        <span>{model.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  
+                  <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 uppercase mt-2">
+                    Gemini - General
+                  </div>
+                  {AI_MODELS.gemini.general.map((model) => (
+                    <SelectItem key={model.value} value={model.value}>
+                      <div className="flex items-center gap-2">
+                        <Bot className="w-4 h-4" />
+                        <span>{model.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  
+                  <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 uppercase mt-2">
+                    Gemini - Performance & Cost
+                  </div>
+                  {AI_MODELS.gemini.performance_and_cost.map((model) => (
+                    <SelectItem key={model.value} value={model.value}>
+                      <div className="flex items-center gap-2">
+                        <Bot className="w-4 h-4" />
+                        <span>{model.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  
+                  <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 uppercase mt-2">
+                    Gemini - Specialized
+                  </div>
+                  {AI_MODELS.gemini.specialized.map((model) => (
+                    <SelectItem key={model.value} value={model.value}>
+                      <div className="flex items-center gap-2">
+                        <Bot className="w-4 h-4" />
+                        <span>{model.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  
+                  <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 uppercase mt-2">
+                    Gemini - Live API
+                  </div>
+                  {AI_MODELS.gemini.live_api.map((model) => (
                     <SelectItem key={model.value} value={model.value}>
                       <div className="flex items-center gap-2">
                         <Bot className="w-4 h-4" />
@@ -102,7 +199,7 @@ export default function AITest() {
               {generateMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating with {AI_MODELS.find(m => m.value === selectedModel)?.label}...
+                  Generating with {getModelLabel(selectedModel)}...
                 </>
               ) : (
                 <>
