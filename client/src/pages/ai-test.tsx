@@ -38,6 +38,30 @@ const AI_MODELS = {
       { value: "gemini-2.5-flash-live", label: "Gemini 2.5 Flash Live" },
     ],
   },
+  groq: {
+    fast: [
+      { value: "llama-3.3-70b-versatile", label: "Llama 3.3 70B" },
+      { value: "llama-3.1-70b-versatile", label: "Llama 3.1 70B" },
+      { value: "llama-3.1-8b-instant", label: "Llama 3.1 8B Instant" },
+      { value: "mixtral-8x7b-32768", label: "Mixtral 8x7B" },
+    ],
+    specialized: [
+      { value: "llama-3.2-90b-vision-preview", label: "Llama 3.2 90B Vision" },
+      { value: "llama-3.2-11b-vision-preview", label: "Llama 3.2 11B Vision" },
+    ],
+  },
+  huggingface: {
+    popular: [
+      { value: "meta-llama/Llama-3.3-70B-Instruct", label: "Llama 3.3 70B Instruct" },
+      { value: "meta-llama/Llama-3.1-8B-Instruct", label: "Llama 3.1 8B Instruct" },
+      { value: "mistralai/Mistral-7B-Instruct-v0.3", label: "Mistral 7B Instruct" },
+      { value: "microsoft/Phi-3-mini-4k-instruct", label: "Phi-3 Mini 4K" },
+    ],
+    code: [
+      { value: "bigcode/starcoder2-15b", label: "StarCoder2 15B" },
+      { value: "Salesforce/codegen-16B-mono", label: "CodeGen 16B" },
+    ],
+  },
 };
 
 const getModelLabel = (modelValue: string): string => {
@@ -168,6 +192,54 @@ export default function AITest() {
                     Gemini - Live API
                   </div>
                   {AI_MODELS.gemini.live_api.map((model) => (
+                    <SelectItem key={model.value} value={model.value}>
+                      <div className="flex items-center gap-2">
+                        <Bot className="w-4 h-4" />
+                        <span>{model.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  
+                  <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 uppercase mt-2">
+                    Groq - Fast Models
+                  </div>
+                  {AI_MODELS.groq.fast.map((model) => (
+                    <SelectItem key={model.value} value={model.value}>
+                      <div className="flex items-center gap-2">
+                        <Bot className="w-4 h-4" />
+                        <span>{model.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  
+                  <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 uppercase mt-2">
+                    Groq - Specialized
+                  </div>
+                  {AI_MODELS.groq.specialized.map((model) => (
+                    <SelectItem key={model.value} value={model.value}>
+                      <div className="flex items-center gap-2">
+                        <Bot className="w-4 h-4" />
+                        <span>{model.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  
+                  <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 uppercase mt-2">
+                    Hugging Face - Popular
+                  </div>
+                  {AI_MODELS.huggingface.popular.map((model) => (
+                    <SelectItem key={model.value} value={model.value}>
+                      <div className="flex items-center gap-2">
+                        <Bot className="w-4 h-4" />
+                        <span>{model.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  
+                  <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 uppercase mt-2">
+                    Hugging Face - Code
+                  </div>
+                  {AI_MODELS.huggingface.code.map((model) => (
                     <SelectItem key={model.value} value={model.value}>
                       <div className="flex items-center gap-2">
                         <Bot className="w-4 h-4" />
