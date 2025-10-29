@@ -8,7 +8,7 @@ import { GoogleGenAI } from "@google/genai";
 // This API key is from Gemini Developer API Key, not vertex AI API Key
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
-export async function generateHTMLContent(prompt: string): Promise<string> {
+export async function generateHTMLContent(prompt: string, model: string = "gemini-2.5-pro"): Promise<string> {
   try {
     const systemPrompt = `You are an expert web developer. Generate clean, well-structured HTML content based on the user's request. 
 The HTML should be ready to render and can include Tailwind CSS classes for styling.
@@ -16,7 +16,7 @@ Return ONLY the HTML content without any markdown code blocks or explanations.
 Make sure the HTML is semantic and accessible. keep in mind all the infformation should be authentic and accurate if not available then don't include it.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: model,
       config: {
         systemInstruction: systemPrompt,
       },

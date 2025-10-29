@@ -3,18 +3,29 @@ import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Sparkles } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Sparkles, Bot } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+
+const AI_MODELS = [
+  { value: "gpt-5", label: "GPT-5 (OpenAI - Latest)", provider: "OpenAI" },
+  { value: "gpt-4o", label: "GPT-4o (OpenAI)", provider: "OpenAI" },
+  { value: "gpt-4-turbo", label: "GPT-4 Turbo (OpenAI)", provider: "OpenAI" },
+  { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro (Google)", provider: "Google" },
+  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Google)", provider: "Google" },
+  { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash (Google)", provider: "Google" },
+];
 
 export default function AITest() {
   const [prompt, setPrompt] = useState("");
+  const [selectedModel, setSelectedModel] = useState("gpt-5");
   const [htmlOutput, setHtmlOutput] = useState("");
 
   const generateMutation = useMutation({
-    mutationFn: async (promptText: string) => {
-      const response = await apiRequest("POST", "/api/ai-test", { prompt: promptText });
-      const data = await response.json();
-      return data;
+    mutationFn: async (data: { prompt: string; model: string }) => {
+      const response = await apiRequest("POST", "/api/ai-test", data);
+      const result = await response.json();
+      return result;
     },
     onSuccess: (data: { html: string }) => {
       setHtmlOutput(data.html);
@@ -22,8 +33,8 @@ export default function AITest() {
   });
 
   const handleGenerate = () => {
-    if (prompt.trim()) {
-      generateMutation.mutate(prompt);
+    if (prompt.trim() && selectedModel) {
+      generateMutation.mutate({ prompt, model: selectedModel });
     }
   };
 
@@ -50,23 +61,48 @@ export default function AITest() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Textarea
-              data-testid="input-prompt"
-              placeholder="Enter your prompt here... (e.g., 'Create a beautiful profile card with an avatar, name, title, and social media links')"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              className="min-h-[150px] text-base"
-            />
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                AI Model
+              </label>
+              <Select value={selectedModel} onValueChange={setSelectedModel}>
+                <SelectTrigger data-testid="select-model" className="w-full">
+                  <SelectValue placeholder="Select AI Model" />
+                </SelectTrigger>
+                <SelectContent>
+                  {AI_MODELS.map((model) => (
+                    <SelectItem key={model.value} value={model.value}>
+                      <div className="flex items-center gap-2">
+                        <Bot className="w-4 h-4" />
+                        <span>{model.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Prompt
+              </label>
+              <Textarea
+                data-testid="input-prompt"
+                placeholder="Enter your prompt here... (e.g., 'Create a beautiful profile card with an avatar, name, title, and social media links')"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                className="min-h-[150px] text-base"
+              />
+            </div>
             <Button
               data-testid="button-generate"
               onClick={handleGenerate}
-              disabled={!prompt.trim() || generateMutation.isPending}
+              disabled={!prompt.trim() || !selectedModel || generateMutation.isPending}
               className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
             >
               {generateMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
+                  Generating with {AI_MODELS.find(m => m.value === selectedModel)?.label}...
                 </>
               ) : (
                 <>

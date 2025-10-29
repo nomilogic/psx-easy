@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { PSXService } from "./services/psx-service";
 import { CompanyService } from "./services/company-service";
 import { generateHTMLContent } from "./services/gemini";
+import { generateHTMLContentOpenAI } from "./services/openai";
 import kse100Routes from "./routes-kse100";
 import type {
   StockData,
@@ -32,13 +33,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Test endpoint - Generate HTML from prompt
   app.post("/api/ai-test", async (req, res) => {
     try {
-      const { prompt } = req.body;
+      const { prompt, model } = req.body;
       
       if (!prompt || typeof prompt !== 'string') {
         return res.status(400).json({ error: "Prompt is required" });
       }
 
-      const htmlContent = await generateHTMLContent(prompt);
+      if (!model || typeof model !== 'string') {
+        return res.status(400).json({ error: "Model is required" });
+      }
+
+      let htmlContent: string;
+
+      if (model.startsWith('gpt-')) {
+        htmlContent = await generateHTMLContentOpenAI(prompt, model);
+      } else if (model.startsWith('gemini-')) {
+        htmlContent = await generateHTMLContent(prompt, model);
+      } else {
+        return res.status(400).json({ error: "Invalid model selected" });
+      }
+
       res.json({ html: htmlContent });
     } catch (error) {
       console.error("Error generating HTML:", error);
