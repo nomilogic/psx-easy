@@ -34,25 +34,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ai-test", async (req, res) => {
     try {
       const { prompt, model } = req.body;
+      console.log(
+        `AI Test endpoint called with prompt: ${prompt} and model: ${model}`,
+      );
 
-      if (!prompt || typeof prompt !== 'string') {
+      if (!prompt || typeof prompt !== "string") {
         return res.status(400).json({ error: "Prompt is required" });
       }
 
-      if (!model || typeof model !== 'string') {
+      if (!model || typeof model !== "string") {
         return res.status(400).json({ error: "Model is required" });
       }
 
       let htmlContent: string;
 
       // Check Pollinations models first (before checking for gemini- prefix)
-      if (["openai", "openai-fast", "openai-large", "openai-reasoning", "openai-audio", "gemini", "gemini-search", "mistral", "deepseek", "bidara", "chickytutor", "evil", "midijourney", "qwen-coder", "roblox-rp", "rtist", "unity"].includes(model)) {
+      if (
+        [
+          "openai",
+          "openai-fast",
+          "openai-large",
+          "openai-reasoning",
+          "openai-audio",
+          "gemini",
+          "gemini-search",
+          "mistral",
+          "deepseek",
+          "bidara",
+          "chickytutor",
+          "evil",
+          "midijourney",
+          "qwen-coder",
+          "roblox-rp",
+          "rtist",
+          "unity",
+        ].includes(model)
+      ) {
         // Use Pollinations.AI
-        const { generateHTMLContentPollinations } = await import("./services/pollinations");
+        const { generateHTMLContentPollinations } = await import(
+          "./services/pollinations"
+        );
         htmlContent = await generateHTMLContentPollinations(prompt, model);
-      } else if (model.startsWith('gpt-')) {
+      } else if (model.startsWith("gpt-")) {
         htmlContent = await generateHTMLContentOpenAI(prompt, model);
-      } else if (model.startsWith('gemini-')) {
+      } else if (model.startsWith("gemini-")) {
         htmlContent = await generateHTMLContent(prompt, model);
       } else {
         return res.status(400).json({ error: "Invalid model selected" });
@@ -61,11 +86,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ html: htmlContent });
     } catch (error) {
       console.error("Error generating HTML:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to generate HTML content";
-      res.status(500).json({ 
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to generate HTML content";
+      res.status(500).json({
         error: "Failed to generate HTML content",
         details: errorMessage,
-        model: req.body.model || "unknown"
+        model: req.body.model || "unknown",
       });
     }
   });
@@ -1836,7 +1864,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (jsonMatch) {
                 aiPredictions = JSON.parse(jsonMatch[0]);
               } else {
-                console.warn("Could not find JSON array in AI predictions response.");
+                console.warn(
+                  "Could not find JSON array in AI predictions response.",
+                );
               }
             } catch (parseError) {
               console.error("Error parsing AI predictions JSON:", parseError);

@@ -122,7 +122,7 @@ export class PSXService {
   private static readonly HISTORICAL_URL = `${PSXService.BASE_URL}/historical`;
   private static readonly SYMBOL_URL = `${PSXService.BASE_URL}/symbols`;
 
-  private static async fetchWithRetry<T extends string | object>(
+  static async fetchWithRetry<T extends string | object>(
     url: string,
     isJson: boolean = true,
   ): Promise<T> {
