@@ -9,28 +9,29 @@ export async function generateHTMLContentPollinations(
 
     const enhancedPrompt = `${prompt}
 
-IMPORTANT: You are generating HTML content for a web application. 
-- Return ONLY valid HTML code
-- Include inline styles or Tailwind CSS classes for styling
-- Make it visually appealing and responsive
-- Ensure all data is authentic and accurate
-- If data is not available, do not include placeholder text
+You are generating HTML content for a web application. 
+Return ONLY valid HTML code
+Include inline styles or Tailwind CSS classes for styling
+Make it visually appealing and responsive
+Ensure all data is authentic and accurate
+If data is not available, do not include placeholder text
 
-Return ONLY the HTML content, no markdown formatting or code blocks.`;
+Return ONLY the HTML content, no markdown formatting or code blocks`;
 
     // Pollinations.AI text generation endpoint - using the model attribute correctly
     const url = `https://text.pollinations.ai/${encodeURIComponent(enhancedPrompt)}?model=${encodeURIComponent(model)}&json=false`;
 
     console.log(`Calling Pollinations API with URL: ${url}`);
     console.log(`Using model: ${model}`);
-
+    const token="XOs00Fr01SBhK - LR";
     const response = await fetch(url, {
       method: "GET",
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/117.0 Safari/537.36",
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9",
         "Accept-Language": "en-US,en;q=0.5",
+        "Authorization": `Bearer ${token}`,
       },
     });
 

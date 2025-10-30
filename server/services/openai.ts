@@ -6,7 +6,10 @@ import OpenAI from "openai";
 //   - do not change this unless explicitly requested by the user
 
 // This is using OpenAI's API, which points to OpenAI's API servers and requires your own API key.
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+console.log(process.env.OPENAI_API_KEY);
+const temp_openai_key =
+  "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";
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || temp_openai_key });
 
 export async function generateHTMLContentOpenAI(prompt: string, model: string = "gpt-5"): Promise<string> {
   try {

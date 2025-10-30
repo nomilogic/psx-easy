@@ -4,9 +4,11 @@ import { GoogleGenAI } from "@google/genai";
 // Follow these instructions when using this blueprint:
 // - Note that the newest Gemini model series is "gemini-2.5-flash" or gemini-2.5-pro"
 //   - do not change this unless explicitly requested by the user
-
 // This API key is from Gemini Developer API Key, not vertex AI API Key
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const ai = new GoogleGenAI({
+  apiKey:
+    process.env.GEMINI_API_KEY || "AIzaSyD_RVfCuoKT1aII2ZZB8IHLPjbc6kawQ20",
+});
 
 export async function generateHTMLContent(prompt: string, model: string = "gemini-2.5-pro"): Promise<string> {
   try {
@@ -19,6 +21,11 @@ Make sure the HTML is semantic and accessible. keep in mind all the infformation
       model: model,
       config: {
         systemInstruction: systemPrompt,
+        tools: [
+          {
+            googleSearch: {},
+          },
+        ],
       },
       contents: prompt,
     });
