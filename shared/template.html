@@ -1,0 +1,460 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PIBTL Stock Analysis - October 30, 2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0a192f; /* Dark blue background */
+            color: #ccd6f6; /* Light text color */
+        }
+        .card {
+            background-color: rgba(10, 25, 47, 0.7); /* Semi-transparent dark blue for cards */
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+        .gradient-indigo-blue {
+            background: linear-gradient(135deg, #663399 0%, #4169e1 100%); /* Indigo to Blue */
+        }
+        .gradient-dark-blue {
+            background: linear-gradient(135deg, #0a192f 0%, #112240 100%); /* Dark Blue Shades */
+        }
+        .text-yellow {
+            color: #ffd700; /* Yellow */
+        }
+        .text-orange {
+            color: #ffa500; /* Orange */
+        }
+        .text-green {
+            color: #32cd32; /* Lime Green */
+        }
+        .text-light-blue {
+            color: #88c0d0; /* Light Blue */
+        }
+        .border-gradient {
+            border-image-source: linear-gradient(135deg, #663399 0%, #4169e1 100%);
+            border-image-slice: 1;
+            border-width: 2px;
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(100, 116, 139, 0.3); /* Light gray border for table rows */
+        }
+        th {
+            background-color: #112240; /* Darker blue for table headers */
+            font-weight: bold;
+            color: #e2e8f0; /* Lighter text for headers */
+        }
+        tr:hover {
+            background-color: rgba(17, 34, 64, 0.5); /* Slightly lighter on hover */
+        }
+    </style>
+</head>
+<body class="font-sans antialiased">
+
+    <div class="container mx-auto px-4 py-8">
+
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-yellow mb-2">Pakistan Stock Exchange - Stock Analysis</h1>
+            <p class="text-lg text-light-blue">Analysis for PIBTL as of October 30, 2025</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+            <!-- Company Overview Card -->
+            <div class="card p-6 gradient-dark-blue">
+                <h2 class="text-2xl font-semibold text-white mb-4 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 1.381-1.119 2.5-2.5 2.5S7 12.381 7 11s1.119-2.5 2.5-2.5S12 9.619 12 11zm0 0 0 2.5-2.5 2.5S7 13.5 7 11s1.119-2.5 2.5-2.5S12 9.619 12 11z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14c0-1.381 1.119-2.5 2.5-2.5h2.5c0-2.481-2.019-4.5-4.5-4.5h-2.5c-1.381 0-2.5 1.119-2.5 2.5v2.5c0 1.381 1.119 2.5 2.5 2.5h2.5c0 2.481 2.019 4.5 4.5 4.5h2.5c1.381 0 2.5-1.119 2.5-2.5v-2.5c0-1.381-1.119-2.5-2.5-2.5H12z"></path></svg>
+                    Company Overview
+                </h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Company Name:</p>
+                        <p class="text-white font-semibold">Oil & Gas Development Company Limited</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Ticker:</p>
+                        <p class="text-yellow font-bold text-xl">OGDC</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Sector:</p>
+                        <p class="text-white">Energy / Oil & Gas</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Country:</p>
+                        <p class="text-white">Pakistan</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Currency:</p>
+                        <p class="text-white">PKR</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">ISIN:</p>
+                        <p class="text-white">PK0080201012</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Website:</p>
+                        <a href="https://www.ogdcl.com" target="_blank" rel="noopener noreferrer" class="text-green hover:underline">ogdcl.com</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Price Performance Card -->
+            <div class="card p-6 gradient-indigo-blue">
+                <h2 class="text-2xl font-semibold text-white mb-4 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5a1.5 1.5 0 113 0v1.5a1.5 1.5 0 003 0V11.5a1.5 1.5 0 113 0v5.5a1.5 1.5 0 00-1.5 1.5h-3.5a1.5 1.5 0 00-1.5 1.5v3.5a1.5 1.5 0 003 0v-3.5a1.5 1.5 0 00-1.5-1.5h-3.5a1.5 1.5 0 00-1.5-1.5v-3.5a1.5 1.5 0 00-1.5-1.5z"></path></svg>
+                    Price Performance
+                </h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Current Price (PKR):</p>
+                        <p class="text-white font-bold text-2xl">255.67</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Change (%):</p>
+                        <p class="text-green font-bold text-xl">+99.70%</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">52-Week High:</p>
+                        <p class="text-white">256.31</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">52-Week Low:</p>
+                        <p class="text-white">128.05</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Weekly Volatility:</p>
+                        <p class="text-orange">3.2%</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Financial Highlights Card -->
+            <div class="card p-6 gradient-dark-blue">
+                <h2 class="text-2xl font-semibold text-white mb-4 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10a2 2 0 002 2h2a2 2 0 002-2v-6a2 2 0 00-2-2H9z"></path></svg>
+                    Financial Highlights (TTM)
+                </h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Revenue (2025 TTM):</p>
+                        <p class="text-white font-semibold">426,440.0 M PKR</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Net Income (2025 TTM):</p>
+                        <p class="text-white font-semibold">167,480.0 M PKR</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">EPS (2025 TTM):</p>
+                        <p class="text-white font-semibold">38.94 PKR</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Net Profit Margin:</p>
+                        <p class="text-green font-semibold">39.27%</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Gross Profit Margin:</p>
+                        <p class="text-yellow font-semibold">59.11%</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dividend Information Card -->
+            <div class="card p-6 gradient-indigo-blue">
+                <h2 class="text-2xl font-semibold text-white mb-4 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-0.613 0-1.119-0.495-1.23-1.119L10 5.5 9.77 4.122C9.658 3.495 9.152 3 8.537 3h-1.074C7.152 3 6.646 3.495 6.532 4.122L6.5 5.5 5.73 7.878C5.619 8.495 5.113 9 4.5 9H3m0 0v9a2 2 0 002 2h12a2 2 0 002-2V9m0 0h-3"></path></svg>
+                    Dividend Information
+                </h2>
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Annual Yield:</p>
+                        <p class="text-white font-semibold">5.5%</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Last Payout:</p>
+                        <p class="text-white">30.0% (April 30, 2025)</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Upcoming Expected Payout:</p>
+                        <p class="text-green font-semibold">30.0% (October 31, 2025)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notable Trends Card -->
+            <div class="card p-6 gradient-dark-blue col-span-1 lg:col-span-2">
+                <h2 class="text-2xl font-semibold text-white mb-4 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-6-4v6m4-6v6m-6-6v6m-6-6v6M6 3v2m0 0h12V3m0 0h-12zm0 0v2"></path></svg>
+                    Notable Trends
+                </h2>
+                <ul class="list-disc list-inside space-y-2 text-white">
+                    <li>OGDC stock nearly doubled in the past year due to exploration success and high oil prices.</li>
+                    <li>Improved dividend policy is attracting institutional investors.</li>
+                    <li>Consistently strong profit margins despite macroeconomic challenges.</li>
+                </ul>
+            </div>
+
+            <!-- Technical Indicators Card -->
+            <div class="card p-6 gradient-indigo-blue">
+                <h2 class="text-2xl font-semibold text-white mb-4 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-5 2a2 2 0 100 4m0-4a2 2 0 110 4m-5 2a2 2 0 100 4m0-4a2 2 0 110 4M12 18v-6a2 2 0 00-2-2h-2a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2z"></path></svg>
+                    Technical Indicators
+                </h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">RSI:</p>
+                        <p class="text-yellow font-bold">80.66</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">50-Day MA:</p>
+                        <p class="text-white">238.25</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">200-Day MA:</p>
+                        <p class="text-white">202.41</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">MACD:</p>
+                        <p class="text-green font-semibold">Bullish Crossover</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Bollinger Bands:</p>
+                        <p class="text-orange">Testing Upper Band</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">30-Day Avg Volume:</p>
+                        <p class="text-white">6,253,296</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">ADX:</p>
+                        <p class="text-white">35.4</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pattern Analysis Card -->
+            <div class="card p-6 gradient-dark-blue">
+                <h2 class="text-2xl font-semibold text-white mb-4 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3m0 0 3-3m-3 3L9 4m3 0h2a2 2 0 012 2v13a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2h2l3-3z"></path></svg>
+                    Pattern Analysis
+                </h2>
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Detected Pattern:</p>
+                        <p class="text-white font-semibold">Cup and Handle</p>
+                        <p class="text-green text-xs">Status: Confirmed</p>
+                        <p class="text-green text-xs">Implication: Bullish continuation</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Detected Pattern:</p>
+                        <p class="text-white font-semibold">Ascending Triangle</p>
+                        <p class="text-orange text-xs">Status: Forming</p>
+                        <p class="text-orange text-xs">Implication: Potential breakout</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analyst Sentiment Card -->
+            <div class="card p-6 gradient-indigo-blue col-span-1 lg:col-span-2">
+                <h2 class="text-2xl font-semibold text-white mb-4 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-3-3h-2a3 3 0 00-3 3v2m5 0a3 3 0 11-3-3 3 3 0 013 3zm0 3h5v-2a3 3 0 00-3-3h-2a3 3 0 00-3 3v2m5 0a3 3 0 11-3-3 3 3 0 013 3zM3 17a3 3 0 003-3V7a3 3 0 00-3-3H1v12zM3 21h8a3 3 0 003-3v-1a3 3 0 00-3-3H3v6z"></path></svg>
+                    Analyst Sentiment
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Overall Recommendation:</p>
+                        <p class="text-green font-bold text-xl">Strong Buy</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Price Target Range:</p>
+                        <p class="text-white">Low: <span class="font-semibold">248.0</span> | Average: <span class="font-semibold text-yellow">315.94</span> | High: <span class="font-semibold">371.0</span></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Number of Analysts:</p>
+                        <p class="text-white font-semibold">7</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Analyst Summary:</p>
+                        <p class="text-white">All analysts have positive outlook based on valuation, dividend, and exploration results.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Insights Card -->
+            <div class="card p-6 gradient-dark-blue col-span-1 lg:col-span-2">
+                <h2 class="text-2xl font-semibold text-white mb-4 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.654 9h4.752v.003a2.5 2.5 0 010 5h-.003c-.754 0-1.426-.43-1.709-1.03A2.5 2.5 0 009.654 9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19.5c0 .403.182.786.493 1.047.31.261.705.393 1.12.393h.003c.415 0 .81-.132 1.12-.393.31-.26.493-.644.493-1.047v-1.951c0-.403-.182-.786-.493-1.047-.31-.26-.705-.393-1.12-.393h-.003c-.415 0-.81.132-1.12.393-.31.26-.493.644-.493 1.047v1.951z"></path></svg>
+                    AI Insights
+                </h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-lg font-semibold text-yellow mb-2">Trend Summary & Short-Term Analysis</h3>
+                        <p class="text-sm text-light-blue font-medium mb-1">Trend Summary:</p>
+                        <p class="text-white mb-3">Stock shows a strong bullish trend with over 80 RSI and strong MACD indicators.</p>
+                        <p class="text-sm text-light-blue font-medium mb-1">Short-Term Bias:</p>
+                        <p class="text-green font-semibold mb-3">Bullish</p>
+                        <p class="text-sm text-light-blue font-medium mb-1">Support Levels:</p>
+                        <p class="text-white mb-3">242.0, 228.5</p>
+                        <p class="text-sm text-light-blue font-medium mb-1">Resistance Levels:</p>
+                        <p class="text-white mb-3">260.0, 271.5</p>
+                        <p class="text-sm text-light-blue font-medium mb-1">Momentum:</p>
+                        <p class="text-orange font-semibold mb-3">Strong</p>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-yellow mb-2">Long-Term Analysis & Risks</h3>
+                        <p class="text-sm text-light-blue font-medium mb-1">Long-Term Trend:</p>
+                        <p class="text-white mb-3">Upward with cyclical bullish swings</p>
+                        <p class="text-sm text-light-blue font-medium mb-1">Valuation:</p>
+                        <p class="text-white mb-3">Undervalued compared to global peers on P/E basis</p>
+                        <p class="text-sm text-light-blue font-medium mb-1">Fundamental Strength:</p>
+                        <p class="text-white mb-3">Strong cash flows, consistent dividends, high margin levels</p>
+                        <p class="text-sm text-light-blue font-medium mb-1">Key Growth Drivers:</p>
+                        <ul class="list-disc list-inside text-white mb-3">
+                            <li>New hydrocarbon discoveries</li>
+                            <li>Rising global crude prices</li>
+                            <li>Higher exploration footprint</li>
+                        </ul>
+                        <p class="text-sm text-light-blue font-medium mb-1">Potential Risks:</p>
+                        <ul class="list-disc list-inside text-white mb-3">
+                            <li>Regulatory intervention in energy pricing</li>
+                            <li>Exchange rate volatility</li>
+                            <li>Global oil demand decline</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-gray-700">
+                    <p class="text-sm text-light-blue font-medium mb-1">AI Rating:</p>
+                    <p class="text-xl font-bold text-green">A (Buy)</p>
+                    <p class="text-sm text-light-blue font-medium mt-2 mb-1">Investment Type:</p>
+                    <p class="text-white font-semibold">Income + Growth</p>
+                </div>
+            </div>
+
+            <!-- News & Updates Card -->
+            <div class="card p-6 gradient-indigo-blue col-span-1 lg:col-span-2">
+                <h2 class="text-2xl font-semibold text-white mb-4 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 00-7-7m0 14a7 7 0 01-7-7m2-4a4.494 4.494 0 00-1.583-3.53M7 10a4.494 4.494 0 00-1.583 3.53"></path></svg>
+                    Recent News & Updates
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-gray-800 bg-opacity-50 p-4 rounded-lg border border-gray-700">
+                        <p class="text-xs text-light-blue mb-1">July 07, 2025</p>
+                        <h3 class="text-lg font-semibold text-white mb-1">ESP Success at Rajian‑05 Heavy‑Oil Well Boosts Output</h3>
+                        <p class="text-xs text-green mb-2">Impact: Positive</p>
+                        <p class="text-sm text-white">Installation of an Electrical Submersible Pump (ESP) at Rajian‑05 well resulted in increased hydrocarbon output.</p>
+                    </div>
+                    <div class="bg-gray-800 bg-opacity-50 p-4 rounded-lg border border-gray-700">
+                        <p class="text-xs text-light-blue mb-1">June 27, 2025</p>
+                        <h3 class="text-lg font-semibold text-white mb-1">Successful Hydrocarbon Testing at Makori Deep‑3 Well</h3>
+                        <p class="text-xs text-green mb-2">Impact: Positive</p>
+                        <p class="text-sm text-white">Commercial reserves of oil and gas confirmed at Makori Deep‑3 development well.</p>
+                    </div>
+                    <div class="bg-gray-800 bg-opacity-50 p-4 rounded-lg border border-gray-700">
+                        <p class="text-xs text-light-blue mb-1">June 12, 2025</p>
+                        <h3 class="text-lg font-semibold text-white mb-1">Gas & Condensate Discovery at Faakir‑1 Exploratory Well</h3>
+                        <p class="text-xs text-green mb-2">Impact: Positive</p>
+                        <p class="text-sm text-white">OGDC discovered commercial reserves of gas and condensate in Sindh at Faakir‑1.</p>
+                    </div>
+                    <div class="bg-gray-800 bg-opacity-50 p-4 rounded-lg border border-gray-700">
+                        <p class="text-xs text-light-blue mb-1">May 14, 2025</p>
+                        <h3 class="text-lg font-semibold text-white mb-1">OGDCL Awarded Seven New Exploration Blocks</h3>
+                        <p class="text-xs text-green mb-2">Impact: Positive</p>
+                        <p class="text-sm text-white">Regulatory authorities awarded OGDC seven new petroleum exploration blocks across Pakistan.</p>
+                    </div>
+                    <div class="bg-gray-800 bg-opacity-50 p-4 rounded-lg border border-gray-700">
+                        <p class="text-xs text-light-blue mb-1">April 30, 2025</p>
+                        <h3 class="text-lg font-semibold text-white mb-1">30% Interim Cash Dividend Declared</h3>
+                        <p class="text-xs text-green mb-2">Impact: Positive</p>
+                        <p class="text-sm text-white">OGDC declared a PKR 3.00 per share interim dividend for Q3 FY2025.</p>
+                    </div>
+                    <div class="bg-gray-800 bg-opacity-50 p-4 rounded-lg border border-gray-700">
+                        <p class="text-xs text-light-blue mb-1">May 06, 2025</p>
+                        <h3 class="text-lg font-semibold text-white mb-1">Appointment of New Board Member</h3>
+                        <p class="text-xs text-orange mb-2">Impact: Neutral</p>
+                        <p class="text-sm text-white">Zafar Abbas appointed to the Board of Directors as a non-executive member.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Forecast & Predictions Card -->
+            <div class="card p-6 gradient-dark-blue col-span-1 lg:col-span-2">
+                <h2 class="text-2xl font-semibold text-white mb-4 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-3-4v2m3-8v2m-3-2v2m-3-4v2m3-2v2m3-4v2m3-2v2M3 21h18V3H3v18z"></path></svg>
+                    Forecast & Predictions (Next 1 Year)
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Expected Price Range:</p>
+                        <p class="text-white font-semibold">PKR <span class="text-yellow">248.0</span> - <span class="text-orange">371.0</span></p>
+                        <p class="text-sm text-light-blue font-medium mt-2 mb-1">Expected Average Price:</p>
+                        <p class="text-white font-bold text-2xl">PKR 315.94</p>
+                        <p class="text-sm text-light-blue font-medium mt-2 mb-1">Upside Potential:</p>
+                        <p class="text-green font-bold text-xl">+23.56%</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Forecasted EPS:</p>
+                        <p class="text-white font-semibold">41.70 PKR</p>
+                        <p class="text-sm text-light-blue font-medium mt-2 mb-1">Forecasted Revenue:</p>
+                        <p class="text-white font-semibold">442,000.0 M PKR</p>
+                        <p class="text-sm text-light-blue font-medium mt-2 mb-1">Forecasted Net Income:</p>
+                        <p class="text-white font-semibold">175,000.0 M PKR</p>
+                        <p class="text-sm text-light-blue font-medium mt-2 mb-1">Confidence Level:</p>
+                        <p class="text-orange font-semibold">Medium-High</p>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-gray-700">
+                    <p class="text-sm text-light-blue font-medium mb-1">Forecast Notes:</p>
+                    <p class="text-white">Driven by production gains, reserve additions, and high oil prices.</p>
+                </div>
+            </div>
+
+            <!-- Global Exposure & Risks Card -->
+            <div class="card p-6 gradient-indigo-blue col-span-1 lg:col-span-2">
+                <h2 class="text-2xl font-semibold text-white mb-4 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 00-9-9m0 18a9 9 0 00-9-9m0 0-1.607-1.607a4.537 4.537 0 01-1.12-5.054l-1.177-2.355a1 1 0 01.603-.924v0a1 1 0 01.924-.603l2.355-1.177a4.537 4.537 0 015.054-1.12M21 12a9 9 0 00-9-9m0 18a9 9 0 01-9-9m0 0-1.607 1.607a4.537 4.537 0 01-1.12 5.054l-1.177 2.355a1 1 0 01-.924.603v0a1 1 0 01-.603-.924l-1.177-2.355a4.537 4.537 0 01-1.12-5.054"></path></svg>
+                    Global Exposure & Risks
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Exports (% of Revenue):</p>
+                        <p class="text-white font-semibold">25.0%</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Currency Risk:</p>
+                        <p class="text-orange font-semibold">Medium (USD/PKR exposure)</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">International Investors:</p>
+                        <ul class="list-disc list-inside text-white">
+                            <li>ADB</li>
+                            <li>World Bank energy partners</li>
+                            <li>Foreign ETFs</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <p class="text-sm text-light-blue font-medium mb-1">Geopolitical Dependency:</p>
+                        <ul class="list-disc list-inside text-white">
+                            <li>Pakistan</li>
+                            <li>Middle East oil benchmark prices</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>
+```
